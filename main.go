@@ -72,6 +72,12 @@ func read(v any, indent int) (L *list.List) {
 	return
 }
 
+func Read(v any, indent int) (L *list.List) {
+	L = read(v, indent)
+	L.Back().Value.(*Element).comma = false
+	return L
+}
+
 type Application struct {
 	L       *list.List
 	cursor  *list.Element
@@ -143,7 +149,7 @@ func main1(source io.Reader, title string) error {
 	if err != nil {
 		return err
 	}
-	L := read(v, 0)
+	L := Read(v, 0)
 	app := newApplication(L)
 
 	pager1 := &pager.Pager{
