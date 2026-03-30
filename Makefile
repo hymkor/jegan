@@ -1,3 +1,3 @@
 all:
 	go fmt ./...
-	go build
+	go build "./cmd/nemo"

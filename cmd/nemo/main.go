@@ -13,6 +13,8 @@ import (
 	"github.com/mattn/go-runewidth"
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
+
+	"github.com/hymkor/jegan/internal/pager"
 )
 
 type textElement string
@@ -28,7 +30,7 @@ func (t textElement) Display(w int) string {
 	}
 }
 
-func pager(source io.Reader, title string) error {
+func main1(source io.Reader, title string) error {
 	tty := &tty8pe.Tty{}
 	lines := list.New()
 	sc := bufio.NewScanner(source)
@@ -39,8 +41,8 @@ func pager(source io.Reader, title string) error {
 	if err := sc.Err(); err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
-	pager := &Pager{
-		Status: func(_ *Session, out io.Writer) error {
+	pager1 := &pager.Pager{
+		Status: func(_ *pager.Session, out io.Writer) error {
 			if title != "" {
 				fmt.Fprintf(out, "\x1B[7m%s\x1B[0m", title)
 			}
@@ -48,19 +50,19 @@ func pager(source io.Reader, title string) error {
 		},
 	}
 	ttyout := colorable.NewColorableStdout()
-	return pager.EventLoop(tty, lines, ttyout)
+	return pager1.EventLoop(tty, lines, ttyout)
 }
 
 func mains(args []string) error {
 	if len(args) < 1 {
-		return pager(os.Stdin, "<STDIN>")
+		return main1(os.Stdin, "<STDIN>")
 	}
 	fd, err := os.Open(args[0])
 	if err != nil {
 		return err
 	}
 	defer fd.Close()
-	return pager(fd, args[0])
+	return main1(fd, args[0])
 }
 
 func main() {

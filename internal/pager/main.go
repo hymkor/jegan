@@ -1,4 +1,4 @@
-package main
+package pager
 
 import (
 	"container/list"
@@ -9,11 +9,11 @@ import (
 )
 
 type Pager struct {
-	cache  []string
-	Width  int
-	Height int
-	Hander func(*Session, string) (bool, error)
-	Status func(*Session, io.Writer) error
+	cache   []string
+	Width   int
+	Height  int
+	Handler func(*Session, string) (bool, error)
+	Status  func(*Session, io.Writer) error
 }
 
 func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
@@ -131,8 +131,8 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		if err != nil {
 			return err
 		}
-		if pager.Hander != nil {
-			if ok, err := pager.Hander(session, key); err != nil {
+		if pager.Handler != nil {
+			if ok, err := pager.Handler(session, key); err != nil {
 				return err
 			} else if ok {
 				rewind()
