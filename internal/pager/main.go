@@ -55,19 +55,21 @@ func (session *Session) Front() {
 	session.Window = session.List.Front()
 }
 
-func (session *Session) rollup() {
-	for i := 0; i < session.Height-1; i++ {
-		if w := session.Window.Prev(); w != nil {
-			session.Window = w
-		} else {
-			break
+func (session *Session) rollup() (i int) {
+	for i < session.Height-1 {
+		w := session.Window.Prev()
+		if w == nil {
+			return
 		}
+		session.Window = w
+		i++
 	}
+	return
 }
 
-func (session *Session) Back() {
+func (session *Session) Back() int {
 	session.Window = session.List.Back()
-	session.rollup()
+	return session.rollup()
 }
 
 func (session *Session) NextPage() {

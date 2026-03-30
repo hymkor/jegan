@@ -20,6 +20,7 @@ type Element struct {
 	value  any
 	indent int
 	comma  bool
+	cursor bool
 }
 
 func (e *Element) Display(w int) string {
@@ -31,7 +32,11 @@ func (e *Element) Display(w int) string {
 	if e.comma {
 		b.WriteByte(',')
 	}
-	return runewidth.Truncate(b.String(), w-1, "")
+	line := runewidth.Truncate(b.String(), w-1, "")
+	if e.cursor {
+		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
+	}
+	return line
 }
 
 func newElement(v any, i int, comma bool) *Element {
@@ -67,6 +72,67 @@ func read(v any, indent int) (L *list.List) {
 	return
 }
 
+type Application struct {
+	L       *list.List
+	cursor  *list.Element
+	csrline int
+	winline int
+}
+
+func newApplication(L *list.List) *Application {
+	cursor := L.Front()
+	cursor.Value.(*Element).cursor = true
+
+	return &Application{
+		L:      L,
+		cursor: cursor,
+	}
+}
+
+func (app *Application) SetCursor(c *list.Element) {
+	app.cursor.Value.(*Element).cursor = false
+	app.cursor = c
+	app.cursor.Value.(*Element).cursor = true
+}
+
+func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
+	switch key {
+	default:
+		return false, nil
+	case "j", "\x1B[B":
+		if c := app.cursor.Next(); c != nil {
+			app.SetCursor(c)
+			app.csrline++
+			for app.csrline-app.winline >= session.Height {
+				session.Window = session.Window.Next()
+				app.winline++
+			}
+		}
+	case "k", "\x1B[A":
+		if c := app.cursor.Prev(); c != nil {
+			app.SetCursor(c)
+			app.csrline--
+			for app.csrline < app.winline {
+				session.Window = session.Window.Prev()
+				app.winline--
+			}
+		}
+	case "<":
+		app.SetCursor(app.L.Front())
+		session.Front()
+		app.winline = 0
+		app.csrline = 0
+	case ">":
+		app.SetCursor(app.L.Back())
+		n := session.Back()
+		app.csrline = app.L.Len() - 1
+		app.winline = app.L.Len() - 1 - n
+	case " ", "b":
+		return true, nil
+	}
+	return true, nil
+}
+
 func main1(source io.Reader, title string) error {
 	data, err := io.ReadAll(source)
 	if err != nil {
@@ -78,6 +144,7 @@ func main1(source io.Reader, title string) error {
 		return err
 	}
 	L := read(v, 0)
+	app := newApplication(L)
 
 	pager1 := &pager.Pager{
 		Status: func(_ *pager.Session, out io.Writer) error {
@@ -86,6 +153,7 @@ func main1(source io.Reader, title string) error {
 			}
 			return nil
 		},
+		Handler: app.Handle,
 	}
 	ttyout := colorable.NewColorableStdout()
 	return pager1.EventLoop(&tty8pe.Tty{}, L, ttyout)
