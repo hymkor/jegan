@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/mattn/go-colorable"
 
 	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
 
@@ -63,8 +65,13 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 		Cursor:  65535,
 		Default: defaults,
 	}
+	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
+	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
 	result, err := editor.ReadLine(context.Background())
 	io.WriteString(session.TtyOut, "\x1B[?25l")
+	if err == readline.CtrlC {
+		return "", errors.New("Canceled")
+	}
 	return result, err
 }
 
