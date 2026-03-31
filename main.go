@@ -39,6 +39,14 @@ func (e *Element) Display(w int) string {
 	return line
 }
 
+func (e *Element) SetComma(value bool) {
+	e.comma = value
+}
+
+func setComma(e *list.Element, value bool) {
+	e.Value.(interface{ SetComma(bool) }).SetComma(value)
+}
+
 func newElement(v any, i int, comma bool) *Element {
 	return &Element{value: v, indent: i, comma: comma}
 }
@@ -54,7 +62,7 @@ func read(v any, indent int) (L *list.List) {
 			L.PushBack(n)
 			L.PushBackList(sub)
 		}
-		L.Back().Value.(*Element).comma = false
+		setComma(L.Back(), false)
 		L.PushBack(newElement("}", indent, true))
 		return
 	}
@@ -64,7 +72,7 @@ func read(v any, indent int) (L *list.List) {
 			sub := read(value, indent+1)
 			L.PushBackList(sub)
 		}
-		L.Back().Value.(*Element).comma = false
+		setComma(L.Back(), false)
 		L.PushBack(newElement("]", indent, false))
 		return
 	}
@@ -74,7 +82,7 @@ func read(v any, indent int) (L *list.List) {
 
 func Read(v any, indent int) (L *list.List) {
 	L = read(v, indent)
-	L.Back().Value.(*Element).comma = false
+	setComma(L.Back(), false)
 	return L
 }
 
