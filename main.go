@@ -73,7 +73,7 @@ func read(v any, indent int) (L *list.List) {
 			L.PushBackList(sub)
 		}
 		setComma(L.Back(), false)
-		L.PushBack(newElement("]", indent, false))
+		L.PushBack(newElement("]", indent, true))
 		return
 	}
 	L.PushBack(newElement(fmt.Sprintf("%#v", v), indent, true))
