@@ -43,12 +43,48 @@ func (e *Element) SetComma(value bool) {
 	e.comma = value
 }
 
+func (e *Element) SetCursor(value bool) {
+	e.cursor = value
+}
+
+type Pair struct {
+	key string
+	Element
+}
+
+func (pair *Pair) Display(w int) string {
+	var b strings.Builder
+	for i := 0; i < pair.indent; i++ {
+		b.WriteString("  ")
+	}
+	fmt.Fprintf(&b, "%q: %v", pair.key, pair.value)
+	if pair.comma {
+		b.WriteByte(',')
+	}
+	line := runewidth.Truncate(b.String(), w-1, "")
+	if pair.cursor {
+		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
+	}
+	return line
+}
+
 func setComma(e *list.Element, value bool) {
 	e.Value.(interface{ SetComma(bool) }).SetComma(value)
 }
 
+func setCursor(e *list.Element, value bool) {
+	e.Value.(interface{ SetCursor(bool) }).SetCursor(value)
+}
+
 func newElement(v any, i int, comma bool) *Element {
 	return &Element{value: v, indent: i, comma: comma}
+}
+
+func newPair(k string, v any, i int, comma bool) *Pair {
+	return &Pair{
+		key:     k,
+		Element: Element{value: v, indent: i, comma: comma},
+	}
 }
 
 func read(v any, indent int) (L *list.List) {
@@ -58,7 +94,7 @@ func read(v any, indent int) (L *list.List) {
 		for key, val := range x {
 			sub := read(val, indent+1)
 			first := sub.Remove(sub.Front()).(*Element)
-			n := newElement(fmt.Sprintf("%#v:%v", key, first.value), indent+1, first.comma)
+			n := newPair(key, first.value, indent+1, first.comma)
 			L.PushBack(n)
 			L.PushBackList(sub)
 		}
@@ -95,7 +131,7 @@ type Application struct {
 
 func newApplication(L *list.List) *Application {
 	cursor := L.Front()
-	cursor.Value.(*Element).cursor = true
+	setCursor(cursor, true)
 
 	return &Application{
 		L:      L,
@@ -104,9 +140,9 @@ func newApplication(L *list.List) *Application {
 }
 
 func (app *Application) SetCursor(c *list.Element) {
-	app.cursor.Value.(*Element).cursor = false
+	setCursor(app.cursor, false)
 	app.cursor = c
-	app.cursor.Value.(*Element).cursor = true
+	setCursor(app.cursor, true)
 }
 
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
