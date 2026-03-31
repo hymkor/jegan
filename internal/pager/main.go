@@ -50,6 +50,7 @@ type Session struct {
 	Window *list.Element
 	tail   *list.Element
 	TtyOut io.Writer
+	GetKey func() (string, error)
 }
 
 func (session *Session) Front() {
@@ -110,6 +111,7 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		Pager:  pager,
 		Window: L.Front(),
 		List:   L,
+		GetKey: getkey,
 		TtyOut: ttyout,
 	}
 	io.WriteString(ttyout, "\x1B[?25l")
