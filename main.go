@@ -86,6 +86,72 @@ func (app *Application) readNewValue(session *pager.Session, prompt string) (str
 	return result, err == nil
 }
 
+func (app *Application) replaceValueOnly(session *pager.Session) {
+	value, _ := getValue(app.cursor)
+	if number, ok := value.(float64); ok {
+		text, err := app.ReadLine(session, "New number:", fmt.Sprint(number))
+		if err == nil {
+			newValue, err := strconv.ParseFloat(text, 64)
+			if err == nil && setValue(app.cursor, newValue) {
+				return
+			}
+		}
+	} else if text, ok := value.(string); ok {
+		text, err := app.ReadLine(session, "New string:", fmt.Sprint(text))
+		if err == nil && setValue(app.cursor, text) {
+			return
+		}
+	}
+	session.TtyOut.Write([]byte{'\a'})
+}
+
+func (app *Application) replaceTypeAndValue(session *pager.Session) {
+	value, _ := getValue(app.cursor)
+	for {
+		fmt.Fprint(session.TtyOut,
+			"\r'1':String, '2':Number, '3':null, '4':true, '5':false ? \x1B[0K")
+		key, err := session.GetKey()
+		if err != nil {
+			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			return
+		}
+		switch key {
+		case "\a":
+			fmt.Fprint(session.TtyOut, "\rCanceled\x1B[0K")
+			return
+		case "1":
+			text, err := app.ReadLine(session, "New string:", fmt.Sprint(value))
+			if err == nil && setValue(app.cursor, text) {
+				return
+			}
+			session.TtyOut.Write([]byte{'\a'})
+		case "2":
+			text, err := app.ReadLine(session, "New number:", fmt.Sprint(value))
+			if err == nil {
+				newValue, err := strconv.ParseFloat(text, 64)
+				if err == nil && setValue(app.cursor, newValue) {
+					return
+				}
+			}
+			session.TtyOut.Write([]byte{'\a'})
+		case "3":
+			if setValue(app.cursor, nil) {
+				return
+			}
+		case "4":
+			if setValue(app.cursor, true) {
+				return
+			}
+		case "5":
+			if setValue(app.cursor, false) {
+				return
+			}
+		default:
+			session.TtyOut.Write([]byte{'\a'})
+		}
+	}
+}
+
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
@@ -119,22 +185,10 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.csrline = app.L.Len() - 1
 		app.winline = app.L.Len() - 1 - n
 	case " ", "b":
-		return true, nil
 	case "r":
-		text, ok := app.readNewValue(session, "New string:")
-		if !ok || !setValue(app.cursor, text) {
-			session.TtyOut.Write([]byte{'\a'})
-		}
-		return true, nil
-	case "f":
-		text, ok := app.readNewValue(session, "New number:")
-		if ok {
-			newValue, err := strconv.ParseFloat(text, 64)
-			if err != nil || !setValue(app.cursor, newValue) {
-				session.TtyOut.Write([]byte{'\a'})
-			}
-		}
-		return true, nil
+		app.replaceValueOnly(session)
+	case "R":
+		app.replaceTypeAndValue(session)
 	case "w":
 		fname, err := app.ReadLine(session, "Write to:", app.Title)
 		if err != nil {
