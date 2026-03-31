@@ -2,25 +2,46 @@ package main
 
 import (
 	"container/list"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
 
+	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
+	"github.com/nyaosorg/go-windows-dbg"
 
 	"github.com/hymkor/jegan/internal/pager"
 )
+
+func debug(v ...any) {
+	if false {
+		dbg.Println(v...)
+	}
+}
+
+type Mark rune
+
+func (m Mark) String() string {
+	return string(rune(m))
+}
+
+func (m Mark) GoString() string {
+	return string(rune(m))
+}
 
 type Element struct {
 	value  any
 	indent int
 	comma  bool
 	cursor bool
+	setter func(any)
 }
 
 func (e *Element) Display(w int) string {
@@ -28,7 +49,7 @@ func (e *Element) Display(w int) string {
 	for i := 0; i < e.indent; i++ {
 		b.WriteString("  ")
 	}
-	fmt.Fprint(&b, e.value)
+	fmt.Fprintf(&b, "%#v", e.value)
 	if e.comma {
 		b.WriteByte(',')
 	}
@@ -37,6 +58,24 @@ func (e *Element) Display(w int) string {
 		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
 	}
 	return line
+}
+
+func (e *Element) CanSetValue() bool {
+	return e.setter != nil
+}
+
+func (e *Element) SetValue(value any) bool {
+	debug("(*Element) SetValue:", value)
+	if e.setter == nil {
+		return false
+	}
+	e.value = value
+	e.setter(value)
+	return true
+}
+
+func (e *Element) Value() any {
+	return e.value
 }
 
 func (e *Element) SetComma(value bool) {
@@ -57,7 +96,7 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.indent; i++ {
 		b.WriteString("  ")
 	}
-	fmt.Fprintf(&b, "%q: %v", pair.key, pair.value)
+	fmt.Fprintf(&b, "%q: %#v", pair.key, pair.value)
 	if pair.comma {
 		b.WriteByte(',')
 	}
@@ -76,48 +115,93 @@ func setCursor(e *list.Element, value bool) {
 	e.Value.(interface{ SetCursor(bool) }).SetCursor(value)
 }
 
-func newElement(v any, i int, comma bool) *Element {
-	return &Element{value: v, indent: i, comma: comma}
+func setValue(e *list.Element, value any) bool {
+	debug("setValue:", value)
+	v, ok := e.Value.(interface{ SetValue(any) bool })
+	return ok && v.SetValue(value)
 }
 
-func newPair(k string, v any, i int, comma bool) *Pair {
+func getValue(e *list.Element) (v any, ok bool) {
+	obj, ok := e.Value.(interface{ Value() any })
+	if ok {
+		v = obj.Value()
+	}
+	return
+}
+
+func canSetValue(e *list.Element) bool {
+	v, ok := e.Value.(interface{ CanSetValue() bool })
+	return ok && v.CanSetValue()
+}
+
+func newElement(v any, i int, comma bool, setter func(any)) *Element {
+	return &Element{value: v, indent: i, comma: comma, setter: setter}
+}
+
+func newPair(k string, v any, i int, comma bool, setter func(any)) *Pair {
 	return &Pair{
 		key:     k,
-		Element: Element{value: v, indent: i, comma: comma},
+		Element: Element{value: v, indent: i, comma: comma, setter: setter},
 	}
 }
 
-func read(v any, indent int) (L *list.List) {
+func canLet(v any) bool {
+	if _, ok := v.(map[string]any); ok {
+		return false
+	}
+	if _, ok := v.([]any); ok {
+		return false
+	}
+	return true
+}
+
+func read(v any, indent int, setter func(any)) (L *list.List) {
 	L = list.New()
 	if x, ok := v.(map[string]any); ok {
-		L.PushBack(newElement("{", indent, false))
+		L.PushBack(newElement(Mark('{'), indent, false, nil))
 		for key, val := range x {
-			sub := read(val, indent+1)
+			var setter1 func(any)
+			if canLet(val) {
+				key1 := key
+				setter1 = func(v any) {
+					debug("read: setter:", key, v)
+					x[key1] = v
+				}
+			}
+			sub := read(val, indent+1, setter1)
 			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, indent+1, first.comma)
+			n := newPair(key, first.value, indent+1, first.comma, setter1)
 			L.PushBack(n)
 			L.PushBackList(sub)
 		}
 		setComma(L.Back(), false)
-		L.PushBack(newElement("}", indent, true))
+		L.PushBack(newElement(Mark('}'), indent, true, nil))
 		return
 	}
 	if x, ok := v.([]any); ok {
-		L.PushBack(newElement("[", indent, false))
-		for _, value := range x {
-			sub := read(value, indent+1)
+		L.PushBack(newElement(Mark('['), indent, false, setter))
+		for i, value := range x {
+			var setter1 func(any)
+			if canLet(value) {
+				i1 := i
+				setter1 = func(v any) {
+					debug("read: setter:", i1, v)
+					x[i1] = v
+				}
+			}
+			sub := read(value, indent+1, setter1)
 			L.PushBackList(sub)
 		}
 		setComma(L.Back(), false)
-		L.PushBack(newElement("]", indent, true))
+		L.PushBack(newElement(Mark(']'), indent, true, nil))
 		return
 	}
-	L.PushBack(newElement(fmt.Sprintf("%#v", v), indent, true))
+	L.PushBack(newElement(v, indent, true, setter))
 	return
 }
 
-func Read(v any, indent int) (L *list.List) {
-	L = read(v, indent)
+func Read(v any, indent int, setter func(any)) (L *list.List) {
+	L = read(v, indent, setter)
 	setComma(L.Back(), false)
 	return L
 }
@@ -143,6 +227,28 @@ func (app *Application) SetCursor(c *list.Element) {
 	setCursor(app.cursor, false)
 	app.cursor = c
 	setCursor(app.cursor, true)
+}
+
+func (app *Application) readNewValue(session *pager.Session, prompt string) (string, bool) {
+	if !canSetValue(app.cursor) {
+		session.TtyOut.Write([]byte{'\a'})
+		return "", false
+	}
+	value, _ := getValue(app.cursor)
+	editor := &readline.Editor{
+		Writer: session.TtyOut,
+		PromptWriter: func(w io.Writer) (int, error) {
+			return fmt.Fprintf(w, "\r%s \x1B[0K", prompt)
+		},
+		LineFeedWriter: func(readline.Result, io.Writer) (int, error) {
+			return 0, nil
+		},
+		Cursor:  65535,
+		Default: fmt.Sprint(value),
+	}
+	result, err := editor.ReadLine(context.Background())
+	io.WriteString(session.TtyOut, "\x1B[?25l")
+	return result, err == nil
 }
 
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
@@ -179,6 +285,21 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.winline = app.L.Len() - 1 - n
 	case " ", "b":
 		return true, nil
+	case "r":
+		text, ok := app.readNewValue(session, "New string:")
+		if !ok || !setValue(app.cursor, text) {
+			session.TtyOut.Write([]byte{'\a'})
+		}
+		return true, nil
+	case "f":
+		text, ok := app.readNewValue(session, "New number:")
+		if ok {
+			newValue, err := strconv.ParseFloat(text, 64)
+			if err != nil || !setValue(app.cursor, newValue) {
+				session.TtyOut.Write([]byte{'\a'})
+			}
+		}
+		return true, nil
 	}
 	return true, nil
 }
@@ -193,13 +314,13 @@ func main1(source io.Reader, title string) error {
 	if err != nil {
 		return err
 	}
-	L := Read(v, 0)
+	L := Read(v, 0, func(x any) { v = x })
 	app := newApplication(L)
 
 	pager1 := &pager.Pager{
 		Status: func(_ *pager.Session, out io.Writer) error {
 			if title != "" {
-				fmt.Fprintf(out, "\x1B[7m%s\x1B[0m", title)
+				fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K", title)
 			}
 			return nil
 		},
