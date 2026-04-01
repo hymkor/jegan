@@ -199,8 +199,28 @@ func isHashElement(p *list.Element) bool {
 }
 
 func (app *Application) insertNewValue(session *pager.Session) {
-	element := ref(app.cursor)
-	if element.value == Mark('{') {
+	if element := ref(app.cursor); element.value == Mark('[') {
+		next := app.cursor.Next()
+		element = ref(next)
+		var comma bool
+		var indent int
+		if element.value == Mark(']') {
+			comma = false
+			indent = element.indent + 1
+		} else {
+			comma = true
+			indent = element.indent
+		}
+		value, ok := app.readNewValue(session, "")
+		if !ok {
+			return
+		}
+		app.L.InsertBefore(
+			newElement(value, indent, comma),
+			next)
+		return
+	}
+	if element := ref(app.cursor); element.value == Mark('{') {
 		key, err := app.ReadLine(session, "Key: ", "")
 		if err != nil {
 			return

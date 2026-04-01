@@ -138,7 +138,7 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 			return err
 		}
 		if pager.Handler != nil {
-			if ok, err := pager.Handler(session, key); err != nil {
+			if ok, msg, err := pager.Handler(session, key); err != nil {
 				return err
 			} else if ok {
 				rewind()
