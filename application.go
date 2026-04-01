@@ -65,17 +65,6 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	return result, err
 }
 
-func (app *Application) readNewValue(session *pager.Session, prompt string) (string, bool) {
-	if !canSetValue(app.cursor) {
-		session.TtyOut.Write([]byte{'\a'})
-		return "", false
-	}
-	value, _ := getValue(app.cursor)
-	result, err := app.ReadLine(session, prompt, fmt.Sprint(value))
-
-	return result, err == nil
-}
-
 func (app *Application) replaceValueOnly(session *pager.Session) {
 	value, _ := getValue(app.cursor)
 	if number, ok := value.(float64); ok {
@@ -96,46 +85,48 @@ func (app *Application) replaceValueOnly(session *pager.Session) {
 }
 
 func (app *Application) replaceTypeAndValue(session *pager.Session) {
-	value, _ := getValue(app.cursor)
+	original, _ := getValue(app.cursor)
+	newValue, ok := app.readNewValue(session, fmt.Sprint(original))
+	if ok {
+		setValue(app.cursor, newValue)
+	}
+}
+
+func (app *Application) readNewValue(session *pager.Session, defaults string) (any, bool) {
+
 	for {
 		fmt.Fprint(session.TtyOut,
 			"\r'1':String, '2':Number, '3':null, '4':true, '5':false ? \x1B[0K")
 		key, err := session.GetKey()
 		if err != nil {
 			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
-			return
+			return nil, false
 		}
 		switch key {
 		case "\a":
 			fmt.Fprint(session.TtyOut, "\rCanceled\x1B[0K")
-			return
+			return nil, false
 		case "1":
-			text, err := app.ReadLine(session, "New string:", fmt.Sprint(value))
-			if err == nil && setValue(app.cursor, text) {
-				return
+			text, err := app.ReadLine(session, "New string:", defaults)
+			if err == nil {
+				return text, true
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "2":
-			text, err := app.ReadLine(session, "New number:", fmt.Sprint(value))
+			text, err := app.ReadLine(session, "New number:", defaults)
 			if err == nil {
 				newValue, err := strconv.ParseFloat(text, 64)
-				if err == nil && setValue(app.cursor, newValue) {
-					return
+				if err == nil {
+					return newValue, true
 				}
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "3":
-			if setValue(app.cursor, nil) {
-				return
-			}
+			return nil, true
 		case "4":
-			if setValue(app.cursor, true) {
-				return
-			}
+			return true, true
 		case "5":
-			if setValue(app.cursor, false) {
-				return
-			}
+			return false, true
 		default:
 			session.TtyOut.Write([]byte{'\a'})
 		}
