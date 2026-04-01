@@ -27,7 +27,7 @@ type Application struct {
 
 func newApplication(L *list.List) *Application {
 	cursor := L.Front()
-	setCursor(cursor, true)
+	ref(cursor).cursor = true
 
 	return &Application{
 		L:      L,
@@ -36,9 +36,9 @@ func newApplication(L *list.List) *Application {
 }
 
 func (app *Application) SetCursor(c *list.Element) {
-	setCursor(app.cursor, false)
+	ref(app.cursor).cursor = false
 	app.cursor = c
-	setCursor(app.cursor, true)
+	ref(app.cursor).cursor = true
 }
 
 func (app *Application) ReadLine(session *pager.Session, prompt, defaults string) (string, error) {
@@ -64,18 +64,20 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 }
 
 func (app *Application) replaceValueOnly(session *pager.Session) {
-	value, _ := getValue(app.cursor)
-	if number, ok := value.(float64); ok {
+	element := ref(app.cursor)
+	if number, ok := element.value.(float64); ok {
 		text, err := app.ReadLine(session, "New number:", fmt.Sprint(number))
 		if err == nil {
 			newValue, err := strconv.ParseFloat(text, 64)
-			if err == nil && setValue(app.cursor, newValue) {
+			if err == nil {
+				element.value = newValue
 				return
 			}
 		}
-	} else if text, ok := value.(string); ok {
+	} else if text, ok := element.value.(string); ok {
 		text, err := app.ReadLine(session, "New string:", fmt.Sprint(text))
-		if err == nil && setValue(app.cursor, text) {
+		if err == nil {
+			element.value = text
 			return
 		}
 	}
@@ -83,10 +85,10 @@ func (app *Application) replaceValueOnly(session *pager.Session) {
 }
 
 func (app *Application) replaceTypeAndValue(session *pager.Session) {
-	original, _ := getValue(app.cursor)
-	newValue, ok := app.readNewValue(session, fmt.Sprint(original))
+	element := ref(app.cursor)
+	newValue, ok := app.readNewValue(session, fmt.Sprint(element.value))
 	if ok {
-		setValue(app.cursor, newValue)
+		element.value = newValue
 	}
 }
 
@@ -132,13 +134,13 @@ func (app *Application) readNewValue(session *pager.Session, defaults string) (a
 }
 
 func getIndex(cursor *list.Element) (index int) {
-	indent := cursor.Value.(interface{ Indent() int }).Indent()
+	indent := ref(cursor).indent
 	for {
 		cursor = cursor.Prev()
 		if cursor == nil {
 			return -1
 		}
-		i := cursor.Value.(interface{ Indent() int }).Indent()
+		i := ref(cursor).indent
 		if i < indent {
 			return
 		}
@@ -148,7 +150,7 @@ func getIndex(cursor *list.Element) (index int) {
 
 func isDuplicated(cursor *list.Element, indent int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
-		i := p.Value.(interface{ Indent() int }).Indent()
+		i := ref(p).indent
 		if i < indent {
 			break
 		}
@@ -160,7 +162,7 @@ func isDuplicated(cursor *list.Element, indent int, key string) bool {
 		}
 	}
 	for p := cursor.Next(); p != nil; p = p.Next() {
-		i := p.Value.(interface{ Indent() int }).Indent()
+		i := ref(p).indent
 		if i < indent {
 			break
 		}
@@ -178,35 +180,33 @@ func isHashElement(p *list.Element) bool {
 	if _, ok := p.Value.(*Pair); ok {
 		return true
 	}
-	indent := p.Value.(interface{ Indent() int }).Indent()
+	indent := ref(p).indent
 	for {
 		p = p.Prev()
 		if p == nil {
 			return false
 		}
-		i := p.Value.(interface{ Indent() int }).Indent()
+		element := ref(p)
+		i := element.indent
 		if i == indent {
 			if _, ok := p.Value.(*Pair); ok {
 				return true
 			}
 		} else if i < indent {
-			value, ok := getValue(p)
-			return ok && value == Mark('{')
+			return element.value == Mark('{')
 		}
 	}
 }
 
 func (app *Application) insertNewValue(session *pager.Session) {
-	if v, ok := getValue(app.cursor); ok && v == Mark('{') {
+	element := ref(app.cursor)
+	if element.value == Mark('{') {
 		key, err := app.ReadLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
 		next := app.cursor.Next()
-		if next == nil {
-			panic("next == nil")
-		}
-		element, ok := getElement(next)
+		element = ref(next)
 		var comma bool
 		var indent int
 		if element.value == Mark('}') {
@@ -225,10 +225,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			return
 		}
 		app.L.InsertBefore(
-			newPair(key,
-				value,
-				indent,
-				comma),
+			newPair(key, value, indent, comma),
 			next)
 		return
 	}
@@ -237,10 +234,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if err != nil {
 			return
 		}
-		element, ok := getElement(app.cursor)
-		if !ok {
-			return
-		}
+		element := ref(app.cursor)
 		if isDuplicated(app.cursor, element.indent, key) {
 			session.TtyOut.Write([]byte{'\a'})
 			return
@@ -250,10 +244,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			return
 		}
 		app.L.InsertAfter(
-			newPair(key,
-				value,
-				element.indent,
-				element.comma),
+			newPair(key, value, element.indent, element.comma),
 			app.cursor)
 		element.comma = true
 		return
@@ -268,10 +259,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			return
 		}
 		app.L.InsertAfter(
-			newElement(
-				value,
-				element.indent,
-				element.comma),
+			newElement(value, element.indent, element.comma),
 			app.cursor)
 		element.comma = true
 	}

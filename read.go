@@ -50,27 +50,6 @@ func (e *Element) Display(w int) string {
 	return line
 }
 
-func (e *Element) SetValue(value any) bool {
-	e.value = value
-	return true
-}
-
-func (e *Element) Value() any {
-	return e.value
-}
-
-func (e *Element) SetComma(value bool) {
-	e.comma = value
-}
-
-func (e *Element) SetCursor(value bool) {
-	e.cursor = value
-}
-
-func (e *Element) Indent() int {
-	return e.indent
-}
-
 type Pair struct {
 	key string
 	Element
@@ -92,40 +71,12 @@ func (pair *Pair) Display(w int) string {
 	return line
 }
 
-func getElement(e *list.Element) (*Element, bool) {
+func ref(e *list.Element) *Element {
 	pair, ok := e.Value.(*Pair)
 	if ok {
-		return &pair.Element, true
+		return &pair.Element
 	}
-	v, ok := e.Value.(*Element)
-	return v, ok
-}
-
-func setComma(e *list.Element, value bool) {
-	e.Value.(interface{ SetComma(bool) }).SetComma(value)
-}
-
-func setCursor(e *list.Element, value bool) {
-	e.Value.(interface{ SetCursor(bool) }).SetCursor(value)
-}
-
-func setValue(e *list.Element, value any) bool {
-	debug("setValue:", value)
-	v, ok := e.Value.(interface{ SetValue(any) bool })
-	return ok && v.SetValue(value)
-}
-
-func getValue(e *list.Element) (v any, ok bool) {
-	obj, ok := e.Value.(interface{ Value() any })
-	if ok {
-		v = obj.Value()
-	}
-	return
-}
-
-func canSetValue(e *list.Element) bool {
-	v, ok := e.Value.(interface{ CanSetValue() bool })
-	return ok && v.CanSetValue()
+	return e.Value.(*Element)
 }
 
 func newElement(v any, i int, comma bool) *Element {
@@ -149,16 +100,6 @@ func (p *Pair) Dump(w io.Writer) {
 	p.Element.Dump(w)
 }
 
-func canLet(v any) bool {
-	if _, ok := v.(map[string]any); ok {
-		return false
-	}
-	if _, ok := v.([]any); ok {
-		return false
-	}
-	return true
-}
-
 func read(v any, indent int) (L *list.List) {
 	L = list.New()
 	if x, ok := v.(map[string]any); ok {
@@ -170,7 +111,7 @@ func read(v any, indent int) (L *list.List) {
 			L.PushBack(n)
 			L.PushBackList(sub)
 		}
-		setComma(L.Back(), false)
+		ref(L.Back()).comma = false
 		L.PushBack(newElement(Mark('}'), indent, true))
 		return
 	}
@@ -180,7 +121,7 @@ func read(v any, indent int) (L *list.List) {
 			sub := read(value, indent+1)
 			L.PushBackList(sub)
 		}
-		setComma(L.Back(), false)
+		ref(L.Back()).comma = false
 		L.PushBack(newElement(Mark(']'), indent, true))
 		return
 	}
@@ -190,7 +131,7 @@ func read(v any, indent int) (L *list.List) {
 
 func Read(v any) (L *list.List) {
 	L = read(v, 0)
-	setComma(L.Back(), false)
+	ref(L.Back()).comma = false
 	return L
 }
 
