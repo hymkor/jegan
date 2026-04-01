@@ -89,30 +89,31 @@ func (app *Application) replaceValueOnly(session *pager.Session) {
 
 func (app *Application) replaceTypeAndValue(session *pager.Session) {
 	element := ref(app.cursor)
-	newValue, ok := app.readNewValue(session, fmt.Sprint(element.value))
-	if ok {
-		element.value = newValue
+	values := app.readNewValue(session, fmt.Sprint(element.value))
+	if len(values) == 1 {
+		element.value = values[0]
 	}
 }
 
-func (app *Application) readNewValue(session *pager.Session, defaults string) (any, bool) {
+func (app *Application) readNewValue(session *pager.Session, defaults string) []any {
 
 	for {
 		fmt.Fprint(session.TtyOut,
-			"\r'1':String, '2':Number, '3':null, '4':true, '5':false ? \x1B[0K")
+			"\r'1':String, '2':Number, '3':null, "+
+				"'4':true, '5':false, '6':{}, '7':[] ? \x1B[0K")
 		key, err := session.GetKey()
 		if err != nil {
 			app.message = err.Error()
-			return nil, false
+			return nil
 		}
 		switch key {
 		case "\a":
 			app.message = "Canceled"
-			return nil, false
+			return nil
 		case "1":
 			text, err := app.ReadLine(session, "New string:", defaults)
 			if err == nil {
-				return text, true
+				return []any{text}
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "2":
@@ -120,16 +121,20 @@ func (app *Application) readNewValue(session *pager.Session, defaults string) (a
 			if err == nil {
 				newValue, err := strconv.ParseFloat(text, 64)
 				if err == nil {
-					return newValue, true
+					return []any{newValue}
 				}
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "3":
-			return nil, true
+			return []any{nil}
 		case "4":
-			return true, true
+			return []any{true}
 		case "5":
-			return false, true
+			return []any{false}
+		case "6":
+			return []any{Mark('{'), Mark('}')}
+		case "7":
+			return []any{Mark('['), Mark(']')}
 		default:
 			session.TtyOut.Write([]byte{'\a'})
 		}
@@ -214,13 +219,20 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = true
 			indent = element.indent
 		}
-		value, ok := app.readNewValue(session, "")
-		if !ok {
-			return
+		values := app.readNewValue(session, "")
+		switch len(values) {
+		case 2: // [\n[\n],\n
+			app.L.InsertBefore(
+				newElement(values[0], indent, false),
+				next)
+			app.L.InsertBefore(
+				newElement(values[1], indent, comma),
+				next)
+		case 1: // [\n value
+			app.L.InsertBefore(
+				newElement(values[0], indent, comma),
+				next)
 		}
-		app.L.InsertBefore(
-			newElement(value, indent, comma),
-			next)
 		return
 	}
 	if element := ref(app.cursor); element.value == Mark('{') {
@@ -243,13 +255,20 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = true
 			indent = element.indent
 		}
-		value, ok := app.readNewValue(session, "")
-		if !ok {
-			return
+		values := app.readNewValue(session, "")
+		switch len(values) {
+		case 2: // { key:[]
+			app.L.InsertBefore(
+				newPair(key, values[0], indent, false),
+				next)
+			app.L.InsertBefore(
+				newElement(values[1], indent, comma),
+				next)
+		case 1: // { key:value
+			app.L.InsertBefore(
+				newPair(key, values[0], indent, comma),
+				next)
 		}
-		app.L.InsertBefore(
-			newPair(key, value, indent, comma),
-			next)
 		return
 	}
 	if isHashElement(app.cursor) {
@@ -262,13 +281,20 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			session.TtyOut.Write([]byte{'\a'})
 			return
 		}
-		value, ok := app.readNewValue(session, "")
-		if !ok {
-			return
+		values := app.readNewValue(session, "")
+		switch len(values) {
+		case 2: // key:[],
+			app.L.InsertAfter(
+				newElement(values[1], element.indent, element.comma),
+				app.cursor)
+			app.L.InsertAfter(
+				newPair(key, values[0], element.indent, false),
+				app.cursor)
+		case 1: // key:value,
+			app.L.InsertAfter(
+				newPair(key, values[0], element.indent, element.comma),
+				app.cursor)
 		}
-		app.L.InsertAfter(
-			newPair(key, value, element.indent, element.comma),
-			app.cursor)
 		element.comma = true
 		return
 	}
@@ -277,13 +303,20 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if index < 0 {
 			return
 		}
-		value, ok := app.readNewValue(session, "")
-		if !ok {
-			return
+		values := app.readNewValue(session, "")
+		switch len(values) {
+		case 2: // [ \n ],
+			app.L.InsertAfter(
+				newElement(values[1], element.indent, element.comma),
+				app.cursor)
+			app.L.InsertAfter(
+				newElement(values[0], element.indent, false),
+				app.cursor)
+		case 1: // value,
+			app.L.InsertAfter(
+				newElement(values[0], element.indent, element.comma),
+				app.cursor)
 		}
-		app.L.InsertAfter(
-			newElement(value, element.indent, element.comma),
-			app.cursor)
 		element.comma = true
 	}
 }
