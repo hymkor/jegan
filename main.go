@@ -26,7 +26,7 @@ func main1(data []byte, title string) error {
 	if err != nil {
 		return err
 	}
-	L := Read(v, 0, func(x any) { v = x })
+	L := Read(v)
 	app := newApplication(L)
 	app.Root = v
 	app.Title = title

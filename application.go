@@ -149,38 +149,25 @@ func getIndex(cursor *list.Element) (index int) {
 
 func (app *Application) insertNewValue(session *pager.Session) {
 	if pair, ok := app.cursor.Value.(*Pair); ok {
-		parent, ok := pair.Element.parent.(map[string]any)
-		if !ok {
-			return
-		}
 		key, err := app.ReadLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
-		if _, ok := parent[key]; ok {
-			return
-		}
+		// あとでやる：key duplication check
 		value, ok := app.readNewValue(session, "")
 		if !ok {
 			return
 		}
-		parent[key] = value
 		app.L.InsertAfter(
 			newPair(key,
 				value,
 				pair.Element.indent,
-				pair.Element.comma,
-				func(v any) { parent[key] = v },
-				parent),
+				pair.Element.comma),
 			app.cursor)
 		pair.Element.comma = true
 		return
 	}
 	if element, ok := app.cursor.Value.(*Element); ok {
-		parent, ok := element.parent.([]any)
-		if !ok {
-			return
-		}
 		index := getIndex(app.cursor)
 		if index < 0 {
 			return
@@ -189,16 +176,11 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if !ok {
 			return
 		}
-		parent = append(parent, nil)
-		copy(parent[index+1:], parent[index:])
-		parent[index] = value
 		app.L.InsertAfter(
 			newElement(
 				value,
 				element.indent,
-				element.comma,
-				func(v any) { parent[index] = v },
-				parent),
+				element.comma),
 			app.cursor)
 		element.comma = true
 	}

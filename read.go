@@ -24,8 +24,6 @@ type Element struct {
 	indent int
 	comma  bool
 	cursor bool
-	setter func(any)
-	parent any
 }
 
 func (e *Element) Dump(w io.Writer) {
@@ -51,17 +49,8 @@ func (e *Element) Display(w int) string {
 	return line
 }
 
-func (e *Element) CanSetValue() bool {
-	return e.setter != nil
-}
-
 func (e *Element) SetValue(value any) bool {
-	debug("(*Element) SetValue:", value)
-	if e.setter == nil {
-		return false
-	}
 	e.value = value
-	e.setter(value)
 	return true
 }
 
@@ -129,24 +118,20 @@ func canSetValue(e *list.Element) bool {
 	return ok && v.CanSetValue()
 }
 
-func newElement(v any, i int, comma bool, setter func(any), parent any) *Element {
+func newElement(v any, i int, comma bool) *Element {
 	return &Element{
 		value:  v,
 		indent: i,
-		comma:  comma,
-		setter: setter,
-		parent: parent}
+		comma:  comma}
 }
 
-func newPair(k string, v any, i int, comma bool, setter func(any), parent any) *Pair {
+func newPair(k string, v any, i int, comma bool) *Pair {
 	return &Pair{
 		key: k,
 		Element: Element{
 			value:  v,
 			indent: i,
-			comma:  comma,
-			setter: setter,
-			parent: parent}}
+			comma:  comma}}
 }
 
 func (p *Pair) Dump(w io.Writer) {
@@ -164,53 +149,37 @@ func canLet(v any) bool {
 	return true
 }
 
-func read(v any, indent int, setter func(any), parent any) (L *list.List) {
+func read(v any, indent int) (L *list.List) {
 	L = list.New()
 	if x, ok := v.(map[string]any); ok {
-		L.PushBack(newElement(Mark('{'), indent, false, nil, parent))
+		L.PushBack(newElement(Mark('{'), indent, false))
 		for key, val := range x {
-			var setter1 func(any)
-			if canLet(val) {
-				key1 := key
-				setter1 = func(v any) {
-					debug("read: setter:", key, v)
-					x[key1] = v
-				}
-			}
-			sub := read(val, indent+1, setter1, x)
+			sub := read(val, indent+1)
 			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, indent+1, first.comma, setter1, x)
+			n := newPair(key, first.value, indent+1, first.comma)
 			L.PushBack(n)
 			L.PushBackList(sub)
 		}
 		setComma(L.Back(), false)
-		L.PushBack(newElement(Mark('}'), indent, true, nil, parent))
+		L.PushBack(newElement(Mark('}'), indent, true))
 		return
 	}
 	if x, ok := v.([]any); ok {
-		L.PushBack(newElement(Mark('['), indent, false, setter, parent))
-		for i, value := range x {
-			var setter1 func(any)
-			if canLet(value) {
-				i1 := i
-				setter1 = func(v any) {
-					debug("read: setter:", i1, v)
-					x[i1] = v
-				}
-			}
-			sub := read(value, indent+1, setter1, x)
+		L.PushBack(newElement(Mark('['), indent, false))
+		for _, value := range x {
+			sub := read(value, indent+1)
 			L.PushBackList(sub)
 		}
 		setComma(L.Back(), false)
-		L.PushBack(newElement(Mark(']'), indent, true, nil, parent))
+		L.PushBack(newElement(Mark(']'), indent, true))
 		return
 	}
-	L.PushBack(newElement(v, indent, true, setter, parent))
+	L.PushBack(newElement(v, indent, true))
 	return
 }
 
-func Read(v any, indent int, setter func(any)) (L *list.List) {
-	L = read(v, indent, setter, nil)
+func Read(v any) (L *list.List) {
+	L = read(v, 0)
 	setComma(L.Back(), false)
 	return L
 }
