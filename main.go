@@ -25,6 +25,7 @@ func main1(data []byte, title string) error {
 		return err
 	}
 	app := newApplication(Read(v))
+	defer app.Close()
 	app.Title = title
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)

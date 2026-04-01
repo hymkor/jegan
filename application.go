@@ -14,6 +14,7 @@ import (
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/go-safewrite"
+	"github.com/hymkor/go-safewrite/perm"
 	"github.com/hymkor/jegan/internal/pager"
 )
 
@@ -394,9 +395,8 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 			app.message = err.Error()
 			break
 		}
-		if err := safewrite.RestorePerm(fd); err != nil {
-			app.message = err.Error()
-		}
+		perm.Track(fd)
+		app.Title = fname
 	}
 	return true, nil
 }
@@ -419,4 +419,8 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 		Handler: app.Handle,
 	}
 	return pager1.EventLoop(tty, app.L, ttyout)
+}
+
+func (app *Application) Close() error {
+	return perm.RestoreAll()
 }
