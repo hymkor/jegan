@@ -92,6 +92,15 @@ func (pair *Pair) Display(w int) string {
 	return line
 }
 
+func getElement(e *list.Element) (*Element, bool) {
+	pair, ok := e.Value.(*Pair)
+	if ok {
+		return &pair.Element, true
+	}
+	v, ok := e.Value.(*Element)
+	return v, ok
+}
+
 func setComma(e *list.Element, value bool) {
 	e.Value.(interface{ SetComma(bool) }).SetComma(value)
 }

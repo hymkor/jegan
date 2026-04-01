@@ -174,13 +174,74 @@ func isDuplicated(cursor *list.Element, indent int, key string) bool {
 	return false
 }
 
+func isHashElement(p *list.Element) bool {
+	if _, ok := p.Value.(*Pair); ok {
+		return true
+	}
+	indent := p.Value.(interface{ Indent() int }).Indent()
+	for {
+		p = p.Prev()
+		if p == nil {
+			return false
+		}
+		i := p.Value.(interface{ Indent() int }).Indent()
+		if i == indent {
+			if _, ok := p.Value.(*Pair); ok {
+				return true
+			}
+		} else if i < indent {
+			value, ok := getValue(p)
+			return ok && value == Mark('{')
+		}
+	}
+}
+
 func (app *Application) insertNewValue(session *pager.Session) {
-	if pair, ok := app.cursor.Value.(*Pair); ok {
+	if v, ok := getValue(app.cursor); ok && v == Mark('{') {
 		key, err := app.ReadLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
-		if isDuplicated(app.cursor, pair.Element.indent, key) {
+		next := app.cursor.Next()
+		if next == nil {
+			panic("next == nil")
+		}
+		element, ok := getElement(next)
+		var comma bool
+		var indent int
+		if element.value == Mark('}') {
+			comma = false
+			indent = element.indent + 1
+		} else {
+			if isDuplicated(next, element.indent, key) {
+				session.TtyOut.Write([]byte{'\a'})
+				return
+			}
+			comma = true
+			indent = element.indent
+		}
+		value, ok := app.readNewValue(session, "")
+		if !ok {
+			return
+		}
+		app.L.InsertBefore(
+			newPair(key,
+				value,
+				indent,
+				comma),
+			next)
+		return
+	}
+	if isHashElement(app.cursor) {
+		key, err := app.ReadLine(session, "Key: ", "")
+		if err != nil {
+			return
+		}
+		element, ok := getElement(app.cursor)
+		if !ok {
+			return
+		}
+		if isDuplicated(app.cursor, element.indent, key) {
 			session.TtyOut.Write([]byte{'\a'})
 			return
 		}
@@ -191,10 +252,10 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		app.L.InsertAfter(
 			newPair(key,
 				value,
-				pair.Element.indent,
-				pair.Element.comma),
+				element.indent,
+				element.comma),
 			app.cursor)
-		pair.Element.comma = true
+		element.comma = true
 		return
 	}
 	if element, ok := app.cursor.Value.(*Element); ok {
