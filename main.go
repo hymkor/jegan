@@ -28,7 +28,6 @@ func main1(data []byte, title string) error {
 	}
 	L := Read(v)
 	app := newApplication(L)
-	app.Root = v
 	app.Title = title
 
 	pager1 := &pager.Pager{

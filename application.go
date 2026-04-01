@@ -22,7 +22,6 @@ type Application struct {
 	cursor  *list.Element
 	csrline int
 	winline int
-	Root    any
 	Title   string
 }
 
