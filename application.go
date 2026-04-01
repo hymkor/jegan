@@ -72,8 +72,15 @@ func (app *Application) replaceTypeAndValue(session *pager.Session) {
 		return
 	}
 	values := app.readNewValue(session, element.value)
-	if len(values) == 1 {
+	switch len(values) {
+	case 1:
 		element.value = values[0]
+	case 2:
+		app.L.InsertAfter(
+			newElement(values[1], element.indent, element.comma),
+			app.cursor)
+		element.value = values[0]
+		element.comma = false
 	}
 }
 
