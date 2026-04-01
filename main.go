@@ -10,8 +10,6 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
-
-	"github.com/hymkor/jegan/internal/pager"
 )
 
 func debug(v ...any) {
@@ -26,21 +24,10 @@ func main1(data []byte, title string) error {
 	if err != nil {
 		return err
 	}
-	L := Read(v)
-	app := newApplication(L)
+	app := newApplication(Read(v))
 	app.Title = title
-
-	pager1 := &pager.Pager{
-		Status: func(_ *pager.Session, out io.Writer) error {
-			if title != "" {
-				fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K", title)
-			}
-			return nil
-		},
-		Handler: app.Handle,
-	}
 	ttyout := colorable.NewColorableStdout()
-	return pager1.EventLoop(&tty8pe.Tty{}, L, ttyout)
+	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
 
 func mains(args []string) error {

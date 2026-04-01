@@ -11,7 +11,7 @@ import (
 
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
-	"github.com/nyaosorg/go-windows-dbg"
+	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/go-safewrite"
 	"github.com/hymkor/jegan/internal/pager"
@@ -23,6 +23,7 @@ type Application struct {
 	csrline int
 	winline int
 	Title   string
+	message string
 }
 
 func newApplication(L *list.List) *Application {
@@ -74,12 +75,14 @@ func (app *Application) replaceValueOnly(session *pager.Session) {
 				return
 			}
 		}
+		app.message = err.Error()
 	} else if text, ok := element.value.(string); ok {
 		text, err := app.ReadLine(session, "New string:", fmt.Sprint(text))
 		if err == nil {
 			element.value = text
 			return
 		}
+		app.message = err.Error()
 	}
 	session.TtyOut.Write([]byte{'\a'})
 }
@@ -99,12 +102,12 @@ func (app *Application) readNewValue(session *pager.Session, defaults string) (a
 			"\r'1':String, '2':Number, '3':null, '4':true, '5':false ? \x1B[0K")
 		key, err := session.GetKey()
 		if err != nil {
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			app.message = err.Error()
 			return nil, false
 		}
 		switch key {
 		case "\a":
-			fmt.Fprint(session.TtyOut, "\rCanceled\x1B[0K")
+			app.message = "Canceled"
 			return nil, false
 		case "1":
 			text, err := app.ReadLine(session, "New string:", defaults)
@@ -327,7 +330,7 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 	case "w":
 		fname, err := app.ReadLine(session, "Write to:", app.Title)
 		if err != nil {
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			app.message = err.Error()
 			break
 		}
 		fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
@@ -350,19 +353,37 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 			}
 		})
 		if err != nil {
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			app.message = err.Error()
 			break
 		}
 		Dump(app.L, fd)
 		if err := fd.Close(); err != nil {
-			dbg.Println(err.Error())
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			app.message = err.Error()
 			break
 		}
 		if err := safewrite.RestorePerm(fd); err != nil {
-			dbg.Println(err.Error())
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
+			app.message = err.Error()
 		}
 	}
 	return true, nil
+}
+
+func (app *Application) Status(_ *pager.Session, out io.Writer) error {
+	if app.message != "" {
+		fmt.Fprintf(out, "\x1B[1m%s\x1B[0m\x1B[0K", app.message)
+		app.message = ""
+		return nil
+	}
+	if app.Title != "" {
+		fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K", app.Title)
+	}
+	return nil
+}
+
+func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
+	pager1 := &pager.Pager{
+		Status:  app.Status,
+		Handler: app.Handle,
+	}
+	return pager1.EventLoop(tty, app.L, ttyout)
 }
