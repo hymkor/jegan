@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -25,6 +26,13 @@ type Element struct {
 	cursor bool
 	setter func(any)
 	parent any
+}
+
+func (e *Element) Dump(w io.Writer) {
+	fmt.Fprintf(w, "%#v", e.value)
+	if e.comma {
+		w.Write([]byte{','})
+	}
 }
 
 func (e *Element) Display(w int) string {
@@ -141,6 +149,11 @@ func newPair(k string, v any, i int, comma bool, setter func(any), parent any) *
 			parent: parent}}
 }
 
+func (p *Pair) Dump(w io.Writer) {
+	fmt.Fprintf(w, "%q:", p.key)
+	p.Element.Dump(w)
+}
+
 func canLet(v any) bool {
 	if _, ok := v.(map[string]any); ok {
 		return false
@@ -200,4 +213,10 @@ func Read(v any, indent int, setter func(any)) (L *list.List) {
 	L = read(v, indent, setter, nil)
 	setComma(L.Back(), false)
 	return L
+}
+
+func Dump(L *list.List, w io.Writer) {
+	for p := L.Front(); p != nil; p = p.Next() {
+		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
+	}
 }

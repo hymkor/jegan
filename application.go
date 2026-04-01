@@ -3,7 +3,6 @@ package main
 import (
 	"container/list"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -250,11 +249,6 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
 			break
 		}
-		data, err := json.Marshal(app.Root)
-		if err != nil {
-			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
-			break
-		}
 		fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
 			for {
 				if info.ReadOnly() {
@@ -278,7 +272,7 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
 			break
 		}
-		fd.Write(data)
+		Dump(app.L, fd)
 		if err := fd.Close(); err != nil {
 			dbg.Println(err.Error())
 			fmt.Fprintf(session.TtyOut, "\r%s\x1B[0K", err.Error())
