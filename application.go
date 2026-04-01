@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -65,81 +66,51 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	return result, err
 }
 
-func (app *Application) replaceValueOnly(session *pager.Session) {
-	element := ref(app.cursor)
-	if number, ok := element.value.(float64); ok {
-		text, err := app.ReadLine(session, "New number:", fmt.Sprint(number))
-		if err == nil {
-			newValue, err := strconv.ParseFloat(text, 64)
-			if err == nil {
-				element.value = newValue
-				return
-			}
-		}
-		app.message = err.Error()
-	} else if text, ok := element.value.(string); ok {
-		text, err := app.ReadLine(session, "New string:", fmt.Sprint(text))
-		if err == nil {
-			element.value = text
-			return
-		}
-		app.message = err.Error()
-	}
-	session.TtyOut.Write([]byte{'\a'})
-}
-
 func (app *Application) replaceTypeAndValue(session *pager.Session) {
 	element := ref(app.cursor)
-	values := app.readNewValue(session, fmt.Sprint(element.value))
+	if _, ok := element.value.(Mark); ok {
+		return
+	}
+	values := app.readNewValue(session, element.value)
 	if len(values) == 1 {
 		element.value = values[0]
 	}
 }
 
-func (app *Application) readNewValue(session *pager.Session, defaults string) []any {
+func (app *Application) readNewValue(session *pager.Session, defaults any) []any {
+	rawText, err := app.ReadLine(session, "New value:", fmt.Sprintf("%#v", defaults))
+	if err != nil {
+		app.message = err.Error()
+		return nil
+	}
+	normText := strings.TrimSpace(rawText)
 
-	for {
-		fmt.Fprint(session.TtyOut,
-			"\r'1':String, '2':Number, '3':null, "+
-				"'4':true, '5':false, '6':{}, '7':[] ? \x1B[0K")
-		key, err := session.GetKey()
-		if err != nil {
-			app.message = err.Error()
-			return nil
-		}
-		switch key {
-		case "\a":
-			app.message = "Canceled"
-			return nil
-		case "1":
-			text, err := app.ReadLine(session, "New string:", defaults)
-			if err == nil {
-				return []any{text}
-			}
-			session.TtyOut.Write([]byte{'\a'})
-		case "2":
-			text, err := app.ReadLine(session, "New number:", defaults)
-			if err == nil {
-				newValue, err := strconv.ParseFloat(text, 64)
-				if err == nil {
-					return []any{newValue}
-				}
-			}
-			session.TtyOut.Write([]byte{'\a'})
-		case "3":
-			return []any{nil}
-		case "4":
-			return []any{true}
-		case "5":
-			return []any{false}
-		case "6":
-			return []any{Mark('{'), Mark('}')}
-		case "7":
-			return []any{Mark('['), Mark(']')}
-		default:
-			session.TtyOut.Write([]byte{'\a'})
+	if len(normText) >= 2 && normText[0] == '"' && normText[len(normText)-1] == '"' {
+		var s string
+		err := json.Unmarshal([]byte(rawText), &s)
+		if err == nil {
+			return []any{s}
 		}
 	}
+	if number, err := strconv.ParseFloat(normText, 64); err == nil {
+		return []any{number}
+	}
+	if strings.EqualFold(normText, "null") {
+		return []any{nil}
+	}
+	if strings.EqualFold(normText, "true") {
+		return []any{true}
+	}
+	if strings.EqualFold(normText, "false") {
+		return []any{false}
+	}
+	if normText == "{}" {
+		return []any{Mark('{'), Mark('}')}
+	}
+	if normText == "[]" {
+		return []any{Mark('['), Mark(']')}
+	}
+	return []any{rawText}
 }
 
 func getIndex(cursor *list.Element) (index int) {
@@ -411,8 +382,6 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.winline = app.L.Len() - 1 - n
 	case " ", "b":
 	case "r":
-		app.replaceValueOnly(session)
-	case "R":
 		app.replaceTypeAndValue(session)
 	case "o":
 		app.insertNewValue(session)
