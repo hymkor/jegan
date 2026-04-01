@@ -133,6 +133,78 @@ func (app *Application) readNewValue(session *pager.Session, defaults string) (a
 	}
 }
 
+func getIndex(cursor *list.Element) (index int) {
+	indent := cursor.Value.(interface{ Indent() int }).Indent()
+	for {
+		cursor = cursor.Prev()
+		if cursor == nil {
+			return -1
+		}
+		i := cursor.Value.(interface{ Indent() int }).Indent()
+		if i < indent {
+			return
+		}
+		index++
+	}
+}
+
+func (app *Application) insertNewValue(session *pager.Session) {
+	if pair, ok := app.cursor.Value.(*Pair); ok {
+		parent, ok := pair.Element.parent.(map[string]any)
+		if !ok {
+			return
+		}
+		key, err := app.ReadLine(session, "Key: ", "")
+		if err != nil {
+			return
+		}
+		if _, ok := parent[key]; ok {
+			return
+		}
+		value, ok := app.readNewValue(session, "")
+		if !ok {
+			return
+		}
+		parent[key] = value
+		app.L.InsertAfter(
+			newPair(key,
+				value,
+				pair.Element.indent,
+				pair.Element.comma,
+				func(v any) { parent[key] = v },
+				parent),
+			app.cursor)
+		pair.Element.comma = true
+		return
+	}
+	if element, ok := app.cursor.Value.(*Element); ok {
+		parent, ok := element.parent.([]any)
+		if !ok {
+			return
+		}
+		index := getIndex(app.cursor)
+		if index < 0 {
+			return
+		}
+		value, ok := app.readNewValue(session, "")
+		if !ok {
+			return
+		}
+		parent = append(parent, nil)
+		copy(parent[index+1:], parent[index:])
+		parent[index] = value
+		app.L.InsertAfter(
+			newElement(
+				value,
+				element.indent,
+				element.comma,
+				func(v any) { parent[index] = v },
+				parent),
+			app.cursor)
+		element.comma = true
+	}
+}
+
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
@@ -170,6 +242,8 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.replaceValueOnly(session)
 	case "R":
 		app.replaceTypeAndValue(session)
+	case "o":
+		app.insertNewValue(session)
 	case "w":
 		fname, err := app.ReadLine(session, "Write to:", app.Title)
 		if err != nil {

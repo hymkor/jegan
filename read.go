@@ -69,6 +69,10 @@ func (e *Element) SetCursor(value bool) {
 	e.cursor = value
 }
 
+func (e *Element) Indent() int {
+	return e.indent
+}
+
 type Pair struct {
 	key string
 	Element
