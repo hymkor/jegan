@@ -27,7 +27,11 @@ type Element struct {
 }
 
 func (e *Element) Dump(w io.Writer) {
-	fmt.Fprintf(w, "%#v", e.value)
+	if e.value == nil {
+		io.WriteString(w, "null")
+	} else {
+		fmt.Fprintf(w, "%#v", e.value)
+	}
 	if e.comma {
 		w.Write([]byte{','})
 	}
@@ -38,10 +42,7 @@ func (e *Element) Display(w int) string {
 	for i := 0; i < e.indent; i++ {
 		b.WriteString("  ")
 	}
-	fmt.Fprintf(&b, "%#v", e.value)
-	if e.comma {
-		b.WriteByte(',')
-	}
+	e.Dump(&b)
 	line := runewidth.Truncate(b.String(), w-1, "")
 	if e.cursor {
 		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
