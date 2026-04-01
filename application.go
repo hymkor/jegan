@@ -322,6 +322,61 @@ func (app *Application) insertNewValue(session *pager.Session) {
 	}
 }
 
+func (app *Application) removeCursor(session *pager.Session) {
+	comma := ref(app.cursor).comma
+	if next := app.cursor.Next(); next != nil {
+		ref(app.cursor).cursor = false
+		app.L.Remove(app.cursor)
+		app.cursor = next
+		ref(app.cursor).cursor = true
+		if !comma {
+			if p := app.cursor.Prev(); p != nil {
+				ref(p).comma = false
+			}
+		}
+	} else if prev := app.cursor.Prev(); prev != nil {
+		ref(app.cursor).cursor = false
+		app.L.Remove(app.cursor)
+		app.cursor = prev
+		ref(app.cursor).cursor = true
+		app.csrline--
+		if app.csrline < app.winline {
+			session.Window = app.cursor
+			app.winline = app.csrline
+		}
+		if !comma {
+			ref(prev).comma = false
+		}
+	}
+}
+
+func (app *Application) removeLine(session *pager.Session) {
+	element := ref(app.cursor)
+	mark, ok := element.value.(Mark)
+	if !ok {
+		app.removeCursor(session)
+		return
+	}
+	if mark != Mark('{') && mark != Mark('[') {
+		return
+	}
+	if element.indent == 0 {
+		return
+	}
+	next := app.cursor.Next()
+	if next == nil {
+		return
+	}
+	n := ref(next)
+	if n.value != Mark(']') && n.value != Mark('}') {
+		return
+	}
+	comma := n.comma
+	app.L.Remove(next)
+	app.removeCursor(session)
+	ref(app.cursor).comma = comma
+}
+
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
@@ -361,6 +416,8 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.replaceTypeAndValue(session)
 	case "o":
 		app.insertNewValue(session)
+	case "d":
+		app.removeLine(session)
 	case "w":
 		fname, err := app.ReadLine(session, "Write to:", app.Title)
 		if err != nil {
