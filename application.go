@@ -147,13 +147,44 @@ func getIndex(cursor *list.Element) (index int) {
 	}
 }
 
+func isDuplicated(cursor *list.Element, indent int, key string) bool {
+	for p := cursor; p != nil; p = p.Prev() {
+		i := p.Value.(interface{ Indent() int }).Indent()
+		if i < indent {
+			break
+		}
+		if i == indent {
+			q, ok := p.Value.(*Pair)
+			if ok && q.key == key {
+				return true
+			}
+		}
+	}
+	for p := cursor.Next(); p != nil; p = p.Next() {
+		i := p.Value.(interface{ Indent() int }).Indent()
+		if i < indent {
+			break
+		}
+		if i == indent {
+			q, ok := p.Value.(*Pair)
+			if ok && q.key == key {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (app *Application) insertNewValue(session *pager.Session) {
 	if pair, ok := app.cursor.Value.(*Pair); ok {
 		key, err := app.ReadLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
-		// あとでやる：key duplication check
+		if isDuplicated(app.cursor, pair.Element.indent, key) {
+			session.TtyOut.Write([]byte{'\a'})
+			return
+		}
 		value, ok := app.readNewValue(session, "")
 		if !ok {
 			return
