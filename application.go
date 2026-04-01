@@ -221,7 +221,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			indent = element.indent + 1
 		} else {
 			if isDuplicated(next, element.indent, key) {
-				session.TtyOut.Write([]byte{'\a'})
+				app.message = fmt.Sprintf("\aduplicate key: %q", key)
 				return
 			}
 			comma = true
@@ -250,7 +250,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		}
 		element := ref(app.cursor)
 		if isDuplicated(app.cursor, element.indent, key) {
-			session.TtyOut.Write([]byte{'\a'})
+			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
 		}
 		values := app.readNewValue(session, "")
