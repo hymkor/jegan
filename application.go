@@ -519,14 +519,14 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 	return true, nil
 }
 
-func (app *Application) Status(session *pager.Session, out io.Writer) error {
+func (app *Application) Status(session *pager.Session) (rv string) {
 	if app.message != "" {
-		fmt.Fprintf(out, "\x1B[1m%s\x1B[0m\x1B[0K", app.message)
+		rv = fmt.Sprintf("\x1B[1m%s\x1B[0m\x1B[0K", app.message)
 		app.message = ""
 	} else if app.Title != "" {
-		fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K", app.Title)
+		rv = fmt.Sprintf("\x1B[7m%s\x1B[0m\x1B[0K", app.Title)
 	}
-	return nil
+	return
 }
 
 func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {

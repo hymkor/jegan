@@ -16,7 +16,7 @@ type Pager struct {
 	Width   int
 	Height  int
 	Handler func(*Session, string) (bool, error)
-	Status  func(*Session, io.Writer) error
+	Status  func(*Session) string
 }
 
 func (pager *Pager) truncate(s string) string {
@@ -160,9 +160,9 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 			return
 		}, ttyout)
 		if pager.Status != nil {
-			var b strings.Builder
-			pager.Status(session, &b)
-			io.WriteString(ttyout, pager.truncate(b.String()))
+			s := pager.Status(session)
+			s = pager.truncate(s)
+			io.WriteString(ttyout, s)
 		}
 		key, err := getkey()
 		if err != nil {
