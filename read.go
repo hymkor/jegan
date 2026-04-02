@@ -60,10 +60,7 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.indent; i++ {
 		b.WriteString("  ")
 	}
-	fmt.Fprintf(&b, "%q: %#v", pair.key, pair.value)
-	if pair.comma {
-		b.WriteByte(',')
-	}
+	pair.Dump(&b)
 	line := runewidth.Truncate(b.String(), w-1, "")
 	if pair.cursor {
 		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
@@ -96,7 +93,7 @@ func newPair(k string, v any, i int, comma bool) *Pair {
 }
 
 func (p *Pair) Dump(w io.Writer) {
-	fmt.Fprintf(w, "%q:", p.key)
+	fmt.Fprintf(w, "%q: ", p.key)
 	p.Element.Dump(w)
 }
 
