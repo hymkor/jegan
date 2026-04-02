@@ -86,8 +86,15 @@ func (app *Application) replaceTypeAndValue(session *pager.Session) {
 	}
 }
 
-func (app *Application) readNewValue(session *pager.Session, defaults any) []any {
-	rawText, err := app.ReadLine(session, "New value:", fmt.Sprintf("%#v", defaults))
+func (app *Application) readNewValue(session *pager.Session, defaultv any) []any {
+	var defaults string
+	if v, ok := defaultv.(Mark); ok {
+		defaults = string(rune(v))
+	} else {
+		b, _ := json.Marshal(defaultv)
+		defaults = string(b)
+	}
+	rawText, err := app.ReadLine(session, "New value:", defaults)
 	if err != nil {
 		app.message = err.Error()
 		return nil
