@@ -389,7 +389,7 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		n := session.Back()
 		app.csrline = app.L.Len() - 1
 		app.winline = app.L.Len() - 1 - n
-	case " ", "b":
+	case " ", "b", keys.CtrlC, keys.CtrlG:
 	case "r":
 		app.replaceTypeAndValue(session)
 	case "o":
