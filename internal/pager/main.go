@@ -4,6 +4,9 @@ import (
 	"container/list"
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/mattn/go-runewidth"
 
 	"github.com/nyaosorg/go-ttyadapter"
 )
@@ -14,6 +17,32 @@ type Pager struct {
 	Height  int
 	Handler func(*Session, string) (bool, error)
 	Status  func(*Session, io.Writer) error
+}
+
+func (pager *Pager) truncate(s string) string {
+	w := 0
+	ansi := false
+	overflow := false
+	var b strings.Builder
+	for _, c := range s {
+		if !ansi {
+			if c == '\x1B' {
+				ansi = true
+			} else {
+				w += runewidth.RuneWidth(c)
+				if w >= pager.Width {
+					overflow = true
+				}
+			}
+		}
+		if !overflow || ansi {
+			b.WriteRune(c)
+		}
+		if ansi && ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') {
+			ansi = false
+		}
+	}
+	return b.String()
 }
 
 func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
@@ -28,7 +57,7 @@ func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 			break
 		}
 		if i >= len(pager.cache) || pager.cache[i] != line {
-			io.WriteString(out, line)
+			io.WriteString(out, pager.truncate(line))
 			io.WriteString(out, "\x1B[0K")
 		}
 		out.Write([]byte{'\n'})
@@ -131,7 +160,9 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 			return
 		}, ttyout)
 		if pager.Status != nil {
-			pager.Status(session, ttyout)
+			var b strings.Builder
+			pager.Status(session, &b)
+			io.WriteString(ttyout, pager.truncate(b.String()))
 		}
 		key, err := getkey()
 		if err != nil {

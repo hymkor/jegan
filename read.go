@@ -47,7 +47,7 @@ func (e *Element) Display(w int) string {
 		b.WriteString("  ")
 	}
 	e.Dump(&b)
-	line := runewidth.Truncate(b.String(), w-1, "")
+	line := b.String()
 	if e.cursor {
 		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
 	}
@@ -65,7 +65,7 @@ func (pair *Pair) Display(w int) string {
 		b.WriteString("  ")
 	}
 	pair.Dump(&b)
-	line := runewidth.Truncate(b.String(), w-1, "")
+	line := b.String()
 	if pair.cursor {
 		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
 	}
