@@ -68,12 +68,15 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	return result, err
 }
 
-func (app *Application) replaceTypeAndValue(session *pager.Session) {
+func (app *Application) replaceTypeAndValue(
+	session *pager.Session,
+	input func(*pager.Session, any) []any) {
+
 	element := ref(app.cursor)
 	if _, ok := element.value.(Mark); ok {
 		return
 	}
-	values := app.readNewValue(session, element.value)
+	values := input(session, element.value)
 	switch len(values) {
 	case 1:
 		element.value = values[0]
@@ -130,6 +133,51 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 		return []any{Mark('['), Mark(']')}
 	}
 	return []any{rawText}
+}
+
+func (app *Application) readNewValue2(session *pager.Session, defaultv any) []any {
+	for {
+		fmt.Fprint(session.TtyOut,
+			"\r'1':String, '2':Number, '3':null, "+
+				"'4':true, '5':false, '6':{}, '7':[] ? \x1B[0K")
+		key, err := session.GetKey()
+		if err != nil {
+			app.message = err.Error()
+			return nil
+		}
+		switch key {
+		case "\a":
+			app.message = "Canceled"
+			return nil
+		case "1":
+			text, err := app.ReadLine(session, "New string:", fmt.Sprint(defaultv))
+			if err == nil {
+				return []any{text}
+			}
+			session.TtyOut.Write([]byte{'\a'})
+		case "2":
+			text, err := app.ReadLine(session, "New number:", fmt.Sprint(defaultv))
+			if err == nil {
+				newValue, err := strconv.ParseFloat(text, 64)
+				if err == nil {
+					return []any{newValue}
+				}
+			}
+			session.TtyOut.Write([]byte{'\a'})
+		case "3":
+			return []any{nil}
+		case "4":
+			return []any{true}
+		case "5":
+			return []any{false}
+		case "6":
+			return []any{Mark('{'), Mark('}')}
+		case "7":
+			return []any{Mark('['), Mark(']')}
+		default:
+			session.TtyOut.Write([]byte{'\a'})
+		}
+	}
 }
 
 func getIndex(cursor *list.Element) (index int) {
@@ -401,7 +449,9 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		app.winline = app.L.Len() - 1 - n
 	case " ", "b", keys.CtrlC, keys.CtrlG:
 	case "r":
-		app.replaceTypeAndValue(session)
+		app.replaceTypeAndValue(session, app.readNewValue)
+	case "R":
+		app.replaceTypeAndValue(session, app.readNewValue2)
 	case "o":
 		app.insertNewValue(session)
 	case "d":
