@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mattn/go-runewidth"
+
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
@@ -434,14 +436,14 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 	return true, nil
 }
 
-func (app *Application) Status(_ *pager.Session, out io.Writer) error {
+func (app *Application) Status(session *pager.Session, out io.Writer) error {
 	if app.message != "" {
-		fmt.Fprintf(out, "\x1B[1m%s\x1B[0m\x1B[0K", app.message)
+		fmt.Fprintf(out, "\x1B[1m%s\x1B[0m\x1B[0K",
+			runewidth.Truncate(app.message, session.Width-1, ""))
 		app.message = ""
-		return nil
-	}
-	if app.Title != "" {
-		fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K", app.Title)
+	} else if app.Title != "" {
+		fmt.Fprintf(out, "\x1B[7m%s\x1B[0m\x1B[0K",
+			runewidth.Truncate(app.Title, session.Width-1, ""))
 	}
 	return nil
 }
