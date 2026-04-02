@@ -293,11 +293,13 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertBefore(
 				newElement(values[1], indent, comma),
 				next)
+			app.nextLine(session)
 			app.dirty = true
 		case 1: // [\n value
 			app.L.InsertBefore(
 				newElement(values[0], indent, comma),
 				next)
+			app.nextLine(session)
 			app.dirty = true
 		}
 		return
@@ -331,11 +333,13 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertBefore(
 				newElement(values[1], indent, comma),
 				next)
+			app.nextLine(session)
 			app.dirty = true
 		case 1: // { key:value
 			app.L.InsertBefore(
 				newPair(key, values[0], indent, comma),
 				next)
+			app.nextLine(session)
 			app.dirty = true
 		}
 		return
@@ -359,11 +363,13 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertAfter(
 				newPair(key, values[0], element.indent, false),
 				app.cursor)
+			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
 			app.L.InsertAfter(
 				newPair(key, values[0], element.indent, element.comma),
 				app.cursor)
+			app.nextLine(session)
 			app.dirty = true
 		}
 		element.comma = true
@@ -383,11 +389,13 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertAfter(
 				newElement(values[0], element.indent, false),
 				app.cursor)
+			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
 			app.L.InsertAfter(
 				newElement(values[0], element.indent, element.comma),
 				app.cursor)
+			app.nextLine(session)
 			app.dirty = true
 		}
 		element.comma = true
@@ -517,19 +525,25 @@ func (app *Application) quit(session *pager.Session) bool {
 	}
 }
 
+func (app *Application) nextLine(session *pager.Session) {
+	c := app.cursor.Next()
+	if c == nil {
+		return
+	}
+	app.SetCursor(c)
+	app.csrline++
+	for app.csrline-app.winline >= session.Height {
+		session.Window = session.Window.Next()
+		app.winline++
+	}
+}
+
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
 		return false, nil
 	case "j", "\x1B[B":
-		if c := app.cursor.Next(); c != nil {
-			app.SetCursor(c)
-			app.csrline++
-			for app.csrline-app.winline >= session.Height {
-				session.Window = session.Window.Next()
-				app.winline++
-			}
-		}
+		app.nextLine(session)
 	case "k", "\x1B[A":
 		if c := app.cursor.Prev(); c != nil {
 			app.SetCursor(c)
