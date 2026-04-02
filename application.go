@@ -117,7 +117,9 @@ func (app *Application) replaceTypeAndValue(
 
 func (app *Application) readNewValue(session *pager.Session, defaultv any) []any {
 	var defaults string
-	if v, ok := defaultv.(Mark); ok {
+	if _, ok := defaultv.(struct{}); ok {
+		defaults = ""
+	} else if v, ok := defaultv.(Mark); ok {
 		defaults = string(rune(v))
 	} else {
 		b, err := json.Marshal(defaultv)
@@ -284,7 +286,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = true
 			indent = element.indent
 		}
-		values := app.readNewValue(session, "")
+		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // [\n[\n],\n
 			app.L.InsertBefore(
@@ -324,7 +326,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = true
 			indent = element.indent
 		}
-		values := app.readNewValue(session, "")
+		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // { key:[]
 			app.L.InsertBefore(
@@ -354,7 +356,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
 		}
-		values := app.readNewValue(session, "")
+		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // key:[],
 			app.L.InsertAfter(
@@ -380,7 +382,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if index < 0 {
 			return
 		}
-		values := app.readNewValue(session, "")
+		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // [ \n ],
 			app.L.InsertAfter(
