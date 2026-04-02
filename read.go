@@ -53,19 +53,30 @@ func highlightString(s string, color string, b *strings.Builder) {
 }
 
 func (e *Element) highlight(b *strings.Builder) {
+	const (
+		cyan   = "\x1B[36m"
+		normal = "\x1B[39m"
+	)
 	v := e.value
 	if m, ok := v.(Mark); ok {
 		b.WriteString("\x1B[31m")
 		b.WriteRune(rune(m))
-		b.WriteString("\x1B[39m")
+		b.WriteString(normal)
 	} else if s, ok := v.(string); ok {
 		jsonBin, _ := json.Marshal(s)
 		highlightString(string(jsonBin), "\x1B[35m", b)
-		if e.comma {
-			b.WriteByte(',')
-		}
+	} else if v == true {
+		io.WriteString(b, cyan+"true"+normal)
+	} else if v == false {
+		io.WriteString(b, cyan+"false"+normal)
+	} else if v == nil {
+		io.WriteString(b, cyan+"nil"+normal)
 	} else {
 		e.Dump(b)
+		return
+	}
+	if e.comma {
+		b.WriteByte(',')
 	}
 }
 
