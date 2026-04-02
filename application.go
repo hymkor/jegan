@@ -73,14 +73,35 @@ func (app *Application) replaceTypeAndValue(
 	input func(*pager.Session, any) []any) {
 
 	element := ref(app.cursor)
-	if _, ok := element.value.(Mark); ok {
-		return
+	defaultv := element.value
+	prev := func() {}
+
+	if v, ok := element.value.(Mark); ok {
+		next := app.cursor.Next()
+		if next == nil {
+			return
+		}
+		nextv, ok := ref(next).value.(Mark)
+		if !ok {
+			return
+		}
+		if v == Mark('{') && nextv == Mark('}') {
+			defaultv = map[string]any{}
+			prev = func() { app.L.Remove(next) }
+		} else if v == Mark('[') && nextv == Mark(']') {
+			defaultv = []any{}
+			prev = func() { app.L.Remove(next) }
+		} else {
+			return
+		}
 	}
-	values := input(session, element.value)
+	values := input(session, defaultv)
 	switch len(values) {
 	case 1:
+		prev()
 		element.value = values[0]
 	case 2:
+		prev()
 		app.L.InsertAfter(
 			newElement(values[1], element.indent, element.comma),
 			app.cursor)
