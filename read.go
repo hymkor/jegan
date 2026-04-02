@@ -188,6 +188,10 @@ func Read(v any) (L *list.List) {
 
 func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
+		for i := ref(p).indent; i > 0; i-- {
+			w.Write([]byte{' '})
+		}
 		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
+		w.Write([]byte{'\n'})
 	}
 }
