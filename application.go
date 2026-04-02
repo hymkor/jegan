@@ -91,7 +91,10 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 	if v, ok := defaultv.(Mark); ok {
 		defaults = string(rune(v))
 	} else {
-		b, _ := json.Marshal(defaultv)
+		b, err := json.Marshal(defaultv)
+		if err != nil {
+			debug("(*Application) readNewValue: json.Marshal:", err.Error(), "for", defaultv)
+		}
 		defaults = string(b)
 	}
 	rawText, err := app.ReadLine(session, "New value:", defaults)

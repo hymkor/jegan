@@ -30,7 +30,10 @@ func (e *Element) Dump(w io.Writer) {
 	if v, ok := e.value.(Mark); ok {
 		w.Write([]byte{byte(v)})
 	} else {
-		b, _ := json.Marshal(e.value)
+		b, err := json.Marshal(e.value)
+		if err != nil {
+			debug("(*Element) Dump: json.Marshal:", err.Error(), "for", e.value)
+		}
 		w.Write(b)
 	}
 	if e.comma {
