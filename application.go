@@ -452,6 +452,71 @@ func (app *Application) removeLine(session *pager.Session) {
 	app.dirty = true
 }
 
+func (app *Application) save(session *pager.Session) bool {
+	fname, err := app.ReadLine(session, "Write to:", app.Title)
+	if err != nil {
+		app.message = err.Error()
+		return false
+	}
+	fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
+		for {
+			if info.ReadOnly() {
+				fmt.Fprintf(session.TtyOut, "\rOverwrite READONLY file %q ? ", info.Name)
+			} else {
+				fmt.Fprintf(session.TtyOut, "\rOverwrite file %q ? ", info.Name)
+			}
+			ans, err := session.GetKey()
+			if err != nil {
+				return false
+			}
+			if strings.EqualFold(ans, "y") {
+				return true
+			}
+			if strings.EqualFold(ans, "n") {
+				return false
+			}
+		}
+	})
+	if err != nil {
+		app.message = err.Error()
+		return false
+	}
+	Dump(app.L, fd)
+	if err := fd.Close(); err != nil {
+		app.message = err.Error()
+		return false
+	}
+	perm.Track(fd)
+	app.Title = fname
+	app.dirty = false
+	return true
+}
+
+func (app *Application) quit(session *pager.Session) bool {
+	if !app.dirty {
+		return false // fallback to pager's quit
+	}
+	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]\x1B[0K")
+	key, err := session.GetKey()
+	if err != nil {
+		app.message = err.Error()
+		return true
+	}
+	if key == "y" || key == "Y" {
+		// save and quit
+		if !app.save(session) {
+			return true
+		}
+		return false
+	} else if key == "n" || key == "N" {
+		// does not save, but quit
+		return false // fallback to pager's quit
+	} else {
+		// cancel
+		return true
+	}
+}
+
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
@@ -494,42 +559,9 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 	case "d":
 		app.removeLine(session)
 	case "w":
-		fname, err := app.ReadLine(session, "Write to:", app.Title)
-		if err != nil {
-			app.message = err.Error()
-			break
-		}
-		fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
-			for {
-				if info.ReadOnly() {
-					fmt.Fprintf(session.TtyOut, "\rOverwrite READONLY file %q ? ", info.Name)
-				} else {
-					fmt.Fprintf(session.TtyOut, "\rOverwrite file %q ? ", info.Name)
-				}
-				ans, err := session.GetKey()
-				if err != nil {
-					return false
-				}
-				if strings.EqualFold(ans, "y") {
-					return true
-				}
-				if strings.EqualFold(ans, "n") {
-					return false
-				}
-			}
-		})
-		if err != nil {
-			app.message = err.Error()
-			break
-		}
-		Dump(app.L, fd)
-		if err := fd.Close(); err != nil {
-			app.message = err.Error()
-			break
-		}
-		perm.Track(fd)
-		app.Title = fname
-		app.dirty = false
+		app.save(session)
+	case "q":
+		return app.quit(session), nil
 	}
 	return true, nil
 }
