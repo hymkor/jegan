@@ -47,6 +47,10 @@ func (app *Application) SetCursor(c *list.Element) {
 }
 
 func (app *Application) ReadLine(session *pager.Session, prompt, defaults string) (string, error) {
+	cursorPosition := 65535
+	if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
+		cursorPosition = readline.MojiCountInString(defaults) - 1
+	}
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
 		PromptWriter: func(w io.Writer) (int, error) {
@@ -55,7 +59,7 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 		LineFeedWriter: func(readline.Result, io.Writer) (int, error) {
 			return 0, nil
 		},
-		Cursor:  65535,
+		Cursor:  cursorPosition,
 		Default: defaults,
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
