@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
-
-	"github.com/mattn/go-runewidth"
 )
 
 type Mark rune
@@ -41,17 +39,50 @@ func (e *Element) Dump(w io.Writer) {
 	}
 }
 
+func highlightString(s string, color string, b *strings.Builder) {
+	L := len(s) - 1
+	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
+		b.WriteByte('"')
+		b.WriteString(color) // "\x1B[35m"
+		b.WriteString(s[1:L])
+		b.WriteString("\x1B[39m")
+		b.WriteByte('"')
+	} else {
+		b.WriteString(s)
+	}
+}
+
+func (e *Element) highlight(b *strings.Builder) {
+	v := e.value
+	if m, ok := v.(Mark); ok {
+		b.WriteString("\x1B[31m")
+		b.WriteRune(rune(m))
+		b.WriteString("\x1B[39m")
+	} else if s, ok := v.(string); ok {
+		jsonBin, _ := json.Marshal(s)
+		highlightString(string(jsonBin), "\x1B[35m", b)
+		if e.comma {
+			b.WriteByte(',')
+		}
+	} else {
+		e.Dump(b)
+	}
+}
+
 func (e *Element) Display(w int) string {
 	var b strings.Builder
+	if e.cursor {
+		b.WriteString("\x1B[4m")
+	}
 	for i := 0; i < e.indent; i++ {
 		b.WriteString("  ")
 	}
-	e.Dump(&b)
-	line := b.String()
+	e.highlight(&b)
 	if e.cursor {
-		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
+		b.WriteString(strings.Repeat(" ", w))
+		b.WriteString("\x1B[24m")
 	}
-	return line
+	return b.String()
 }
 
 type Pair struct {
@@ -61,15 +92,21 @@ type Pair struct {
 
 func (pair *Pair) Display(w int) string {
 	var b strings.Builder
+	if pair.cursor {
+		b.WriteString("\x1B[4m")
+	}
 	for i := 0; i < pair.indent; i++ {
 		b.WriteString("  ")
 	}
-	pair.Dump(&b)
-	line := b.String()
+	jsonBin, _ := json.Marshal(pair.key)
+	highlightString(string(jsonBin), "\x1B[33m", &b)
+	b.WriteString(": ")
+	pair.Element.highlight(&b)
 	if pair.cursor {
-		line = "\x1B[4m" + runewidth.FillRight(line, w-1) + "\x1B[24m"
+		b.WriteString(strings.Repeat(" ", w))
+		b.WriteString("\x1B[24m")
 	}
-	return line
+	return b.String()
 }
 
 func ref(e *list.Element) *Element {
