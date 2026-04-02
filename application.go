@@ -26,6 +26,7 @@ type Application struct {
 	winline int
 	Title   string
 	message string
+	dirty   bool
 }
 
 func newApplication(L *list.List) *Application {
@@ -102,6 +103,7 @@ func (app *Application) replaceTypeAndValue(
 	case 1:
 		prev()
 		element.value = values[0]
+		app.dirty = true
 	case 2:
 		prev()
 		app.L.InsertAfter(
@@ -109,6 +111,7 @@ func (app *Application) replaceTypeAndValue(
 			app.cursor)
 		element.value = values[0]
 		element.comma = false
+		app.dirty = true
 	}
 }
 
@@ -290,10 +293,12 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertBefore(
 				newElement(values[1], indent, comma),
 				next)
+			app.dirty = true
 		case 1: // [\n value
 			app.L.InsertBefore(
 				newElement(values[0], indent, comma),
 				next)
+			app.dirty = true
 		}
 		return
 	}
@@ -326,10 +331,12 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertBefore(
 				newElement(values[1], indent, comma),
 				next)
+			app.dirty = true
 		case 1: // { key:value
 			app.L.InsertBefore(
 				newPair(key, values[0], indent, comma),
 				next)
+			app.dirty = true
 		}
 		return
 	}
@@ -352,10 +359,12 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertAfter(
 				newPair(key, values[0], element.indent, false),
 				app.cursor)
+			app.dirty = true
 		case 1: // key:value,
 			app.L.InsertAfter(
 				newPair(key, values[0], element.indent, element.comma),
 				app.cursor)
+			app.dirty = true
 		}
 		element.comma = true
 		return
@@ -374,10 +383,12 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.L.InsertAfter(
 				newElement(values[0], element.indent, false),
 				app.cursor)
+			app.dirty = true
 		case 1: // value,
 			app.L.InsertAfter(
 				newElement(values[0], element.indent, element.comma),
 				app.cursor)
+			app.dirty = true
 		}
 		element.comma = true
 	}
@@ -395,6 +406,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 				ref(p).comma = false
 			}
 		}
+		app.dirty = true
 	} else if prev := app.cursor.Prev(); prev != nil {
 		ref(app.cursor).cursor = false
 		app.L.Remove(app.cursor)
@@ -408,6 +420,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 		if !comma {
 			ref(prev).comma = false
 		}
+		app.dirty = true
 	}
 }
 
@@ -436,6 +449,7 @@ func (app *Application) removeLine(session *pager.Session) {
 	app.L.Remove(next)
 	app.removeCursor(session)
 	ref(app.cursor).comma = comma
+	app.dirty = true
 }
 
 func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
@@ -515,16 +529,23 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 		}
 		perm.Track(fd)
 		app.Title = fname
+		app.dirty = false
 	}
 	return true, nil
 }
 
 func (app *Application) Status(session *pager.Session) (rv string) {
+	var mark rune
+	if app.dirty {
+		mark = '*'
+	} else {
+		mark = ' '
+	}
 	if app.message != "" {
-		rv = fmt.Sprintf("\x1B[1m%s\x1B[0m\x1B[0K", app.message)
+		rv = fmt.Sprintf("\x1B[1m%s\x1B[0m%c\x1B[0K", app.message, mark)
 		app.message = ""
 	} else if app.Title != "" {
-		rv = fmt.Sprintf("\x1B[7m%s\x1B[0m\x1B[0K", app.Title)
+		rv = fmt.Sprintf("\x1B[7m%s\x1B[0m%c\x1B[0K", app.Title, mark)
 	}
 	return
 }
