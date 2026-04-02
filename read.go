@@ -2,7 +2,7 @@ package main
 
 import (
 	"container/list"
-	"fmt"
+	"encoding/json"
 	"io"
 	"strings"
 
@@ -27,10 +27,11 @@ type Element struct {
 }
 
 func (e *Element) Dump(w io.Writer) {
-	if e.value == nil {
-		io.WriteString(w, "null")
+	if v, ok := e.value.(Mark); ok {
+		w.Write([]byte{byte(v)})
 	} else {
-		fmt.Fprintf(w, "%#v", e.value)
+		b, _ := json.Marshal(e.value)
+		w.Write(b)
 	}
 	if e.comma {
 		w.Write([]byte{','})
@@ -93,7 +94,9 @@ func newPair(k string, v any, i int, comma bool) *Pair {
 }
 
 func (p *Pair) Dump(w io.Writer) {
-	fmt.Fprintf(w, "%q: ", p.key)
+	b, _ := json.Marshal(p.key)
+	w.Write(b)
+	w.Write([]byte{':', ' '})
 	p.Element.Dump(w)
 }
 
