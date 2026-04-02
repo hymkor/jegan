@@ -46,6 +46,7 @@ Key bindings
   - Duplicate keys in objects are not allowed.
 
 - `r` : Modify the item at the cursor (same input method as `o`)
+- `R` : Modify the item at the cursor (explicitly specify the value type)
 - `d` : Delete the item at the cursor  
   Non-empty objects and arrays cannot be deleted
 - `w` : Save to file
