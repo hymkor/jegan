@@ -153,6 +153,22 @@ func (p *Pair) Dump(w io.Writer) {
 
 func read(v any, indent int) (L *list.List) {
 	L = list.New()
+	if x, ok := v.([]keyValuePair); ok {
+		L.PushBack(newElement(Mark('{'), indent, false))
+		for _, kv := range x {
+			key := kv.key
+			val := kv.value
+			sub := read(val, indent+1)
+			first := sub.Remove(sub.Front()).(*Element)
+			n := newPair(key, first.value, indent+1, first.comma)
+			L.PushBack(n)
+			L.PushBackList(sub)
+		}
+		ref(L.Back()).comma = false
+		L.PushBack(newElement(Mark('}'), indent, true))
+		return
+
+	}
 	if x, ok := v.(map[string]any); ok {
 		L.PushBack(newElement(Mark('{'), indent, false))
 		for key, val := range x {
