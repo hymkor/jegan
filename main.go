@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
@@ -33,11 +34,14 @@ func main1(data []byte, title string) error {
 
 func mains(args []string) error {
 	if len(args) < 1 {
+		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
+			return main1([]byte{'{', '}'}, "")
+		}
 		data, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return err
 		}
-		return main1(data, "<STDIN>")
+		return main1(data, "")
 	}
 	data, err := os.ReadFile(args[0])
 	if err != nil {
