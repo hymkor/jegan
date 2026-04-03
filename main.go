@@ -19,7 +19,7 @@ func debug(v ...any) {
 	}
 }
 
-func main1(data []byte, title string) error {
+func main1(data []byte, name string) error {
 	var v any
 	err := json.Unmarshal(data, &v)
 	if err != nil {
@@ -27,12 +27,16 @@ func main1(data []byte, title string) error {
 	}
 	app := newApplication(Read(v))
 	defer app.Close()
-	app.Title = title
+	app.Name = name
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
 
 func mains(args []string) error {
+	disable := colorable.EnableColorsStdout(nil)
+	if disable != nil {
+		defer disable()
+	}
 	if len(args) < 1 {
 		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
 			return main1([]byte{'{', '}'}, "")
