@@ -46,6 +46,11 @@ Key bindings
 - `w` : Save to file
 - `q` : Quit
 
+TO DO
+-----
+
+- Preserve key order and formatting (currently lost due to json.Unmarshal)
+
 Changelog
 ---------
 
