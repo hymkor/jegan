@@ -33,6 +33,10 @@ func main1(data []byte, title string) error {
 }
 
 func mains(args []string) error {
+	disable := colorable.EnableColorsStdout(nil)
+	if disable != nil {
+		defer disable()
+	}
 	if len(args) < 1 {
 		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
 			return main1([]byte{'{', '}'}, "")
