@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -20,8 +19,9 @@ func debug(v ...any) {
 }
 
 func main1(data []byte, name string) error {
-	var v any
-	err := json.Unmarshal(data, &v)
+	// var v any
+	// err := json.Unmarshal(data, &v)
+	v, err := unmarshal(data)
 	if err != nil {
 		return err
 	}
