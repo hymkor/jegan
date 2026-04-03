@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -590,10 +591,13 @@ func (app *Application) Status(session *pager.Session) (rv string) {
 		mark = ' '
 	}
 	if app.message != "" {
-		rv = fmt.Sprintf("\x1B[1m%s\x1B[0m%c\x1B[0K", app.message, mark)
+		rv = fmt.Sprintf("\x1B[1m%s\x1B[22m%c\x1B[0K", app.message, mark)
 		app.message = ""
 	} else if app.Title != "" {
-		rv = fmt.Sprintf("\x1B[7m%s\x1B[0m%c\x1B[0K", app.Title, mark)
+		rv = fmt.Sprintf("\x1B[7m%s\x1B[27m%c\x1B[0K", app.Title, mark)
+	} else {
+		rv = fmt.Sprintf("\x1B[1mJegan %s-%s-%s\x1B[22m\x1B[0K",
+			version, runtime.GOOS, runtime.GOARCH)
 	}
 	return
 }

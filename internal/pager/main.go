@@ -38,7 +38,7 @@ func (pager *Pager) truncate(s string) string {
 		if !overflow || ansi {
 			b.WriteRune(c)
 		}
-		if ansi && ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') {
+		if ansi && (('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')) {
 			ansi = false
 		}
 	}
