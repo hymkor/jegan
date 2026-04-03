@@ -2,6 +2,8 @@ Jegan - A terminal JSON editor
 ==============================
 ( English / [Japanese](README_ja.md) )
 
+![](./demo.gif)
+
 Usage
 -----
 

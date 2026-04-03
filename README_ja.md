@@ -2,6 +2,8 @@ Jegan - ターミナル用JSONエディター
 ==================================
 ( [English](README.md) / Japanese )
 
+![](./demo.gif)
+
 起動方法
 --------
 
