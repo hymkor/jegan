@@ -70,7 +70,7 @@ func (e *Element) highlight(b *strings.Builder) {
 	} else if v == false {
 		io.WriteString(b, cyan+"false"+normal)
 	} else if v == nil {
-		io.WriteString(b, cyan+"nil"+normal)
+		io.WriteString(b, cyan+"null"+normal)
 	} else {
 		e.Dump(b)
 		return
