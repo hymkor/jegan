@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"unicode"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -18,6 +20,26 @@ func debug(v ...any) {
 	}
 }
 
+func getFormat(source []byte) (indent, newline []byte) {
+	pos := bytes.IndexByte(source, '\n')
+	if pos < 0 {
+		return []byte{}, []byte{}
+	}
+	if pos > 1 && source[pos-1] == '\r' {
+		newline = []byte{'\r', '\n'}
+	} else {
+		newline = []byte{'\n'}
+	}
+	indent = []byte{}
+	for {
+		pos++
+		if pos >= len(source) || !unicode.IsSpace(rune(source[pos])) {
+			return
+		}
+		indent = append(indent, source[pos])
+	}
+}
+
 func main1(data []byte, name string) error {
 	// var v any
 	// err := json.Unmarshal(data, &v)
@@ -28,6 +50,7 @@ func main1(data []byte, name string) error {
 	app := newApplication(Read(v))
 	defer app.Close()
 	app.Name = name
+	app.indent, app.newline = getFormat(data)
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }

@@ -202,12 +202,12 @@ func Read(v any) (L *list.List) {
 	return L
 }
 
-func Dump(L *list.List, w io.Writer) {
+func Dump(L *list.List, indent, newline []byte, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		for i := ref(p).indent; i > 0; i-- {
-			w.Write([]byte{' '})
+			w.Write(indent)
 		}
 		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
-		w.Write([]byte{'\n'})
+		w.Write(newline)
 	}
 }
