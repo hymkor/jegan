@@ -1,5 +1,10 @@
 Jegan - ターミナル用JSONエディター
 ==================================
+<!-- go run github.com/hymkor/example-into-readme/cmd/badges@latest | -->
+[![License](https://img.shields.io/badge/License-MIT-red)](https://github.com/hymkor/jegan/blob/master/LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/hymkor/jegan.svg)](https://pkg.go.dev/github.com/hymkor/jegan)
+[![GitHub](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/hymkor/jegan)
+<!-- -->
 ( [English](README.md) / Japanese )
 
 ![](./demo.gif)
