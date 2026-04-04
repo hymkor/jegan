@@ -52,6 +52,8 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	cursorPosition := 65535
 	if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
 		cursorPosition = readline.MojiCountInString(defaults) - 1
+	} else if len(defaults) > 5 && strings.HasSuffix(defaults, ".json") {
+		cursorPosition = readline.MojiCountInString(defaults) - 5
 	}
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
