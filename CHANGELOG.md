@@ -7,6 +7,7 @@ Changelog
 - Preserve object key order when loading and saving JSON (#2)
 - Preserve indentation width and line endings when saving JSON (best-effort) (#3)
 - Improve JSON parser error messages with line and column information (#4)
+- Use alphabet keys instead of numeric keys for type selection in Shift+R (#5)
 
 v0.0.1
 ------
