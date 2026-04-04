@@ -2,7 +2,9 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
-### Improvements
+v0.1.0
+------
+Apr 5, 2026
 
 - Preserve object key order when loading and saving JSON (#2)
 - Preserve indentation width and line endings when saving JSON (best-effort) (#3)
