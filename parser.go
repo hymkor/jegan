@@ -23,6 +23,36 @@ func read1st(br io.RuneScanner) (rune, error) {
 	}
 }
 
+type UnexpectedTokenError struct {
+	expect rune
+	got    rune
+}
+
+func (e UnexpectedTokenError) Error() string {
+	return fmt.Sprintf("expected '%c', but got '%c'", e.expect, e.got)
+}
+
+type UnexpectedTokenError2 struct {
+	expect1 rune
+	expect2 rune
+	got     rune
+}
+
+func (e UnexpectedTokenError2) Error() string {
+	return fmt.Sprintf("expected '%c' or '%c', but got '%c'",
+		e.expect1,
+		e.expect2,
+		e.got)
+}
+
+type InvalidLiteralError struct {
+	got string
+}
+
+func (e InvalidLiteralError) Error() string {
+	return fmt.Sprintf("invalid literal: %q", e.got)
+}
+
 func expectRune(br io.RuneScanner, expect rune) error {
 	ch, err := read1st(br)
 	if err != nil {
@@ -32,7 +62,7 @@ func expectRune(br io.RuneScanner, expect rune) error {
 		return err
 	}
 	if ch != expect {
-		return fmt.Errorf("expect '%c', but '%c'", expect, ch)
+		return &UnexpectedTokenError{expect: expect, got: ch}
 	}
 	return nil
 }
@@ -92,7 +122,7 @@ func expectToken(br io.RuneScanner, first rune, expect string) error {
 	s, err := readToken(br, first)
 	result := string(s)
 	if result != expect {
-		return fmt.Errorf("unknown token %s", result)
+		return &InvalidLiteralError{got: result}
 	}
 	return err
 }
@@ -150,7 +180,10 @@ func readHash(br io.RuneScanner) ([]keyValuePair, error) {
 			return result, err
 		}
 		if ch != ',' {
-			return nil, fmt.Errorf("expect '}' or ',', but '%c'", ch)
+			return nil, &UnexpectedTokenError2{
+				expect1: '}',
+				expect2: ',',
+				got:     ch}
 		}
 	}
 }
@@ -176,7 +209,11 @@ func readArray(br io.RuneScanner) ([]any, error) {
 			return result, nil
 		}
 		if ch != ',' {
-			return nil, fmt.Errorf("expect ']' or ',', but '%c'", ch)
+			return nil, &UnexpectedTokenError2{
+				expect1: ']',
+				expect2: ',',
+				got:     ch,
+			}
 		}
 	}
 }
@@ -205,10 +242,14 @@ func readItem(br io.RuneScanner) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("syntax error %s", string(token))
+	return nil, &InvalidLiteralError{got: string(token)}
 }
 
 func unmarshal(data []byte) (any, error) {
-	br := bytes.NewReader(data)
-	return readItem(br)
+	sc := newScanner(bytes.NewReader(data))
+	v, err := readItem(sc)
+	if err != nil {
+		err = sc.WrapError(err)
+	}
+	return v, err
 }
