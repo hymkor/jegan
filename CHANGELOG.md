@@ -8,6 +8,7 @@ Changelog
 - Preserve indentation width and line endings when saving JSON (best-effort) (#3)
 - Improve JSON parser error messages with line and column information (#4)
 - Use alphabet keys instead of numeric keys for type selection in Shift+R (#5)
+- Place the cursor before the file extension when editing the save filename (#6)
 
 v0.0.1
 ------
