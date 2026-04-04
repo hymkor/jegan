@@ -54,4 +54,8 @@ release:
 manifest:
 	$(GO) run github.com/hymkor/make-scoop-manifest@latest -all *-windows-*.zip > $(NAME).json
 
+readme:
+	$(GO) run github.com/hymkor/example-into-readme@latest
+	$(GO) run github.com/hymkor/example-into-readme@latest -target README_ja.md
+
 .PHONY: all test dist _dist clean release manifest
