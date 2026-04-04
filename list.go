@@ -220,6 +220,16 @@ func Dump(L *list.List, format *Format, w io.Writer) {
 		if q == nil {
 			return
 		}
+		if e.value == Mark('{') || e.value == Mark('[') {
+			f := ref(q)
+			if f.value == Mark('}') || f.value == Mark(']') {
+				q.Value.(interface{ Dump(io.Writer) }).Dump(w)
+				q = q.Next()
+				if q == nil {
+					return
+				}
+			}
+		}
 		w.Write(format.newline)
 		p = q
 	}
