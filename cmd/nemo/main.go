@@ -42,11 +42,11 @@ func main1(source io.Reader, title string) error {
 		return err
 	}
 	pager1 := &pager.Pager{
-		Status: func(_ *pager.Session, out io.Writer) error {
+		Status: func(_ *pager.Session) string {
 			if title != "" {
-				fmt.Fprintf(out, "\x1B[7m%s\x1B[0m", title)
+				return fmt.Sprintf("\x1B[7m%s\x1B[0m", title)
 			}
-			return nil
+			return ""
 		},
 	}
 	ttyout := colorable.NewColorableStdout()
