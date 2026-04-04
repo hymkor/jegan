@@ -28,8 +28,7 @@ type Application struct {
 	Name    string
 	message string
 	dirty   bool
-	indent  []byte
-	newline []byte
+	format  *Format
 }
 
 func newApplication(L *list.List) *Application {
@@ -496,7 +495,7 @@ func (app *Application) save(session *pager.Session) bool {
 		app.message = err.Error()
 		return false
 	}
-	Dump(app.L, app.indent, app.newline, fd)
+	Dump(app.L, app.format, fd)
 	if err := fd.Close(); err != nil {
 		app.message = err.Error()
 		return false

@@ -20,23 +20,31 @@ func debug(v ...any) {
 	}
 }
 
-func getFormat(source []byte) (indent, newline []byte) {
+type Format struct {
+	indent     []byte
+	newline    []byte
+	trailingLF bool
+}
+
+func getFormat(source []byte) *Format {
+	format := &Format{}
 	pos := bytes.IndexByte(source, '\n')
 	if pos < 0 {
-		return []byte{}, []byte{}
+		return format
 	}
 	if pos > 1 && source[pos-1] == '\r' {
-		newline = []byte{'\r', '\n'}
+		format.newline = []byte{'\r', '\n'}
 	} else {
-		newline = []byte{'\n'}
+		format.newline = []byte{'\n'}
 	}
-	indent = []byte{}
+	format.trailingLF = source[len(source)-1] == '\n'
+	format.indent = []byte{}
 	for {
 		pos++
 		if pos >= len(source) || !unicode.IsSpace(rune(source[pos])) {
-			return
+			return format
 		}
-		indent = append(indent, source[pos])
+		format.indent = append(format.indent, source[pos])
 	}
 }
 
@@ -55,7 +63,7 @@ func main1(data []byte, name string) error {
 	app := newApplication(Read(v))
 	defer app.Close()
 	app.Name = name
-	app.indent, app.newline = getFormat(data)
+	app.format = getFormat(data)
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
