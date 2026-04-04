@@ -169,8 +169,8 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 func (app *Application) readNewValue2(session *pager.Session, defaultv any) []any {
 	for {
 		fmt.Fprint(session.TtyOut,
-			"\r'1':String, '2':Number, '3':null, "+
-				"'4':true, '5':false, '6':{}, '7':[] ? \x1B[0K")
+			"\r's':string, 'n':number, 'u':null, "+
+				"'t':true, 'f':false, 'o':{}, 'a':[] ? \x1B[0K")
 		key, err := session.GetKey()
 		if err != nil {
 			app.message = err.Error()
@@ -180,13 +180,13 @@ func (app *Application) readNewValue2(session *pager.Session, defaultv any) []an
 		case "\a":
 			app.message = "Canceled"
 			return nil
-		case "1":
+		case "s":
 			text, err := app.ReadLine(session, "New string:", fmt.Sprint(defaultv))
 			if err == nil {
 				return []any{text}
 			}
 			session.TtyOut.Write([]byte{'\a'})
-		case "2":
+		case "n":
 			text, err := app.ReadLine(session, "New number:", fmt.Sprint(defaultv))
 			if err == nil {
 				newValue, err := strconv.ParseFloat(text, 64)
@@ -195,15 +195,15 @@ func (app *Application) readNewValue2(session *pager.Session, defaultv any) []an
 				}
 			}
 			session.TtyOut.Write([]byte{'\a'})
-		case "3":
+		case "u":
 			return []any{nil}
-		case "4":
+		case "t":
 			return []any{true}
-		case "5":
+		case "f":
 			return []any{false}
-		case "6":
+		case "o":
 			return []any{Mark('{'), Mark('}')}
-		case "7":
+		case "a":
 			return []any{Mark('['), Mark(']')}
 		default:
 			session.TtyOut.Write([]byte{'\a'})
