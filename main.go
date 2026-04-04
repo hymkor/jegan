@@ -45,6 +45,11 @@ func main1(data []byte, name string) error {
 	// err := json.Unmarshal(data, &v)
 	v, err := unmarshal(data)
 	if err != nil {
+		if name != "" {
+			err = fmt.Errorf("%s:%w", name, err)
+		} else {
+			err = fmt.Errorf("<STDIN>:%w", err)
+		}
 		return err
 	}
 	app := newApplication(Read(v))
