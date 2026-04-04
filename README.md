@@ -46,10 +46,21 @@ Key bindings
 - `w` : Save to file
 - `q` : Quit
 
-TO DO
------
+Note on JSON Formatting
+-----------------------
 
-- Preserve key order and formatting (currently lost due to json.Unmarshal)
+The formatting of loaded JSON is partially preserved when saving. The following rules apply:
+
+* Line endings (LF or CRLF) and indentation style (number and type of whitespace, spaces or tabs) are detected from the first two lines and reused when saving.
+* The presence or absence of a trailing newline at EOF is preserved.
+* The order of object keys is preserved.
+
+However, some formatting details are normalized:
+
+* A single space is always inserted after `:` before the value.
+* A newline is inserted after `,` (except for JSON that contains no newlines at all).
+* A newline is inserted after `[` or `{` if the array or object has one or more elements
+  (except for single-line JSON or empty arrays/objects).
 
 Changelog
 ---------
