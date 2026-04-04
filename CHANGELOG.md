@@ -11,6 +11,7 @@ Changelog
 - Place the cursor before the file extension when editing the save filename (#6)
 - Preserve trailing newline at EOF when saving JSON (#7)
 - Output empty objects and arrays as `{}` and `[]` without extra newlines (#8)
+- Avoid marking the document as modified when a value is updated without actual changes (#9)
 
 v0.0.1
 ------
