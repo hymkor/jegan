@@ -4,6 +4,55 @@ Jegan - ターミナル用JSONエディター
 
 ![](./demo.gif)
 
+インストール
+-----------
+
+### Manual Installation
+
+[Releases](https://github.com/hymkor/jegan/releases) よりバイナリパッケージをダウンロードして、実行ファイルを展開してください
+
+> &#9888;&#65039; Note: macOS用バイナリは実験的ビルドで、検証できていません。
+> もし何らかの問題を確認されましたらお知らせください！
+
+<!-- go run github.com/hymkor/example-into-readme/cmd/how2install@latest ja | -->
+
+### [eget] インストーラーを使う場合 (クロスプラットフォーム)
+
+```sh
+brew install eget        # Unix-like systems
+# or
+scoop install eget       # Windows
+
+cd (YOUR-BIN-DIRECTORY)
+eget hymkor/jegan
+```
+
+[eget]: https://github.com/zyedidia/eget
+
+### [scoop] インストーラーを使う場合 (Windowsのみ)
+
+```
+scoop install https://raw.githubusercontent.com/hymkor/jegan/master/jegan.json
+```
+
+もしくは
+
+```
+scoop bucket add hymkor https://github.com/hymkor/scoop-bucket
+scoop install jegan
+```
+
+[scoop]: https://scoop.sh/
+
+### "go install" を使う場合 (要Go言語開発環境)
+
+```
+go install github.com/hymkor/jegan@latest
+```
+
+`go install` は `$HOME/go/bin` もしくは `$GOPATH/bin` へ実行ファイルを導入するので、`jegan` を実行するにはそのディレクトリを `$PATH` に追加する必要があります。
+<!-- -->
+
 起動方法
 --------
 

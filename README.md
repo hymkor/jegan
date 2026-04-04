@@ -4,6 +4,55 @@ Jegan - A terminal JSON editor
 
 ![](./demo.gif)
 
+Install
+-------
+
+### Manual Installation
+
+Download the binary package from [Releases](https://github.com/hymkor/jegan/releases) and extract the executable.
+
+> &#9888;&#65039; Note: The macOS build is experimental and not yet tested.
+> Please let us know if you encounter any issues!
+
+<!-- go run github.com/hymkor/example-into-readme/cmd/how2install@latest | -->
+
+### Use [eget] installer (cross-platform)
+
+```sh
+brew install eget        # Unix-like systems
+# or
+scoop install eget       # Windows
+
+cd (YOUR-BIN-DIRECTORY)
+eget hymkor/jegan
+```
+
+[eget]: https://github.com/zyedidia/eget
+
+### Use [scoop]-installer (Windows only)
+
+```
+scoop install https://raw.githubusercontent.com/hymkor/jegan/master/jegan.json
+```
+
+or
+
+```
+scoop bucket add hymkor https://github.com/hymkor/scoop-bucket
+scoop install jegan
+```
+
+[scoop]: https://scoop.sh/
+
+### Use "go install" (requires Go toolchain)
+
+```
+go install github.com/hymkor/jegan@latest
+```
+
+Note: `go install` places the executable in `$HOME/go/bin` or `$GOPATH/bin`, so you need to add this directory to your `$PATH` to run `jegan`.
+<!-- -->
+
 Usage
 -----
 
