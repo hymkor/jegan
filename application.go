@@ -81,7 +81,7 @@ func (app *Application) replaceTypeAndValue(
 
 	element := ref(app.cursor)
 	defaultv := element.value
-	prev := func() {}
+	prev := func() bool { return false }
 
 	if v, ok := element.value.(Mark); ok {
 		next := app.cursor.Next()
@@ -94,10 +94,10 @@ func (app *Application) replaceTypeAndValue(
 		}
 		if v == Mark('{') && nextv == Mark('}') {
 			defaultv = map[string]any{}
-			prev = func() { app.L.Remove(next) }
+			prev = func() bool { app.L.Remove(next); return true }
 		} else if v == Mark('[') && nextv == Mark(']') {
 			defaultv = []any{}
-			prev = func() { app.L.Remove(next) }
+			prev = func() bool { app.L.Remove(next); return true }
 		} else {
 			return
 		}
@@ -105,9 +105,10 @@ func (app *Application) replaceTypeAndValue(
 	values := input(session, defaultv)
 	switch len(values) {
 	case 1:
-		prev()
+		if prev() || element.value != values[0] {
+			app.dirty = true
+		}
 		element.value = values[0]
-		app.dirty = true
 	case 2:
 		prev()
 		app.L.InsertAfter(
