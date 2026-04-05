@@ -112,7 +112,7 @@ func (app *Application) replaceTypeAndValue(
 	case 2:
 		prev()
 		app.L.InsertAfter(
-			newElement(values[1], element.indent, element.comma),
+			newElement(values[1], element.indent, element.comma, nil),
 			app.cursor)
 		element.value = values[0]
 		element.comma = false
@@ -295,16 +295,16 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		switch len(values) {
 		case 2: // [\n[\n],\n
 			app.L.InsertBefore(
-				newElement(values[0], indent, false),
+				newElement(values[0], indent, false, nil),
 				next)
 			app.L.InsertBefore(
-				newElement(values[1], indent, comma),
+				newElement(values[1], indent, comma, nil),
 				next)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // [\n value
 			app.L.InsertBefore(
-				newElement(values[0], indent, comma),
+				newElement(values[0], indent, comma, nil),
 				next)
 			app.nextLine(session)
 			app.dirty = true
@@ -338,7 +338,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 				newPair(key, values[0], indent, false),
 				next)
 			app.L.InsertBefore(
-				newElement(values[1], indent, comma),
+				newElement(values[1], indent, comma, nil),
 				next)
 			app.nextLine(session)
 			app.dirty = true
@@ -365,7 +365,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		switch len(values) {
 		case 2: // key:[],
 			app.L.InsertAfter(
-				newElement(values[1], element.indent, element.comma),
+				newElement(values[1], element.indent, element.comma, nil),
 				app.cursor)
 			app.L.InsertAfter(
 				newPair(key, values[0], element.indent, false),
@@ -391,16 +391,16 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		switch len(values) {
 		case 2: // [ \n ],
 			app.L.InsertAfter(
-				newElement(values[1], element.indent, element.comma),
+				newElement(values[1], element.indent, element.comma, nil),
 				app.cursor)
 			app.L.InsertAfter(
-				newElement(values[0], element.indent, false),
+				newElement(values[0], element.indent, false, nil),
 				app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
 			app.L.InsertAfter(
-				newElement(values[0], element.indent, element.comma),
+				newElement(values[0], element.indent, element.comma, nil),
 				app.cursor)
 			app.nextLine(session)
 			app.dirty = true

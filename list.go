@@ -18,13 +18,16 @@ func (m Mark) GoString() string {
 }
 
 type Element struct {
-	value  any
-	indent int
-	comma  bool
-	cursor bool
+	value   any
+	indent  int
+	comma   bool
+	cursor  bool
+	prefix  []byte
+	postfix []byte
 }
 
 func (e *Element) Dump(w io.Writer) {
+	w.Write(e.prefix)
 	if v, ok := e.value.(Mark); ok {
 		w.Write([]byte{byte(v)})
 	} else {
@@ -34,6 +37,7 @@ func (e *Element) Dump(w io.Writer) {
 		}
 		w.Write(b)
 	}
+	w.Write(e.postfix)
 	if e.comma {
 		w.Write([]byte{','})
 	}
@@ -99,6 +103,8 @@ func (e *Element) Display(w int) string {
 type Pair struct {
 	key string
 	Element
+	preKey []byte
+	preCol []byte
 }
 
 func (pair *Pair) Display(w int) string {
@@ -128,11 +134,12 @@ func ref(e *list.Element) *Element {
 	return e.Value.(*Element)
 }
 
-func newElement(v any, i int, comma bool) *Element {
+func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
 		value:  v,
 		indent: i,
-		comma:  comma}
+		comma:  comma,
+		prefix: prefix}
 }
 
 func newPair(k string, v any, i int, comma bool) *Pair {
@@ -145,32 +152,50 @@ func newPair(k string, v any, i int, comma bool) *Pair {
 }
 
 func (p *Pair) Dump(w io.Writer) {
+	w.Write(p.preKey)
 	b, _ := json.Marshal(p.key)
 	w.Write(b)
-	w.Write([]byte{':', ' '})
+	w.Write(p.preCol)
+	w.Write([]byte{':'})
 	p.Element.Dump(w)
 }
 
 func read(v any, indent int) (L *list.List) {
+	var prefix []byte
+	if t, ok := v.(*token); ok {
+		v = t.value
+		prefix = t.prefix
+	}
 	L = list.New()
+	if x, ok := v.(object); ok {
+		v = []keyValuePair(x)
+	}
 	if x, ok := v.([]keyValuePair); ok {
-		L.PushBack(newElement(Mark('{'), indent, false))
+		L.PushBack(newElement(Mark('{'), indent, false, prefix))
 		for _, kv := range x {
 			key := kv.key
 			val := kv.value
 			sub := read(val, indent+1)
 			first := sub.Remove(sub.Front()).(*Element)
 			n := newPair(key, first.value, indent+1, first.comma)
+			n.preKey = kv.preKey
+			n.preCol = kv.preCol
+			n.Element.prefix = kv.value.prefix
 			L.PushBack(n)
 			L.PushBackList(sub)
+			if sub.Len() >= 1 {
+				ref(sub.Back()).postfix = kv.last
+			} else {
+				n.Element.postfix = kv.last
+			}
 		}
 		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), indent, true))
+		L.PushBack(newElement(Mark('}'), indent, true, nil))
 		return
 
 	}
 	if x, ok := v.(map[string]any); ok {
-		L.PushBack(newElement(Mark('{'), indent, false))
+		L.PushBack(newElement(Mark('{'), indent, false, prefix))
 		for key, val := range x {
 			sub := read(val, indent+1)
 			first := sub.Remove(sub.Front()).(*Element)
@@ -179,20 +204,35 @@ func read(v any, indent int) (L *list.List) {
 			L.PushBackList(sub)
 		}
 		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), indent, true))
+		L.PushBack(newElement(Mark('}'), indent, true, nil))
 		return
 	}
+	if x, ok := v.(array); ok {
+		v = []arrayElement(x)
+	}
+	if x, ok := v.([]arrayElement); ok {
+		L.PushBack(newElement(Mark('['), indent, false, prefix))
+		for _, v := range x {
+			sub := read(v.token, indent+1)
+			ref(sub.Back()).postfix = v.preComma
+			L.PushBackList(sub)
+		}
+		ref(L.Back()).comma = false
+		L.PushBack(newElement(Mark(']'), indent, true, nil))
+		return
+
+	}
 	if x, ok := v.([]any); ok {
-		L.PushBack(newElement(Mark('['), indent, false))
+		L.PushBack(newElement(Mark('['), indent, false, prefix))
 		for _, value := range x {
 			sub := read(value, indent+1)
 			L.PushBackList(sub)
 		}
 		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark(']'), indent, true))
+		L.PushBack(newElement(Mark(']'), indent, true, nil))
 		return
 	}
-	L.PushBack(newElement(v, indent, true))
+	L.PushBack(newElement(v, indent, true, prefix))
 	return
 }
 
@@ -203,34 +243,7 @@ func Read(v any) (L *list.List) {
 }
 
 func Dump(L *list.List, format *Format, w io.Writer) {
-	if format.trailingLF {
-		defer w.Write(format.newline)
-	}
-	p := L.Front()
-	if p == nil {
-		return
-	}
-	for {
-		e := ref(p)
-		for i := e.indent; i > 0; i-- {
-			w.Write(format.indent)
-		}
+	for p := L.Front(); p != nil; p = p.Next() {
 		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
-		q := p.Next()
-		if q == nil {
-			return
-		}
-		if e.value == Mark('{') || e.value == Mark('[') {
-			f := ref(q)
-			if f.value == Mark('}') || f.value == Mark(']') {
-				q.Value.(interface{ Dump(io.Writer) }).Dump(w)
-				q = q.Next()
-				if q == nil {
-					return
-				}
-			}
-		}
-		w.Write(format.newline)
-		p = q
 	}
 }
