@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Preserve whitespace around tokens to minimize formatting changes when saving JSON (#11)
+
 v0.1.0
 ------
 Apr 5, 2026

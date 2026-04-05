@@ -2,6 +2,8 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+- JSON をセーブする時に書式の変化を最小にするため、項目周辺の空白を維持するようにした (#11)
+
 v0.1.0
 ------
 Apr 5, 2026
