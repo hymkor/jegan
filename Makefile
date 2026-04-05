@@ -29,6 +29,10 @@ nemo:
 	$(GO) fmt "./cmd/nemo"
 	$(SET) "CGO_ENABLED=0" && $(GO) build "./cmd/nemo"
 
+test:
+	$(GO) fmt ./...
+	$(GO) test -v
+
 _dist:
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
 	zip -9 $(NAME)-$(VERSION)-$(GOOS)-$(GOARCH).zip $(NAME)$(EXE)
