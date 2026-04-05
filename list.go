@@ -76,7 +76,8 @@ func (e *Element) highlight(b *strings.Builder) {
 	} else if v == nil {
 		io.WriteString(b, cyan+"null"+normal)
 	} else {
-		e.Dump(b)
+		bin, _ := json.Marshal(e.value)
+		b.Write(bin)
 		return
 	}
 	if e.comma {
