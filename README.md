@@ -9,6 +9,20 @@ Jegan - A terminal JSON editor
 
 ![](./demo.gif)
 
+Features
+--------
+
+- Edit JSON in a terminal-based interactive UI
+- Preserve original formatting as much as possible:
+  - whitespace around tokens
+  - indentation and line endings
+  - object key order
+  - literal representations (e.g. escape sequences)
+- Minimize unnecessary diffs when saving
+- Read JSON from files or standard input
+- vi-like navigation (`j`/`k`) with intuitive editing commands (`r`, `o`, `d`)
+- Emacs-like readline support for value editing
+
 Install
 -------
 
@@ -99,22 +113,6 @@ Key bindings
   Non-empty objects and arrays cannot be deleted
 - `w` : Save to file
 - `q` : Quit
-
-Note on JSON Formatting
------------------------
-
-The formatting of loaded JSON is partially preserved when saving. The following rules apply:
-
-* Line endings (LF or CRLF) and indentation style (number and type of whitespace, spaces or tabs) are detected from the first two lines and reused when saving.
-* The presence or absence of a trailing newline at EOF is preserved.
-* The order of object keys is preserved.
-
-However, some formatting details are normalized:
-
-* A single space is always inserted after `:` before the value.
-* A newline is inserted after `,` (except for JSON that contains no newlines at all).
-* A newline is inserted after `[` or `{` if the array or object has one or more elements
-  (except for single-line JSON or empty arrays/objects).
 
 Changelog
 ---------

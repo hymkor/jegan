@@ -31,7 +31,7 @@ nemo:
 
 test:
 	$(GO) fmt ./...
-	$(GO) test -v
+	$(GO) test -v ./...
 
 _dist:
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
