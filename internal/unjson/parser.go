@@ -302,10 +302,18 @@ func readArray(br io.RuneScanner) (Array, error) {
 	}
 }
 
+type ErrTrailingData struct {
+	Err      error
+	Trailing []byte
+}
+
+func (e ErrTrailingData) Error() string { return e.Err.Error() }
+func (e ErrTrailingData) Unwrap() error { return e.Err }
+
 func readItem(br io.RuneScanner) (*Token, error) {
 	prefix, ch, err := read1st(br)
 	if err != nil {
-		return nil, err
+		return nil, &ErrTrailingData{Err: err, Trailing: prefix}
 	}
 	if ch == '"' {
 		s, err := readString(br)
@@ -333,14 +341,17 @@ func readItem(br io.RuneScanner) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	return nil, &InvalidLiteralError{got: string(token)}
+	return nil, &ErrTrailingData{
+		Err:      &InvalidLiteralError{got: string(token)},
+		Trailing: append(prefix, token...),
+	}
 }
 
 func Unmarshal(r io.RuneScanner) (any, error) {
 	sc := newScanner(r)
 	v, err := readItem(sc)
 	if err != nil {
-		err = sc.WrapError(err)
+		return nil, sc.WrapError(err)
 	}
-	return v, err
+	return v, nil
 }

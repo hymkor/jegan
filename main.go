@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"container/list"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -44,20 +46,44 @@ func getFormat(source []byte) *Format {
 
 func main1(data []byte, name string) error {
 	br := bytes.NewReader(data)
-	v, err := unjson.Unmarshal(br)
-	if err != nil {
-		if name != "" {
-			err = fmt.Errorf("%s:%w", name, err)
-		} else {
-			err = fmt.Errorf("<STDIN>:%w", err)
+	var trailing []byte
+	var L *list.List
+	for {
+		v, err := unjson.Unmarshal(br)
+		if err != nil && !errors.Is(err, io.EOF) {
+			if name != "" {
+				err = fmt.Errorf("%s:%w", name, err)
+			} else {
+				err = fmt.Errorf("<STDIN>:%w", err)
+			}
+			return err
 		}
-		return err
+		var e *unjson.ErrTrailingData
+		if errors.As(err, &e) {
+			err = e.Err
+			trailing = e.Trailing
+		}
+		if v == nil {
+			break
+		}
+		l := Read(v)
+		if l == nil {
+			break
+		}
+		if L == nil {
+			L = l
+		} else {
+			L.PushBackList(l)
+		}
+		if err != nil {
+			break
+		}
 	}
-	app := newApplication(Read(v))
+	app := newApplication(L)
 	defer app.Close()
 	app.Name = name
 	app.format = getFormat(data)
-	app.trailing, _ = io.ReadAll(br)
+	app.trailing = trailing
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
