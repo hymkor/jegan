@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/hymkor/jegan/internal/parser"
+	"github.com/hymkor/jegan/internal/unjson"
 )
 
 type Mark rune
@@ -78,7 +78,7 @@ func (e *Element) highlight(b *strings.Builder) {
 		b.WriteString(normal)
 		return
 	}
-	if x, ok := v.(*parser.Literal); ok {
+	if x, ok := v.(*unjson.Literal); ok {
 		v = x.Value()
 	} else {
 		io.WriteString(b, "\x1B[1m")
@@ -181,15 +181,15 @@ func (p *Pair) Dump(w io.Writer) {
 
 func read(v any, nest int) (L *list.List) {
 	var prefix []byte
-	if t, ok := v.(*parser.Token); ok {
+	if t, ok := v.(*unjson.Token); ok {
 		v = t.Value
 		prefix = t.Prefix
 	}
 	L = list.New()
-	if x, ok := v.(parser.Object); ok {
-		v = []parser.KeyValuePair(x)
+	if x, ok := v.(unjson.Object); ok {
+		v = []unjson.KeyValuePair(x)
 	}
-	if x, ok := v.([]parser.KeyValuePair); ok {
+	if x, ok := v.([]unjson.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))
 		for _, kv := range x {
 			key := kv.Key
@@ -213,10 +213,10 @@ func read(v any, nest int) (L *list.List) {
 		return
 
 	}
-	if x, ok := v.(parser.Array); ok {
-		v = []parser.ArrayElement(x)
+	if x, ok := v.(unjson.Array); ok {
+		v = []unjson.ArrayElement(x)
 	}
-	if x, ok := v.([]parser.ArrayElement); ok {
+	if x, ok := v.([]unjson.ArrayElement); ok {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
 			sub := read(v.Token, nest+1)

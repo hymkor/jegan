@@ -13,7 +13,7 @@ import (
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
 
-	"github.com/hymkor/jegan/internal/parser"
+	"github.com/hymkor/jegan/internal/unjson"
 )
 
 func debug(v ...any) {
@@ -51,7 +51,7 @@ func getFormat(source []byte) *Format {
 }
 
 func main1(data []byte, name string) error {
-	v, err := parser.Unmarshal(data)
+	v, err := unjson.Unmarshal(data)
 	if err != nil {
 		if name != "" {
 			err = fmt.Errorf("%s:%w", name, err)
