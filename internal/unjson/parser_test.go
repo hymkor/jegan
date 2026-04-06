@@ -31,7 +31,7 @@ func TestArray(t *testing.T) {
 
 func TestReadItem(t *testing.T) {
 	source := `[ { "1": 2, "3": [ 1,2,  3], "5":6 },7,  8, 9  ]`
-	token, err := readItem(strings.NewReader(source))
+	token, err := readEntry(strings.NewReader(source))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
