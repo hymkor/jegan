@@ -69,7 +69,16 @@ func expectRune(br io.RuneScanner, expect rune) ([]byte, error) {
 	return prefix, nil
 }
 
-func readString(br io.RuneScanner) (string, error) {
+type String struct {
+	value string
+	json  []byte
+}
+
+func (s *String) Value() string  { return s.value }
+func (s *String) String() string { return s.value }
+func (s *String) Json() []byte   { return s.json }
+
+func readString(br io.RuneScanner) (*String, error) {
 	var buffer bytes.Buffer
 	buffer.WriteByte('"')
 	backslash := false
@@ -77,15 +86,19 @@ func readString(br io.RuneScanner) (string, error) {
 		ch, _, err := br.ReadRune()
 		if err != nil {
 			if err == io.EOF {
-				return "", io.ErrUnexpectedEOF
+				return nil, io.ErrUnexpectedEOF
 			}
-			return "", err
+			return nil, err
 		}
 		if !backslash && ch == '"' {
 			buffer.WriteByte('"')
-			var s string
-			err := json.Unmarshal(buffer.Bytes(), &s)
-			return s, err
+			var str string
+			bin := buffer.Bytes()
+			err := json.Unmarshal(bin, &str)
+			return &String{
+				value: str,
+				json:  bin,
+			}, err
 		}
 		if ch == '\\' {
 			backslash = true
@@ -130,17 +143,29 @@ func expectToken(br io.RuneScanner, first rune, expect string) error {
 	return err
 }
 
-func readNumber(br io.RuneScanner, first rune) (float64, error) {
+type Number struct {
+	value float64
+	json  []byte
+}
+
+func (n *Number) Value() float64 { return n.value }
+func (n *Number) Json() []byte   { return n.json }
+func (n *Number) String() string { return string(n.json) }
+
+func readNumber(br io.RuneScanner, first rune) (*Number, error) {
 	token, err1 := readToken(br, first)
 	if err1 != nil {
-		return 0, err1
+		return nil, err1
 	}
 	var number float64
 	err2 := json.Unmarshal(token, &number)
 	if err2 != nil {
-		return number, err2
+		return nil, err2
 	}
-	return number, err1
+	return &Number{
+		value: number,
+		json:  token,
+	}, nil
 }
 
 type Token struct {
@@ -217,7 +242,7 @@ func readObject(br io.RuneScanner) (Object, error) {
 			return nil, err
 		}
 		pairs = append(pairs, KeyValuePair{
-			Key:    key,
+			Key:    key.Value(),
 			Value:  val,
 			PreKey: preKey,
 			PreCol: preVal,

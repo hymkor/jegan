@@ -32,10 +32,12 @@ func (e *Element) Dump(w io.Writer) {
 	w.Write(e.prefix)
 	if v, ok := e.value.(Mark); ok {
 		w.Write([]byte{byte(v)})
+	} else if v, ok := e.value.(interface{ Json() []byte }); ok {
+		w.Write(v.Json())
 	} else {
 		b, err := json.Marshal(e.value)
 		if err != nil {
-			debug("(*Element) Dump: json.Marshal:", err.Error(), "for", e.value)
+			panic(err.Error())
 		}
 		w.Write(b)
 	}
@@ -68,6 +70,8 @@ func (e *Element) highlight(b *strings.Builder) {
 		b.WriteString("\x1B[31m")
 		b.WriteRune(rune(m))
 		b.WriteString(normal)
+	} else if s, ok := v.(*parser.String); ok {
+		highlightString(string(s.Json()), "\x1B[35m", b)
 	} else if s, ok := v.(string); ok {
 		jsonBin, _ := json.Marshal(s)
 		highlightString(string(jsonBin), "\x1B[35m", b)
@@ -77,6 +81,8 @@ func (e *Element) highlight(b *strings.Builder) {
 		io.WriteString(b, cyan+"false"+normal)
 	} else if v == nil {
 		io.WriteString(b, cyan+"null"+normal)
+	} else if j, ok := v.(interface{ Json() []byte }); ok {
+		b.Write(j.Json())
 	} else {
 		bin, _ := json.Marshal(e.value)
 		b.Write(bin)

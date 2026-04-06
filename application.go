@@ -127,6 +127,8 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 		defaults = ""
 	} else if v, ok := defaultv.(Mark); ok {
 		defaults = string(rune(v))
+	} else if v, ok := defaultv.(interface{ Json() []byte }); ok {
+		defaults = string(v.Json())
 	} else {
 		b, err := json.Marshal(defaultv)
 		if err != nil {
