@@ -9,6 +9,8 @@ import (
 	"github.com/mattn/go-runewidth"
 
 	"github.com/nyaosorg/go-ttyadapter"
+
+	"github.com/hymkor/jegan/internal/ansi"
 )
 
 type Pager struct {
@@ -143,8 +145,8 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		GetKey: getkey,
 		TtyOut: ttyout,
 	}
-	io.WriteString(ttyout, "\x1B[?25l")
-	defer io.WriteString(ttyout, "\x1B[?25h\n")
+	io.WriteString(ttyout, ansi.CursorOff)
+	defer io.WriteString(ttyout, ansi.CursorOn+"\n")
 
 	for {
 		session.tail = session.Window

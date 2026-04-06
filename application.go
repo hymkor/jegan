@@ -17,6 +17,7 @@ import (
 
 	"github.com/hymkor/go-safewrite"
 	"github.com/hymkor/go-safewrite/perm"
+	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
 )
 
@@ -170,6 +171,8 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 }
 
 func (app *Application) readNewValue2(session *pager.Session, defaultv any) []any {
+	io.WriteString(session.TtyOut, ansi.CursorOn)
+	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
 		fmt.Fprint(session.TtyOut,
 			"\r's':string, 'n':number, 'u':null, "+
@@ -505,6 +508,8 @@ func (app *Application) save(session *pager.Session) bool {
 		return false
 	}
 	fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
+		io.WriteString(session.TtyOut, ansi.CursorOn)
+		defer io.WriteString(session.TtyOut, ansi.CursorOff)
 		for {
 			if info.ReadOnly() {
 				fmt.Fprintf(session.TtyOut, "\rOverwrite READONLY file %q ? ", info.Name)
@@ -542,6 +547,9 @@ func (app *Application) quit(session *pager.Session) bool {
 	if !app.dirty {
 		return false // fallback to pager's quit
 	}
+	io.WriteString(session.TtyOut, ansi.CursorOn)
+	defer io.WriteString(session.TtyOut, ansi.CursorOff)
+
 	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]\x1B[0K")
 	key, err := session.GetKey()
 	if err != nil {
