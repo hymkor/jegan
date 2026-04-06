@@ -2,7 +2,11 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
-- Preserve whitespace around tokens to minimize formatting changes when saving JSON (#11)
+- Preserve original JSON formatting as much as possible when saving (#11, #12):
+  - whitespace around tokens
+  - indentation and line endings
+  - object key order
+  - literal representations (e.g. escape sequences)
 
 v0.1.0
 ------

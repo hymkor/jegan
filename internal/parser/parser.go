@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"bytes"
@@ -69,7 +69,16 @@ func expectRune(br io.RuneScanner, expect rune) ([]byte, error) {
 	return prefix, nil
 }
 
-func readString(br io.RuneScanner) (string, error) {
+type String struct {
+	value string
+	json  []byte
+}
+
+func (s *String) Value() string  { return s.value }
+func (s *String) String() string { return s.value }
+func (s *String) Json() []byte   { return s.json }
+
+func readString(br io.RuneScanner) (*String, error) {
 	var buffer bytes.Buffer
 	buffer.WriteByte('"')
 	backslash := false
@@ -77,15 +86,19 @@ func readString(br io.RuneScanner) (string, error) {
 		ch, _, err := br.ReadRune()
 		if err != nil {
 			if err == io.EOF {
-				return "", io.ErrUnexpectedEOF
+				return nil, io.ErrUnexpectedEOF
 			}
-			return "", err
+			return nil, err
 		}
 		if !backslash && ch == '"' {
 			buffer.WriteByte('"')
-			var s string
-			err := json.Unmarshal(buffer.Bytes(), &s)
-			return s, err
+			var str string
+			bin := buffer.Bytes()
+			err := json.Unmarshal(bin, &str)
+			return &String{
+				value: str,
+				json:  bin,
+			}, err
 		}
 		if ch == '\\' {
 			backslash = true
@@ -130,51 +143,60 @@ func expectToken(br io.RuneScanner, first rune, expect string) error {
 	return err
 }
 
-func readNumber(br io.RuneScanner, first rune) (float64, error) {
+type Number struct {
+	value float64
+	json  []byte
+}
+
+func (n *Number) Value() float64 { return n.value }
+func (n *Number) Json() []byte   { return n.json }
+func (n *Number) String() string { return string(n.json) }
+
+func readNumber(br io.RuneScanner, first rune) (*Number, error) {
 	token, err1 := readToken(br, first)
 	if err1 != nil {
-		return 0, err1
+		return nil, err1
 	}
 	var number float64
 	err2 := json.Unmarshal(token, &number)
 	if err2 != nil {
-		return number, err2
+		return nil, err2
 	}
-	return number, err1
+	return &Number{
+		value: number,
+		json:  token,
+	}, nil
 }
 
-type token struct {
-	prefix []byte
-	value  any
+type Token struct {
+	Prefix []byte
+	Value  any
 }
 
-func (t token) GoString() string {
-	return fmt.Sprintf("%s%#v", string(t.prefix), t.value)
-}
-func (t *token) Value() any {
-	return t.value
+func (t Token) GoString() string {
+	return fmt.Sprintf("%s%#v", string(t.Prefix), t.Value)
 }
 
-type keyValuePair struct {
-	key    string
-	value  *token
-	preKey []byte
-	preCol []byte
-	last   []byte
+type KeyValuePair struct {
+	Key    string
+	Value  *Token
+	PreKey []byte
+	PreCol []byte
+	Last   []byte
 }
 
-func (k keyValuePair) GoString() string {
+func (k KeyValuePair) GoString() string {
 	return fmt.Sprintf("%s%q%s:%#v%s",
-		string(k.preKey),
-		k.key,
-		string(k.preCol),
-		k.value,
-		string(k.last))
+		string(k.PreKey),
+		k.Key,
+		string(k.PreCol),
+		k.Value,
+		string(k.Last))
 }
 
-type object []keyValuePair
+type Object []KeyValuePair
 
-func (o object) GoString() string {
+func (o Object) GoString() string {
 	var b strings.Builder
 	b.WriteByte('{')
 	for i, p := range o {
@@ -187,19 +209,17 @@ func (o object) GoString() string {
 	return b.String()
 }
 
-// .preKey + .key + .preCol + ':' + .value.prefix + .value.value + .last
-
-func readObject(br io.RuneScanner) (object, error) {
+func readObject(br io.RuneScanner) (Object, error) {
 	first, _, err := br.ReadRune()
 	if err != nil {
 		return nil, err
 	}
 	if first == '}' {
-		return []keyValuePair{}, nil
+		return []KeyValuePair{}, nil
 	}
 	br.UnreadRune()
 
-	var pairs []keyValuePair
+	var pairs []KeyValuePair
 	for {
 		preKey, err := expectRune(br, '"')
 		if err != nil {
@@ -221,15 +241,15 @@ func readObject(br io.RuneScanner) (object, error) {
 		if err != nil {
 			return nil, err
 		}
-		pairs = append(pairs, keyValuePair{
-			key:    key,
-			value:  val,
-			preKey: preKey,
-			preCol: preVal,
-			last:   last,
+		pairs = append(pairs, KeyValuePair{
+			Key:    key.Value(),
+			Value:  val,
+			PreKey: preKey,
+			PreCol: preVal,
+			Last:   last,
 		})
 		if ch == '}' {
-			return object(pairs), nil
+			return Object(pairs), nil
 		}
 		if ch != ',' {
 			return nil, &UnexpectedTokenError2{
@@ -240,18 +260,18 @@ func readObject(br io.RuneScanner) (object, error) {
 	}
 }
 
-type arrayElement struct {
-	*token
-	preComma []byte
+type ArrayElement struct {
+	*Token
+	PreComma []byte
 }
 
-func (a arrayElement) GoString() string {
-	return fmt.Sprintf("%#v%s", a.token, string(a.preComma))
+func (a ArrayElement) GoString() string {
+	return fmt.Sprintf("%#v%s", a.Token, string(a.PreComma))
 }
 
-type array []arrayElement
+type Array []ArrayElement
 
-func (a array) GoString() string {
+func (a Array) GoString() string {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i, e := range a {
@@ -264,12 +284,12 @@ func (a array) GoString() string {
 	return b.String()
 }
 
-func readArray(br io.RuneScanner) (array, error) {
+func readArray(br io.RuneScanner) (Array, error) {
 	first, _, err := br.ReadRune() // check '['
 	if err != nil {
 		return nil, err
 	}
-	var array1 []arrayElement
+	var array1 []ArrayElement
 	if first == ']' {
 		return array1, nil
 	}
@@ -283,12 +303,12 @@ func readArray(br io.RuneScanner) (array, error) {
 		if err != nil {
 			return nil, err
 		}
-		array1 = append(array1, arrayElement{
-			token:    token,
-			preComma: prefix,
+		array1 = append(array1, ArrayElement{
+			Token:    token,
+			PreComma: prefix,
 		})
 		if ch == ']' {
-			return array(array1), nil
+			return Array(array1), nil
 		}
 		if ch != ',' {
 			return nil, &UnexpectedTokenError2{
@@ -300,29 +320,29 @@ func readArray(br io.RuneScanner) (array, error) {
 	}
 }
 
-func readItem(br io.RuneScanner) (*token, error) {
+func readItem(br io.RuneScanner) (*Token, error) {
 	prefix, ch, err := read1st(br)
 	if err != nil {
 		return nil, err
 	}
 	if ch == '"' {
 		s, err := readString(br)
-		return &token{prefix: prefix, value: s}, err
+		return &Token{Prefix: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := readNumber(br, ch)
-		return &token{prefix: prefix, value: n}, err
+		return &Token{Prefix: prefix, Value: n}, err
 	} else if ch == 'n' {
-		return &token{prefix: prefix, value: nil}, expectToken(br, ch, "null")
+		return &Token{Prefix: prefix, Value: nil}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
-		return &token{prefix: prefix, value: false}, expectToken(br, ch, "false")
+		return &Token{Prefix: prefix, Value: false}, expectToken(br, ch, "false")
 	} else if ch == 't' {
-		return &token{prefix: prefix, value: true}, expectToken(br, ch, "true")
+		return &Token{Prefix: prefix, Value: true}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
-		return &token{prefix: prefix, value: o}, err
+		return &Token{Prefix: prefix, Value: o}, err
 	} else if ch == '[' {
 		a, err := readArray(br)
-		return &token{prefix: prefix, value: a}, err
+		return &Token{Prefix: prefix, Value: a}, err
 	}
 	token, err := readToken(br, ch)
 	if err != nil {
@@ -331,7 +351,7 @@ func readItem(br io.RuneScanner) (*token, error) {
 	return nil, &InvalidLiteralError{got: string(token)}
 }
 
-func unmarshal(data []byte) (any, error) {
+func Unmarshal(data []byte) (any, error) {
 	sc := newScanner(bytes.NewReader(data))
 	v, err := readItem(sc)
 	if err != nil {

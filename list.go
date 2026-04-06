@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+
+	"github.com/hymkor/jegan/internal/parser"
 )
 
 type Mark rune
@@ -17,9 +19,13 @@ func (m Mark) GoString() string {
 	return string(rune(m))
 }
 
+func (m Mark) Json() []byte {
+	return []byte{byte(m)}
+}
+
 type Element struct {
 	value   any
-	indent  int
+	nest    int
 	comma   bool
 	cursor  bool
 	prefix  []byte
@@ -28,12 +34,12 @@ type Element struct {
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.prefix)
-	if v, ok := e.value.(Mark); ok {
-		w.Write([]byte{byte(v)})
+	if v, ok := e.value.(interface{ Json() []byte }); ok {
+		w.Write(v.Json())
 	} else {
 		b, err := json.Marshal(e.value)
 		if err != nil {
-			debug("(*Element) Dump: json.Marshal:", err.Error(), "for", e.value)
+			panic(err.Error())
 		}
 		w.Write(b)
 	}
@@ -66,6 +72,8 @@ func (e *Element) highlight(b *strings.Builder) {
 		b.WriteString("\x1B[31m")
 		b.WriteRune(rune(m))
 		b.WriteString(normal)
+	} else if s, ok := v.(*parser.String); ok {
+		highlightString(string(s.Json()), "\x1B[35m", b)
 	} else if s, ok := v.(string); ok {
 		jsonBin, _ := json.Marshal(s)
 		highlightString(string(jsonBin), "\x1B[35m", b)
@@ -75,8 +83,11 @@ func (e *Element) highlight(b *strings.Builder) {
 		io.WriteString(b, cyan+"false"+normal)
 	} else if v == nil {
 		io.WriteString(b, cyan+"null"+normal)
+	} else if j, ok := v.(interface{ Json() []byte }); ok {
+		b.Write(j.Json())
 	} else {
-		e.Dump(b)
+		bin, _ := json.Marshal(e.value)
+		b.Write(bin)
 		return
 	}
 	if e.comma {
@@ -89,7 +100,7 @@ func (e *Element) Display(w int) string {
 	if e.cursor {
 		b.WriteString("\x1B[4m")
 	}
-	for i := 0; i < e.indent; i++ {
+	for i := 0; i < e.nest; i++ {
 		b.WriteString("  ")
 	}
 	e.highlight(&b)
@@ -112,7 +123,7 @@ func (pair *Pair) Display(w int) string {
 	if pair.cursor {
 		b.WriteString("\x1B[4m")
 	}
-	for i := 0; i < pair.indent; i++ {
+	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
 	jsonBin, _ := json.Marshal(pair.key)
@@ -137,7 +148,7 @@ func ref(e *list.Element) *Element {
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
 		value:  v,
-		indent: i,
+		nest:   i,
 		comma:  comma,
 		prefix: prefix}
 }
@@ -146,9 +157,9 @@ func newPair(k string, v any, i int, comma bool) *Pair {
 	return &Pair{
 		key: k,
 		Element: Element{
-			value:  v,
-			indent: i,
-			comma:  comma}}
+			value: v,
+			nest:  i,
+			comma: comma}}
 }
 
 func (p *Pair) Dump(w io.Writer) {
@@ -160,79 +171,56 @@ func (p *Pair) Dump(w io.Writer) {
 	p.Element.Dump(w)
 }
 
-func read(v any, indent int) (L *list.List) {
+func read(v any, nest int) (L *list.List) {
 	var prefix []byte
-	if t, ok := v.(*token); ok {
-		v = t.value
-		prefix = t.prefix
+	if t, ok := v.(*parser.Token); ok {
+		v = t.Value
+		prefix = t.Prefix
 	}
 	L = list.New()
-	if x, ok := v.(object); ok {
-		v = []keyValuePair(x)
+	if x, ok := v.(parser.Object); ok {
+		v = []parser.KeyValuePair(x)
 	}
-	if x, ok := v.([]keyValuePair); ok {
-		L.PushBack(newElement(Mark('{'), indent, false, prefix))
+	if x, ok := v.([]parser.KeyValuePair); ok {
+		L.PushBack(newElement(Mark('{'), nest, false, prefix))
 		for _, kv := range x {
-			key := kv.key
-			val := kv.value
-			sub := read(val, indent+1)
+			key := kv.Key
+			val := kv.Value
+			sub := read(val, nest+1)
 			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, indent+1, first.comma)
-			n.preKey = kv.preKey
-			n.preCol = kv.preCol
-			n.Element.prefix = kv.value.prefix
+			n := newPair(key, first.value, nest+1, first.comma)
+			n.preKey = kv.PreKey
+			n.preCol = kv.PreCol
+			n.Element.prefix = kv.Value.Prefix
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {
-				ref(sub.Back()).postfix = kv.last
+				ref(sub.Back()).postfix = kv.Last
 			} else {
-				n.Element.postfix = kv.last
+				n.Element.postfix = kv.Last
 			}
 		}
 		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), indent, true, nil))
+		L.PushBack(newElement(Mark('}'), nest, true, nil))
 		return
 
 	}
-	if x, ok := v.(map[string]any); ok {
-		L.PushBack(newElement(Mark('{'), indent, false, prefix))
-		for key, val := range x {
-			sub := read(val, indent+1)
-			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, indent+1, first.comma)
-			L.PushBack(n)
-			L.PushBackList(sub)
-		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), indent, true, nil))
-		return
+	if x, ok := v.(parser.Array); ok {
+		v = []parser.ArrayElement(x)
 	}
-	if x, ok := v.(array); ok {
-		v = []arrayElement(x)
-	}
-	if x, ok := v.([]arrayElement); ok {
-		L.PushBack(newElement(Mark('['), indent, false, prefix))
+	if x, ok := v.([]parser.ArrayElement); ok {
+		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
-			sub := read(v.token, indent+1)
-			ref(sub.Back()).postfix = v.preComma
+			sub := read(v.Token, nest+1)
+			ref(sub.Back()).postfix = v.PreComma
 			L.PushBackList(sub)
 		}
 		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark(']'), indent, true, nil))
+		L.PushBack(newElement(Mark(']'), nest, true, nil))
 		return
 
 	}
-	if x, ok := v.([]any); ok {
-		L.PushBack(newElement(Mark('['), indent, false, prefix))
-		for _, value := range x {
-			sub := read(value, indent+1)
-			L.PushBackList(sub)
-		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark(']'), indent, true, nil))
-		return
-	}
-	L.PushBack(newElement(v, indent, true, prefix))
+	L.PushBack(newElement(v, nest, true, prefix))
 	return
 }
 
