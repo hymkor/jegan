@@ -19,6 +19,7 @@ Features
   - object key order
   - literal representations (e.g. escape sequences)
 - Minimize unnecessary diffs when saving
+- Highlight modified values
 - Read JSON from files or standard input
 - vi-like navigation (`j`/`k`) with intuitive editing commands (`r`, `o`, `d`)
 - Emacs-like readline support for value editing
