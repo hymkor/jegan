@@ -22,14 +22,15 @@ import (
 )
 
 type Application struct {
-	L       *list.List
-	cursor  *list.Element
-	csrline int
-	winline int
-	Name    string
-	message string
-	dirty   bool
-	format  *Format
+	L        *list.List
+	cursor   *list.Element
+	csrline  int
+	winline  int
+	Name     string
+	message  string
+	dirty    bool
+	format   *Format
+	trailing []byte
 }
 
 func newApplication(L *list.List) *Application {
@@ -533,6 +534,7 @@ func (app *Application) save(session *pager.Session) bool {
 		return false
 	}
 	Dump(app.L, app.format, fd)
+	fd.Write(app.trailing)
 	if err := fd.Close(); err != nil {
 		app.message = err.Error()
 		return false

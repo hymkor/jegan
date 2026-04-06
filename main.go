@@ -23,9 +23,7 @@ func debug(v ...any) {
 }
 
 type Format struct {
-	indent     []byte
-	newline    []byte
-	trailingLF bool
+	indent []byte
 }
 
 func getFormat(source []byte) *Format {
@@ -34,12 +32,6 @@ func getFormat(source []byte) *Format {
 	if pos < 0 {
 		return format
 	}
-	if pos > 1 && source[pos-1] == '\r' {
-		format.newline = []byte{'\r', '\n'}
-	} else {
-		format.newline = []byte{'\n'}
-	}
-	format.trailingLF = source[len(source)-1] == '\n'
 	format.indent = []byte{}
 	for {
 		pos++
@@ -51,7 +43,8 @@ func getFormat(source []byte) *Format {
 }
 
 func main1(data []byte, name string) error {
-	v, err := unjson.Unmarshal(data)
+	br := bytes.NewReader(data)
+	v, err := unjson.Unmarshal(br)
 	if err != nil {
 		if name != "" {
 			err = fmt.Errorf("%s:%w", name, err)
@@ -64,6 +57,7 @@ func main1(data []byte, name string) error {
 	defer app.Close()
 	app.Name = name
 	app.format = getFormat(data)
+	app.trailing, _ = io.ReadAll(br)
 	ttyout := colorable.NewColorableStdout()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }

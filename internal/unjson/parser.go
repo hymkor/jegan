@@ -336,8 +336,8 @@ func readItem(br io.RuneScanner) (*Token, error) {
 	return nil, &InvalidLiteralError{got: string(token)}
 }
 
-func Unmarshal(data []byte) (any, error) {
-	sc := newScanner(bytes.NewReader(data))
+func Unmarshal(r io.RuneScanner) (any, error) {
+	sc := newScanner(r)
 	v, err := readItem(sc)
 	if err != nil {
 		err = sc.WrapError(err)
