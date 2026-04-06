@@ -19,6 +19,10 @@ func (m Mark) GoString() string {
 	return string(rune(m))
 }
 
+func (m Mark) Json() []byte {
+	return []byte{byte(m)}
+}
+
 type Element struct {
 	value   any
 	nest    int
@@ -30,9 +34,7 @@ type Element struct {
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.prefix)
-	if v, ok := e.value.(Mark); ok {
-		w.Write([]byte{byte(v)})
-	} else if v, ok := e.value.(interface{ Json() []byte }); ok {
+	if v, ok := e.value.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
 		b, err := json.Marshal(e.value)
