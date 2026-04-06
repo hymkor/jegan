@@ -110,9 +110,10 @@ func (app *Application) replaceTypeAndValue(
 		}
 		element.value = values[0]
 	case 2:
+		prefix := getPrefix(app.cursor)
 		prev()
 		app.L.InsertAfter(
-			newElement(values[1], element.indent, element.comma, nil),
+			newElement(values[1], element.nest, element.comma, prefix),
 			app.cursor)
 		element.value = values[0]
 		element.comma = false
@@ -214,27 +215,27 @@ func (app *Application) readNewValue2(session *pager.Session, defaultv any) []an
 }
 
 func getIndex(cursor *list.Element) (index int) {
-	indent := ref(cursor).indent
+	nest := ref(cursor).nest
 	for {
 		cursor = cursor.Prev()
 		if cursor == nil {
 			return -1
 		}
-		i := ref(cursor).indent
-		if i < indent {
+		i := ref(cursor).nest
+		if i < nest {
 			return
 		}
 		index++
 	}
 }
 
-func isDuplicated(cursor *list.Element, indent int, key string) bool {
+func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
-		i := ref(p).indent
-		if i < indent {
+		i := ref(p).nest
+		if i < nest {
 			break
 		}
-		if i == indent {
+		if i == nest {
 			q, ok := p.Value.(*Pair)
 			if ok && q.key == key {
 				return true
@@ -242,11 +243,11 @@ func isDuplicated(cursor *list.Element, indent int, key string) bool {
 		}
 	}
 	for p := cursor.Next(); p != nil; p = p.Next() {
-		i := ref(p).indent
-		if i < indent {
+		i := ref(p).nest
+		if i < nest {
 			break
 		}
-		if i == indent {
+		if i == nest {
 			q, ok := p.Value.(*Pair)
 			if ok && q.key == key {
 				return true
@@ -260,52 +261,80 @@ func isHashElement(p *list.Element) bool {
 	if _, ok := p.Value.(*Pair); ok {
 		return true
 	}
-	indent := ref(p).indent
+	nest := ref(p).nest
 	for {
 		p = p.Prev()
 		if p == nil {
 			return false
 		}
 		element := ref(p)
-		i := element.indent
-		if i == indent {
+		i := element.nest
+		if i == nest {
 			if _, ok := p.Value.(*Pair); ok {
 				return true
 			}
-		} else if i < indent {
+		} else if i < nest {
 			return element.value == Mark('{')
 		}
 	}
 }
 
+func getPrefix(p *list.Element) []byte {
+	if pair, ok := p.Value.(*Pair); ok {
+		return pair.preKey
+	}
+	return ref(p).prefix
+}
+
+func setPrefix(p *list.Element, prefix []byte) {
+	if pair, ok := p.Value.(*Pair); ok {
+		pair.preKey = prefix
+	}
+	ref(p).prefix = prefix
+}
+
+func joinBytes(args ...[]byte) []byte {
+	b := []byte{}
+	for _, b1 := range args {
+		b = append(b, b1...)
+	}
+	return b
+}
+
 func (app *Application) insertNewValue(session *pager.Session) {
+	prefix := getPrefix(app.cursor)
 	if element := ref(app.cursor); element.value == Mark('[') {
 		next := app.cursor.Next()
-		element = ref(next)
+		nextElement := ref(next)
 		var comma bool
-		var indent int
-		if element.value == Mark(']') {
+		var nest int
+		var newPrefix []byte
+		todo := func() {}
+		if nextElement.value == Mark(']') {
 			comma = false
-			indent = element.indent + 1
+			todo = func() { setPrefix(next, prefix) }
+			nest = nextElement.nest + 1
+			newPrefix = joinBytes(prefix, app.format.indent)
 		} else {
 			comma = true
-			indent = element.indent
+			nest = nextElement.nest
+			newPrefix = getPrefix(next)
 		}
 		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // [\n[\n],\n
-			app.L.InsertBefore(
-				newElement(values[0], indent, false, nil),
-				next)
-			app.L.InsertBefore(
-				newElement(values[1], indent, comma, nil),
-				next)
+			e1 := newElement(values[0], nest, false, newPrefix)
+			e2 := newElement(values[1], nest, comma, nil)
+			app.L.InsertBefore(e1, next)
+			app.L.InsertBefore(e2, next)
+			todo()
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // [\n value
 			app.L.InsertBefore(
-				newElement(values[0], indent, comma, nil),
+				newElement(values[0], nest, comma, newPrefix),
 				next)
+			todo()
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -319,33 +348,39 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		next := app.cursor.Next()
 		element = ref(next)
 		var comma bool
-		var indent int
+		var nest int
+		var newPrefix []byte
+		todo := func() {}
 		if element.value == Mark('}') {
 			comma = false
-			indent = element.indent + 1
+			nest = element.nest + 1
+			newPrefix = joinBytes(prefix, app.format.indent)
+			todo = func() { setPrefix(next, prefix) }
 		} else {
-			if isDuplicated(next, element.indent, key) {
+			if isDuplicated(next, element.nest, key) {
 				app.message = fmt.Sprintf("\aduplicate key: %q", key)
 				return
 			}
 			comma = true
-			indent = element.indent
+			nest = element.nest
+			newPrefix = getPrefix(next)
 		}
 		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // { key:[]
-			app.L.InsertBefore(
-				newPair(key, values[0], indent, false),
-				next)
-			app.L.InsertBefore(
-				newElement(values[1], indent, comma, nil),
-				next)
+			p1 := newPair(key, values[0], nest, false)
+			p1.preKey = newPrefix
+			e2 := newElement(values[1], nest, comma, nil)
+			app.L.InsertBefore(p1, next)
+			app.L.InsertBefore(e2, next)
+			todo()
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // { key:value
-			app.L.InsertBefore(
-				newPair(key, values[0], indent, comma),
-				next)
+			p1 := newPair(key, values[0], nest, comma)
+			p1.preKey = newPrefix
+			app.L.InsertBefore(p1, next)
+			todo()
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -357,25 +392,24 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			return
 		}
 		element := ref(app.cursor)
-		if isDuplicated(app.cursor, element.indent, key) {
+		if isDuplicated(app.cursor, element.nest, key) {
 			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
 		}
 		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // key:[],
-			app.L.InsertAfter(
-				newElement(values[1], element.indent, element.comma, nil),
-				app.cursor)
-			app.L.InsertAfter(
-				newPair(key, values[0], element.indent, false),
-				app.cursor)
+			p1 := newPair(key, values[0], element.nest, false)
+			p1.preKey = prefix
+			e2 := newElement(values[1], element.nest, element.comma, nil)
+			app.L.InsertAfter(e2, app.cursor)
+			app.L.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
-			app.L.InsertAfter(
-				newPair(key, values[0], element.indent, element.comma),
-				app.cursor)
+			p := newPair(key, values[0], element.nest, element.comma)
+			p.preKey = prefix
+			app.L.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -390,18 +424,15 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		values := app.readNewValue(session, struct{}{})
 		switch len(values) {
 		case 2: // [ \n ],
-			app.L.InsertAfter(
-				newElement(values[1], element.indent, element.comma, nil),
-				app.cursor)
-			app.L.InsertAfter(
-				newElement(values[0], element.indent, false, nil),
-				app.cursor)
+			e1 := newElement(values[0], element.nest, false, prefix)
+			e2 := newElement(values[1], element.nest, element.comma, nil)
+			app.L.InsertAfter(e2, app.cursor)
+			app.L.InsertAfter(e1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
-			app.L.InsertAfter(
-				newElement(values[0], element.indent, element.comma, nil),
-				app.cursor)
+			e := newElement(values[0], element.nest, element.comma, prefix)
+			app.L.InsertAfter(e, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -449,7 +480,7 @@ func (app *Application) removeLine(session *pager.Session) {
 	if mark != Mark('{') && mark != Mark('[') {
 		return
 	}
-	if element.indent == 0 {
+	if element.nest == 0 {
 		return
 	}
 	next := app.cursor.Next()
