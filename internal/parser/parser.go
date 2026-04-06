@@ -69,16 +69,7 @@ func expectRune(br io.RuneScanner, expect rune) ([]byte, error) {
 	return prefix, nil
 }
 
-type String struct {
-	value string
-	json  []byte
-}
-
-func (s *String) Value() string  { return s.value }
-func (s *String) String() string { return s.value }
-func (s *String) Json() []byte   { return s.json }
-
-func readString(br io.RuneScanner) (*String, error) {
+func readString(br io.RuneScanner) (*Literal, error) {
 	var buffer bytes.Buffer
 	buffer.WriteByte('"')
 	backslash := false
@@ -95,7 +86,7 @@ func readString(br io.RuneScanner) (*String, error) {
 			var str string
 			bin := buffer.Bytes()
 			err := json.Unmarshal(bin, &str)
-			return &String{
+			return &Literal{
 				value: str,
 				json:  bin,
 			}, err
@@ -143,16 +134,7 @@ func expectToken(br io.RuneScanner, first rune, expect string) error {
 	return err
 }
 
-type Number struct {
-	value float64
-	json  []byte
-}
-
-func (n *Number) Value() float64 { return n.value }
-func (n *Number) Json() []byte   { return n.json }
-func (n *Number) String() string { return string(n.json) }
-
-func readNumber(br io.RuneScanner, first rune) (*Number, error) {
+func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
 	token, err1 := readToken(br, first)
 	if err1 != nil {
 		return nil, err1
@@ -162,7 +144,7 @@ func readNumber(br io.RuneScanner, first rune) (*Number, error) {
 	if err2 != nil {
 		return nil, err2
 	}
-	return &Number{
+	return &Literal{
 		value: number,
 		json:  token,
 	}, nil
@@ -242,7 +224,7 @@ func readObject(br io.RuneScanner) (Object, error) {
 			return nil, err
 		}
 		pairs = append(pairs, KeyValuePair{
-			Key:    key.Value(),
+			Key:    key.String(),
 			Value:  val,
 			PreKey: preKey,
 			PreCol: preVal,
@@ -332,11 +314,14 @@ func readItem(br io.RuneScanner) (*Token, error) {
 		n, err := readNumber(br, ch)
 		return &Token{Prefix: prefix, Value: n}, err
 	} else if ch == 'n' {
-		return &Token{Prefix: prefix, Value: nil}, expectToken(br, ch, "null")
+		v := &Literal{value: nil, json: []byte("null")}
+		return &Token{Prefix: prefix, Value: v}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
-		return &Token{Prefix: prefix, Value: false}, expectToken(br, ch, "false")
+		v := &Literal{value: false, json: []byte("false")}
+		return &Token{Prefix: prefix, Value: v}, expectToken(br, ch, "false")
 	} else if ch == 't' {
-		return &Token{Prefix: prefix, Value: true}, expectToken(br, ch, "true")
+		v := &Literal{value: true, json: []byte("true")}
+		return &Token{Prefix: prefix, Value: v}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
 		return &Token{Prefix: prefix, Value: o}, err

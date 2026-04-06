@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -49,16 +50,16 @@ func (e *Element) Dump(w io.Writer) {
 	}
 }
 
-func highlightString(s string, color string, b *strings.Builder) {
+func highlightString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
 	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
 		b.WriteByte('"')
 		b.WriteString(color) // "\x1B[35m"
-		b.WriteString(s[1:L])
+		b.Write(s[1:L])
 		b.WriteString("\x1B[39m")
 		b.WriteByte('"')
 	} else {
-		b.WriteString(s)
+		b.Write(s)
 	}
 }
 
@@ -67,31 +68,38 @@ func (e *Element) highlight(b *strings.Builder) {
 		cyan   = "\x1B[36m"
 		normal = "\x1B[39m"
 	)
+	if e.comma {
+		defer b.WriteByte(',')
+	}
 	v := e.value
 	if m, ok := v.(Mark); ok {
 		b.WriteString("\x1B[31m")
 		b.WriteRune(rune(m))
 		b.WriteString(normal)
-	} else if s, ok := v.(*parser.String); ok {
-		highlightString(string(s.Json()), "\x1B[35m", b)
-	} else if s, ok := v.(string); ok {
+		return
+	}
+	if x, ok := v.(*parser.Literal); ok {
+		v = x.Value()
+	} else {
+		io.WriteString(b, "\x1B[1m")
+		defer io.WriteString(b, "\x1B[22m")
+	}
+	if s, ok := v.(string); ok {
 		jsonBin, _ := json.Marshal(s)
-		highlightString(string(jsonBin), "\x1B[35m", b)
+		highlightString(jsonBin, "\x1B[35m", b)
 	} else if v == true {
 		io.WriteString(b, cyan+"true"+normal)
 	} else if v == false {
 		io.WriteString(b, cyan+"false"+normal)
 	} else if v == nil {
 		io.WriteString(b, cyan+"null"+normal)
-	} else if j, ok := v.(interface{ Json() []byte }); ok {
-		b.Write(j.Json())
 	} else {
-		bin, _ := json.Marshal(e.value)
-		b.Write(bin)
-		return
-	}
-	if e.comma {
-		b.WriteByte(',')
+		bin, err := json.Marshal(e.value)
+		if err != nil {
+			fmt.Fprint(b, e.value)
+		} else {
+			b.Write(bin)
+		}
 	}
 }
 
@@ -127,7 +135,7 @@ func (pair *Pair) Display(w int) string {
 		b.WriteString("  ")
 	}
 	jsonBin, _ := json.Marshal(pair.key)
-	highlightString(string(jsonBin), "\x1B[33m", &b)
+	highlightString(jsonBin, "\x1B[33m", &b)
 	b.WriteString(": ")
 	pair.Element.highlight(&b)
 	if pair.cursor {
