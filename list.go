@@ -195,19 +195,6 @@ func read(v any, nest int) (L *list.List) {
 		return
 
 	}
-	if x, ok := v.(map[string]any); ok {
-		L.PushBack(newElement(Mark('{'), nest, false, prefix))
-		for key, val := range x {
-			sub := read(val, nest+1)
-			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, nest+1, first.comma)
-			L.PushBack(n)
-			L.PushBackList(sub)
-		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), nest, true, nil))
-		return
-	}
 	if x, ok := v.(array); ok {
 		v = []arrayElement(x)
 	}
@@ -222,16 +209,6 @@ func read(v any, nest int) (L *list.List) {
 		L.PushBack(newElement(Mark(']'), nest, true, nil))
 		return
 
-	}
-	if x, ok := v.([]any); ok {
-		L.PushBack(newElement(Mark('['), nest, false, prefix))
-		for _, value := range x {
-			sub := read(value, nest+1)
-			L.PushBackList(sub)
-		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark(']'), nest, true, nil))
-		return
 	}
 	L.PushBack(newElement(v, nest, true, prefix))
 	return
