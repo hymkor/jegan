@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+
+	"github.com/hymkor/jegan/internal/parser"
 )
 
 type Mark rune
@@ -163,31 +165,31 @@ func (p *Pair) Dump(w io.Writer) {
 
 func read(v any, nest int) (L *list.List) {
 	var prefix []byte
-	if t, ok := v.(*token); ok {
-		v = t.value
-		prefix = t.prefix
+	if t, ok := v.(*parser.Token); ok {
+		v = t.Value
+		prefix = t.Prefix
 	}
 	L = list.New()
-	if x, ok := v.(object); ok {
-		v = []keyValuePair(x)
+	if x, ok := v.(parser.Object); ok {
+		v = []parser.KeyValuePair(x)
 	}
-	if x, ok := v.([]keyValuePair); ok {
+	if x, ok := v.([]parser.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))
 		for _, kv := range x {
-			key := kv.key
-			val := kv.value
+			key := kv.Key
+			val := kv.Value
 			sub := read(val, nest+1)
 			first := sub.Remove(sub.Front()).(*Element)
 			n := newPair(key, first.value, nest+1, first.comma)
-			n.preKey = kv.preKey
-			n.preCol = kv.preCol
-			n.Element.prefix = kv.value.prefix
+			n.preKey = kv.PreKey
+			n.preCol = kv.PreCol
+			n.Element.prefix = kv.Value.Prefix
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {
-				ref(sub.Back()).postfix = kv.last
+				ref(sub.Back()).postfix = kv.Last
 			} else {
-				n.Element.postfix = kv.last
+				n.Element.postfix = kv.Last
 			}
 		}
 		ref(L.Back()).comma = false
@@ -195,14 +197,14 @@ func read(v any, nest int) (L *list.List) {
 		return
 
 	}
-	if x, ok := v.(array); ok {
-		v = []arrayElement(x)
+	if x, ok := v.(parser.Array); ok {
+		v = []parser.ArrayElement(x)
 	}
-	if x, ok := v.([]arrayElement); ok {
+	if x, ok := v.([]parser.ArrayElement); ok {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
-			sub := read(v.token, nest+1)
-			ref(sub.Back()).postfix = v.preComma
+			sub := read(v.Token, nest+1)
+			ref(sub.Back()).postfix = v.PreComma
 			L.PushBackList(sub)
 		}
 		ref(L.Back()).comma = false

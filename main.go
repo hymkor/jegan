@@ -12,6 +12,8 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
+
+	"github.com/hymkor/jegan/internal/parser"
 )
 
 func debug(v ...any) {
@@ -49,9 +51,7 @@ func getFormat(source []byte) *Format {
 }
 
 func main1(data []byte, name string) error {
-	// var v any
-	// err := json.Unmarshal(data, &v)
-	v, err := unmarshal(data)
+	v, err := parser.Unmarshal(data)
 	if err != nil {
 		if name != "" {
 			err = fmt.Errorf("%s:%w", name, err)
