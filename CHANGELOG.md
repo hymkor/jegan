@@ -7,6 +7,7 @@ Changelog
   - indentation and line endings
   - object key order
   - literal representations (e.g. escape sequences)
+- Highlight modified values (#14)
 
 v0.1.0
 ------
