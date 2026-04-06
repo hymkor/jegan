@@ -181,7 +181,7 @@ func (p *Pair) Dump(w io.Writer) {
 
 func read(v any, nest int) (L *list.List) {
 	var prefix []byte
-	if t, ok := v.(*unjson.Token); ok {
+	if t, ok := v.(*unjson.Entry); ok {
 		v = t.Value
 		prefix = t.Prefix
 	}
@@ -219,7 +219,7 @@ func read(v any, nest int) (L *list.List) {
 	if x, ok := v.([]unjson.ArrayElement); ok {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
-			sub := read(v.Token, nest+1)
+			sub := read(v.Entry, nest+1)
 			ref(sub.Back()).postfix = v.PreComma
 			L.PushBackList(sub)
 		}

@@ -8,6 +8,7 @@ Changelog
   - object key order
   - literal representations (e.g. escape sequences)
 - Highlight modified values (#14)
+- Support JSONL with round-trip preservation (#16)
 
 v0.1.0
 ------

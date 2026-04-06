@@ -12,7 +12,7 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-- Edit JSON in a terminal-based interactive UI
+- Edit JSON/JSONL in a terminal-based interactive UI
 - Preserve original formatting as much as possible:
   - whitespace around tokens
   - indentation and line endings
