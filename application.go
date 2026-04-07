@@ -89,6 +89,9 @@ func (app *Application) keyFuncReplace(
 
 	element := ref(app.cursor)
 	defaultv := element.value
+	if _, ok := defaultv.(*unjson.RawBytes); ok {
+		return
+	}
 	prev := func() bool { return false }
 
 	if v, ok := element.value.(Mark); ok {
