@@ -96,9 +96,9 @@ func (e *Element) highlight(b *strings.Builder) {
 	} else if v == nil {
 		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
-		bin, err := json.Marshal(e.value)
+		bin, err := json.Marshal(v)
 		if err != nil {
-			fmt.Fprint(b, e.value)
+			fmt.Fprint(b, v)
 		} else {
 			b.Write(bin)
 		}
