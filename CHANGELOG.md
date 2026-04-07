@@ -9,6 +9,7 @@ Changelog
   - literal representations (e.g. escape sequences)
 - Highlight modified values (#14)
 - Support JSONL with round-trip preservation (#16)
+- Treat trailing non-JSON data as a virtual element (RawBytes). Preserve and allow editing of such data (#19)
 - Support multiple input files and wildcards, and allow explicit stdin input using `-` (#18)
 
 v0.1.0
