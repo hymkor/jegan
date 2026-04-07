@@ -235,7 +235,7 @@ func Read(v *unjson.Entry) (L *list.List) {
 	return L
 }
 
-func Dump(L *list.List, format *Format, w io.Writer) {
+func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
 	}

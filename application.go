@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"container/list"
 	"context"
 	"encoding/json"
@@ -29,7 +30,7 @@ type Application struct {
 	Name     string
 	message  string
 	dirty    bool
-	format   *Format
+	indent   []byte
 	trailing []byte
 }
 
@@ -323,7 +324,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = false
 			todo = func() { setPrefix(next, prefix) }
 			nest = nextElement.nest + 1
-			newPrefix = joinBytes(prefix, app.format.indent)
+			newPrefix = joinBytes(prefix, app.indent)
 		} else {
 			comma = true
 			nest = nextElement.nest
@@ -363,7 +364,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if element.value == Mark('}') {
 			comma = false
 			nest = element.nest + 1
-			newPrefix = joinBytes(prefix, app.format.indent)
+			newPrefix = joinBytes(prefix, app.indent)
 			todo = func() { setPrefix(next, prefix) }
 		} else {
 			if isDuplicated(next, element.nest, key) {
@@ -538,7 +539,7 @@ func (app *Application) save(session *pager.Session) bool {
 		app.message = err.Error()
 		return false
 	}
-	Dump(app.L, app.format, fd)
+	Dump(app.L, fd)
 	fd.Write(app.trailing)
 	if err := fd.Close(); err != nil {
 		app.message = err.Error()
@@ -663,6 +664,12 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 	if app.cursor == nil {
 		app.cursor = app.L.Front()
 		ref(app.cursor).cursor = true
+	}
+	if sample := app.L.Front().Next(); sample != nil {
+		prefix := getPrefix(sample)
+		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
+			app.indent = prefix[pos+1:]
+		}
 	}
 	pager1 := &pager.Pager{
 		Status:  app.Status,

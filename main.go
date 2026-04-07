@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -23,30 +22,9 @@ func debug(v ...any) {
 	}
 }
 
-type Format struct {
-	indent []byte
-}
-
-func getFormat(source []byte) *Format {
-	format := &Format{}
-	pos := bytes.IndexByte(source, '\n')
-	if pos < 0 {
-		return format
-	}
-	format.indent = []byte{}
-	for {
-		pos++
-		if pos >= len(source) || !unicode.IsSpace(rune(source[pos])) {
-			return format
-		}
-		format.indent = append(format.indent, source[pos])
-	}
-}
-
 func main1(data []byte, name string) error {
 	app := newApplication()
 	app.Name = name
-	app.format = getFormat(data)
 	defer app.Close()
 
 	br := bytes.NewReader(data)
