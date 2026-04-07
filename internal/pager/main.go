@@ -22,7 +22,7 @@ type Pager struct {
 	Status  func(*Session) string
 }
 
-func (pager *Pager) truncate(s string) string {
+func truncate(s string, width int) string {
 	w := 0
 	ansi := false
 	overflow := false
@@ -33,7 +33,7 @@ func (pager *Pager) truncate(s string) string {
 				ansi = true
 			} else {
 				w += runewidth.RuneWidth(c)
-				if w >= pager.Width {
+				if w >= width {
 					overflow = true
 				}
 			}
@@ -60,7 +60,7 @@ func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 			break
 		}
 		if i >= len(pager.cache) || pager.cache[i] != line {
-			io.WriteString(out, pager.truncate(line))
+			io.WriteString(out, truncate(line, pager.Width))
 			io.WriteString(out, ansi.EraseLine)
 		}
 		out.Write([]byte{'\n'})
@@ -164,7 +164,7 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		}, ttyout)
 		if pager.Status != nil {
 			s := pager.Status(session)
-			s = pager.truncate(s)
+			s = truncate(s, pager.Width)
 			io.WriteString(ttyout, s)
 		}
 		key, err := getkey()

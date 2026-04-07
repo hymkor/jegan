@@ -41,9 +41,10 @@ func (e *Element) Dump(w io.Writer) {
 	} else {
 		b, err := json.Marshal(e.value)
 		if err != nil {
-			panic(err.Error())
+			fmt.Fprint(w, e.value)
+		} else {
+			w.Write(b)
 		}
-		w.Write(b)
 	}
 	w.Write(e.postfix)
 	if e.comma {
@@ -182,6 +183,8 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 	L = list.New()
 	if x, ok := v.(unjson.Object); ok {
 		v = []unjson.KeyValuePair(x)
+	} else if x, ok := v.(unjson.Array); ok {
+		v = []unjson.ArrayElement(x)
 	}
 	if x, ok := v.([]unjson.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))
@@ -205,10 +208,6 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 		ref(L.Back()).comma = false
 		L.PushBack(newElement(Mark('}'), nest, true, nil))
 		return
-
-	}
-	if x, ok := v.(unjson.Array); ok {
-		v = []unjson.ArrayElement(x)
 	}
 	if x, ok := v.([]unjson.ArrayElement); ok {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
@@ -231,7 +230,9 @@ func Read(v *unjson.Entry) (L *list.List) {
 		return nil
 	}
 	L = read(v, 0)
-	ref(L.Back()).comma = false
+	if L != nil && L.Len() > 0 {
+		ref(L.Back()).comma = false
+	}
 	return L
 }
 

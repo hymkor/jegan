@@ -178,7 +178,7 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
-		fmt.Fprint(session.TtyOut,
+		io.WriteString(session.TtyOut,
 			"\r's':string, 'n':number, 'u':null, "+
 				"'t':true, 'f':false, 'o':{}, 'a':[] ? "+ansi.EraseLine)
 		key, err := session.GetKey()
@@ -555,7 +555,7 @@ func (app *Application) keyFuncQuit(session *pager.Session) bool {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
-	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]"+ansi.EraseLine)
+	io.WriteString(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]"+ansi.EraseLine)
 	key, err := session.GetKey()
 	if err != nil {
 		app.message = err.Error()
