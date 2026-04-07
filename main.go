@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -22,11 +23,18 @@ func debug(v ...any) {
 	}
 }
 
-func main1(data []byte, name string) error {
+func main1(r io.Reader, name string) error {
+	closer := func() error { return nil }
+	if c, ok := r.(io.Closer); ok {
+		closer = c.Close
+	}
+	br, ok := r.(io.RuneScanner)
+	if !ok {
+		br = bufio.NewReader(r)
+	}
 	app := &Application{Name: name}
 	defer app.Close()
 
-	br := bytes.NewReader(data)
 	for {
 		v, err := unjson.Unmarshal(br)
 		if err != nil {
@@ -37,6 +45,9 @@ func main1(data []byte, name string) error {
 			}
 			if errors.Is(err, io.EOF) {
 				app.Store(Read(v))
+				if err := closer(); err != nil {
+					return err
+				}
 				ttyout := colorable.NewColorableStdout()
 				return app.EventLoop(&tty8pe.Tty{}, ttyout)
 			}
@@ -56,19 +67,15 @@ func mains(args []string) error {
 	}
 	if len(args) < 1 {
 		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			return main1([]byte{'{', '}'}, "")
+			return main1(strings.NewReader("{}"), "")
 		}
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
-		return main1(data, "")
+		return main1(io.NopCloser(os.Stdin), "")
 	}
-	data, err := os.ReadFile(args[0])
+	fd, err := os.Open(args[0])
 	if err != nil {
 		return err
 	}
-	return main1(data, args[0])
+	return main1(fd, args[0])
 }
 
 func main() {
