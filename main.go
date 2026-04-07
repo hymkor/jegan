@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mattn/go-colorable"
@@ -13,8 +11,6 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
-
-	"github.com/hymkor/jegan/internal/unjson"
 )
 
 func debug(v ...any) {
@@ -23,59 +19,44 @@ func debug(v ...any) {
 	}
 }
 
-func main1(r io.Reader, name string) error {
-	closer := func() error { return nil }
-	if c, ok := r.(io.Closer); ok {
-		closer = c.Close
-	}
-	br, ok := r.(io.RuneScanner)
-	if !ok {
-		br = bufio.NewReader(r)
-	}
-	app := &Application{Name: name}
+func mains(args []string) error {
+	app := &Application{Name: strings.Join(args, "+")}
 	defer app.Close()
 
-	for {
-		v, err := unjson.Unmarshal(br)
-		if err != nil {
-			var e *unjson.ErrTrailingData
-			if errors.As(err, &e) {
-				err = e.Err
-				app.Trailing = e.Trailing
+	if len(args) <= 0 {
+		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
+			app.Load(os.Stdin, "")
+		}
+	} else {
+		for _, arg := range args {
+			if arg == "-" {
+				app.Load(os.Stdin, "")
+				continue
 			}
-			if errors.Is(err, io.EOF) {
-				app.Store(Read(v))
-				if err := closer(); err != nil {
+			fnames, err := filepath.Glob(arg)
+			if err != nil || len(fnames) <= 0 {
+				fnames = []string{arg}
+			}
+			for _, fn := range fnames {
+				fd, err := os.Open(fn)
+				if err != nil {
 					return err
 				}
-				ttyout := colorable.NewColorableStdout()
-				return app.EventLoop(&tty8pe.Tty{}, ttyout)
+				if err := app.Load(fd, fn); err != nil {
+					return err
+				}
+				if err := fd.Close(); err != nil {
+					return err
+				}
 			}
-			if name == "" {
-				return fmt.Errorf("<STDIN>:%w", err)
-			}
-			return fmt.Errorf("%s:%w", name, err)
 		}
-		app.Store(Read(v))
 	}
-}
-
-func mains(args []string) error {
 	disable := colorable.EnableColorsStdout(nil)
 	if disable != nil {
 		defer disable()
 	}
-	if len(args) < 1 {
-		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			return main1(strings.NewReader("{}"), "")
-		}
-		return main1(io.NopCloser(os.Stdin), "")
-	}
-	fd, err := os.Open(args[0])
-	if err != nil {
-		return err
-	}
-	return main1(fd, args[0])
+	ttyout := colorable.NewColorableStdout()
+	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
 
 func main() {
