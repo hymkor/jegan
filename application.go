@@ -46,10 +46,6 @@ func (app *Application) Store(v *list.List) {
 	} else {
 		app.L.PushBackList(v)
 	}
-	if app.cursor == nil {
-		app.cursor = app.L.Front()
-		ref(app.cursor).cursor = true
-	}
 }
 
 func (app *Application) SetCursor(c *list.Element) {
@@ -657,6 +653,17 @@ func (app *Application) Status(session *pager.Session) (rv string) {
 }
 
 func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
+	if app.L == nil {
+		app.L = list.New()
+	}
+	if app.L.Len() <= 0 {
+		app.L.PushBack(newElement(Mark('{'), 0, false, nil))
+		app.L.PushBack(newElement(Mark('}'), 0, false, nil))
+	}
+	if app.cursor == nil {
+		app.cursor = app.L.Front()
+		ref(app.cursor).cursor = true
+	}
 	pager1 := &pager.Pager{
 		Status:  app.Status,
 		Handler: app.Handle,
