@@ -23,8 +23,7 @@ func debug(v ...any) {
 }
 
 func main1(data []byte, name string) error {
-	app := newApplication()
-	app.Name = name
+	app := &Application{Name: name}
 	defer app.Close()
 
 	br := bytes.NewReader(data)
@@ -34,7 +33,7 @@ func main1(data []byte, name string) error {
 			var e *unjson.ErrTrailingData
 			if errors.As(err, &e) {
 				err = e.Err
-				app.trailing = e.Trailing
+				app.Trailing = e.Trailing
 			}
 			if errors.Is(err, io.EOF) {
 				app.Store(Read(v))
