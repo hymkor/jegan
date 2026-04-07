@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -40,9 +41,10 @@ func (e *Element) Dump(w io.Writer) {
 	} else {
 		b, err := json.Marshal(e.value)
 		if err != nil {
-			panic(err.Error())
+			fmt.Fprint(w, e.value)
+		} else {
+			w.Write(b)
 		}
-		w.Write(b)
 	}
 	w.Write(e.postfix)
 	if e.comma {
@@ -54,9 +56,9 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
 	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
 		b.WriteByte('"')
-		b.WriteString(color) // "\x1B[35m"
+		b.WriteString(color)
 		b.Write(s[1:L])
-		b.WriteString("\x1B[39m")
+		b.WriteString(ansi.Default)
 		b.WriteByte('"')
 	} else {
 		b.Write(s)
@@ -64,35 +66,31 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 }
 
 func (e *Element) highlight(b *strings.Builder) {
-	const (
-		cyan   = "\x1B[36m"
-		normal = "\x1B[39m"
-	)
 	if e.comma {
 		defer b.WriteByte(',')
 	}
 	v := e.value
 	if m, ok := v.(Mark); ok {
-		b.WriteString("\x1B[31m")
+		b.WriteString(ansi.Red)
 		b.WriteRune(rune(m))
-		b.WriteString(normal)
+		b.WriteString(ansi.Default)
 		return
 	}
 	if x, ok := v.(*unjson.Literal); ok {
 		v = x.Value()
 	} else {
-		io.WriteString(b, "\x1B[1m")
-		defer io.WriteString(b, "\x1B[22m")
+		io.WriteString(b, ansi.Bold)
+		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := v.(string); ok {
 		jsonBin, _ := json.Marshal(s)
-		highlightString(jsonBin, "\x1B[35m", b)
+		highlightString(jsonBin, ansi.Magenta, b)
 	} else if v == true {
-		io.WriteString(b, cyan+"true"+normal)
+		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
 	} else if v == false {
-		io.WriteString(b, cyan+"false"+normal)
+		io.WriteString(b, ansi.Cyan+"false"+ansi.Default)
 	} else if v == nil {
-		io.WriteString(b, cyan+"null"+normal)
+		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
 		bin, err := json.Marshal(e.value)
 		if err != nil {
@@ -106,7 +104,7 @@ func (e *Element) highlight(b *strings.Builder) {
 func (e *Element) Display(w int) string {
 	var b strings.Builder
 	if e.cursor {
-		b.WriteString("\x1B[4m")
+		b.WriteString(ansi.UnderLine)
 	}
 	for i := 0; i < e.nest; i++ {
 		b.WriteString("  ")
@@ -114,7 +112,7 @@ func (e *Element) Display(w int) string {
 	e.highlight(&b)
 	if e.cursor {
 		b.WriteString(strings.Repeat(" ", w))
-		b.WriteString("\x1B[24m")
+		b.WriteString(ansi.NoUnderLine)
 	}
 	return b.String()
 }
@@ -129,18 +127,18 @@ type Pair struct {
 func (pair *Pair) Display(w int) string {
 	var b strings.Builder
 	if pair.cursor {
-		b.WriteString("\x1B[4m")
+		b.WriteString(ansi.UnderLine)
 	}
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
 	jsonBin, _ := json.Marshal(pair.key)
-	highlightString(jsonBin, "\x1B[33m", &b)
+	highlightString(jsonBin, ansi.Yellow, &b)
 	b.WriteString(": ")
 	pair.Element.highlight(&b)
 	if pair.cursor {
 		b.WriteString(strings.Repeat(" ", w))
-		b.WriteString("\x1B[24m")
+		b.WriteString(ansi.NoUnderLine)
 	}
 	return b.String()
 }
@@ -179,15 +177,14 @@ func (p *Pair) Dump(w io.Writer) {
 	p.Element.Dump(w)
 }
 
-func read(v any, nest int) (L *list.List) {
-	var prefix []byte
-	if t, ok := v.(*unjson.Entry); ok {
-		v = t.Value
-		prefix = t.Prefix
-	}
+func read(t *unjson.Entry, nest int) (L *list.List) {
+	v := t.Value
+	prefix := t.Prefix
 	L = list.New()
 	if x, ok := v.(unjson.Object); ok {
 		v = []unjson.KeyValuePair(x)
+	} else if x, ok := v.(unjson.Array); ok {
+		v = []unjson.ArrayElement(x)
 	}
 	if x, ok := v.([]unjson.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))
@@ -211,10 +208,6 @@ func read(v any, nest int) (L *list.List) {
 		ref(L.Back()).comma = false
 		L.PushBack(newElement(Mark('}'), nest, true, nil))
 		return
-
-	}
-	if x, ok := v.(unjson.Array); ok {
-		v = []unjson.ArrayElement(x)
 	}
 	if x, ok := v.([]unjson.ArrayElement); ok {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
@@ -232,13 +225,18 @@ func read(v any, nest int) (L *list.List) {
 	return
 }
 
-func Read(v any) (L *list.List) {
+func Read(v *unjson.Entry) (L *list.List) {
+	if v == nil {
+		return nil
+	}
 	L = read(v, 0)
-	ref(L.Back()).comma = false
+	if L != nil && L.Len() > 0 {
+		ref(L.Back()).comma = false
+	}
 	return L
 }
 
-func Dump(L *list.List, format *Format, w io.Writer) {
+func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
 	}

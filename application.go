@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"container/list"
 	"context"
 	"encoding/json"
@@ -22,34 +23,36 @@ import (
 )
 
 type Application struct {
-	L        *list.List
-	cursor   *list.Element
-	csrline  int
-	winline  int
 	Name     string
-	message  string
-	dirty    bool
-	format   *Format
-	trailing []byte
+	Trailing []byte
+
+	list    *list.List
+	cursor  *list.Element
+	csrline int
+	winline int
+	message string
+	dirty   bool
+	indent  []byte
 }
 
-func newApplication(L *list.List) *Application {
-	cursor := L.Front()
-	ref(cursor).cursor = true
-
-	return &Application{
-		L:      L,
-		cursor: cursor,
+func (app *Application) Store(v *list.List) {
+	if v == nil {
+		return
+	}
+	if app.list == nil {
+		app.list = v
+	} else {
+		app.list.PushBackList(v)
 	}
 }
 
-func (app *Application) SetCursor(c *list.Element) {
+func (app *Application) setCursor(c *list.Element) {
 	ref(app.cursor).cursor = false
 	app.cursor = c
 	ref(app.cursor).cursor = true
 }
 
-func (app *Application) ReadLine(session *pager.Session, prompt, defaults string) (string, error) {
+func (app *Application) readLine(session *pager.Session, prompt, defaults string) (string, error) {
 	cursorPosition := 65535
 	if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
 		cursorPosition = readline.MojiCountInString(defaults) - 1
@@ -59,7 +62,7 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
 		PromptWriter: func(w io.Writer) (int, error) {
-			return fmt.Fprintf(w, "\r%s \x1B[0K", prompt)
+			return fmt.Fprintf(w, "\r%s "+ansi.EraseLine, prompt)
 		},
 		LineFeedWriter: func(readline.Result, io.Writer) (int, error) {
 			return 0, nil
@@ -70,14 +73,14 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
 	result, err := editor.ReadLine(context.Background())
-	io.WriteString(session.TtyOut, "\x1B[?25l")
+	io.WriteString(session.TtyOut, ansi.CursorOff)
 	if err == readline.CtrlC {
 		return "", errors.New("Canceled")
 	}
 	return result, err
 }
 
-func (app *Application) replaceTypeAndValue(
+func (app *Application) keyFuncReplace(
 	session *pager.Session,
 	input func(*pager.Session, any) []any) {
 
@@ -96,10 +99,10 @@ func (app *Application) replaceTypeAndValue(
 		}
 		if v == Mark('{') && nextv == Mark('}') {
 			defaultv = map[string]any{}
-			prev = func() bool { app.L.Remove(next); return true }
+			prev = func() bool { app.list.Remove(next); return true }
 		} else if v == Mark('[') && nextv == Mark(']') {
 			defaultv = []any{}
-			prev = func() bool { app.L.Remove(next); return true }
+			prev = func() bool { app.list.Remove(next); return true }
 		} else {
 			return
 		}
@@ -114,7 +117,7 @@ func (app *Application) replaceTypeAndValue(
 	case 2:
 		prefix := getPrefix(app.cursor)
 		prev()
-		app.L.InsertAfter(
+		app.list.InsertAfter(
 			newElement(values[1], element.nest, element.comma, prefix),
 			app.cursor)
 		element.value = values[0]
@@ -123,7 +126,7 @@ func (app *Application) replaceTypeAndValue(
 	}
 }
 
-func (app *Application) readNewValue(session *pager.Session, defaultv any) []any {
+func (app *Application) inputFormat(session *pager.Session, defaultv any) []any {
 	var defaults string
 	if _, ok := defaultv.(struct{}); ok {
 		defaults = ""
@@ -132,11 +135,11 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 	} else {
 		b, err := json.Marshal(defaultv)
 		if err != nil {
-			debug("(*Application) readNewValue: json.Marshal:", err.Error(), "for", defaultv)
+			debug("(*Application) inputFormat: json.Marshal:", err.Error(), "for", defaultv)
 		}
 		defaults = string(b)
 	}
-	rawText, err := app.ReadLine(session, "New value:", defaults)
+	rawText, err := app.readLine(session, "New value:", defaults)
 	if err != nil {
 		app.message = err.Error()
 		return nil
@@ -171,13 +174,13 @@ func (app *Application) readNewValue(session *pager.Session, defaultv any) []any
 	return []any{rawText}
 }
 
-func (app *Application) readNewValue2(session *pager.Session, defaultv any) []any {
+func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) []any {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
-		fmt.Fprint(session.TtyOut,
+		io.WriteString(session.TtyOut,
 			"\r's':string, 'n':number, 'u':null, "+
-				"'t':true, 'f':false, 'o':{}, 'a':[] ? \x1B[0K")
+				"'t':true, 'f':false, 'o':{}, 'a':[] ? "+ansi.EraseLine)
 		key, err := session.GetKey()
 		if err != nil {
 			app.message = err.Error()
@@ -188,13 +191,13 @@ func (app *Application) readNewValue2(session *pager.Session, defaultv any) []an
 			app.message = "Canceled"
 			return nil
 		case "s":
-			text, err := app.ReadLine(session, "New string:", fmt.Sprint(defaultv))
+			text, err := app.readLine(session, "New string:", fmt.Sprint(defaultv))
 			if err == nil {
 				return []any{text}
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "n":
-			text, err := app.ReadLine(session, "New number:", fmt.Sprint(defaultv))
+			text, err := app.readLine(session, "New number:", fmt.Sprint(defaultv))
 			if err == nil {
 				newValue, err := strconv.ParseFloat(text, 64)
 				if err == nil {
@@ -305,7 +308,7 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
-func (app *Application) insertNewValue(session *pager.Session) {
+func (app *Application) keyFuncInsert(session *pager.Session) {
 	prefix := getPrefix(app.cursor)
 	if element := ref(app.cursor); element.value == Mark('[') {
 		next := app.cursor.Next()
@@ -318,24 +321,24 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			comma = false
 			todo = func() { setPrefix(next, prefix) }
 			nest = nextElement.nest + 1
-			newPrefix = joinBytes(prefix, app.format.indent)
+			newPrefix = joinBytes(prefix, app.indent)
 		} else {
 			comma = true
 			nest = nextElement.nest
 			newPrefix = getPrefix(next)
 		}
-		values := app.readNewValue(session, struct{}{})
+		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // [\n[\n],\n
 			e1 := newElement(values[0], nest, false, newPrefix)
 			e2 := newElement(values[1], nest, comma, nil)
-			app.L.InsertBefore(e1, next)
-			app.L.InsertBefore(e2, next)
+			app.list.InsertBefore(e1, next)
+			app.list.InsertBefore(e2, next)
 			todo()
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // [\n value
-			app.L.InsertBefore(
+			app.list.InsertBefore(
 				newElement(values[0], nest, comma, newPrefix),
 				next)
 			todo()
@@ -345,7 +348,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		return
 	}
 	if element := ref(app.cursor); element.value == Mark('{') {
-		key, err := app.ReadLine(session, "Key: ", "")
+		key, err := app.readLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
@@ -358,7 +361,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if element.value == Mark('}') {
 			comma = false
 			nest = element.nest + 1
-			newPrefix = joinBytes(prefix, app.format.indent)
+			newPrefix = joinBytes(prefix, app.indent)
 			todo = func() { setPrefix(next, prefix) }
 		} else {
 			if isDuplicated(next, element.nest, key) {
@@ -369,21 +372,21 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			nest = element.nest
 			newPrefix = getPrefix(next)
 		}
-		values := app.readNewValue(session, struct{}{})
+		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // { key:[]
 			p1 := newPair(key, values[0], nest, false)
 			p1.preKey = newPrefix
 			e2 := newElement(values[1], nest, comma, nil)
-			app.L.InsertBefore(p1, next)
-			app.L.InsertBefore(e2, next)
+			app.list.InsertBefore(p1, next)
+			app.list.InsertBefore(e2, next)
 			todo()
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // { key:value
 			p1 := newPair(key, values[0], nest, comma)
 			p1.preKey = newPrefix
-			app.L.InsertBefore(p1, next)
+			app.list.InsertBefore(p1, next)
 			todo()
 			app.nextLine(session)
 			app.dirty = true
@@ -391,7 +394,7 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		return
 	}
 	if isHashElement(app.cursor) {
-		key, err := app.ReadLine(session, "Key: ", "")
+		key, err := app.readLine(session, "Key: ", "")
 		if err != nil {
 			return
 		}
@@ -400,20 +403,20 @@ func (app *Application) insertNewValue(session *pager.Session) {
 			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
 		}
-		values := app.readNewValue(session, struct{}{})
+		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // key:[],
 			p1 := newPair(key, values[0], element.nest, false)
 			p1.preKey = prefix
 			e2 := newElement(values[1], element.nest, element.comma, nil)
-			app.L.InsertAfter(e2, app.cursor)
-			app.L.InsertAfter(p1, app.cursor)
+			app.list.InsertAfter(e2, app.cursor)
+			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
 			p := newPair(key, values[0], element.nest, element.comma)
 			p.preKey = prefix
-			app.L.InsertAfter(p, app.cursor)
+			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -425,18 +428,18 @@ func (app *Application) insertNewValue(session *pager.Session) {
 		if index < 0 {
 			return
 		}
-		values := app.readNewValue(session, struct{}{})
+		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // [ \n ],
 			e1 := newElement(values[0], element.nest, false, prefix)
 			e2 := newElement(values[1], element.nest, element.comma, nil)
-			app.L.InsertAfter(e2, app.cursor)
-			app.L.InsertAfter(e1, app.cursor)
+			app.list.InsertAfter(e2, app.cursor)
+			app.list.InsertAfter(e1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
 			e := newElement(values[0], element.nest, element.comma, prefix)
-			app.L.InsertAfter(e, app.cursor)
+			app.list.InsertAfter(e, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
@@ -448,7 +451,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 	comma := ref(app.cursor).comma
 	if next := app.cursor.Next(); next != nil {
 		ref(app.cursor).cursor = false
-		app.L.Remove(app.cursor)
+		app.list.Remove(app.cursor)
 		app.cursor = next
 		ref(app.cursor).cursor = true
 		if !comma {
@@ -459,7 +462,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 		app.dirty = true
 	} else if prev := app.cursor.Prev(); prev != nil {
 		ref(app.cursor).cursor = false
-		app.L.Remove(app.cursor)
+		app.list.Remove(app.cursor)
 		app.cursor = prev
 		ref(app.cursor).cursor = true
 		app.csrline--
@@ -474,7 +477,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 	}
 }
 
-func (app *Application) removeLine(session *pager.Session) {
+func (app *Application) keyFuncRemove(session *pager.Session) {
 	element := ref(app.cursor)
 	mark, ok := element.value.(Mark)
 	if !ok {
@@ -496,14 +499,14 @@ func (app *Application) removeLine(session *pager.Session) {
 		return
 	}
 	comma := n.comma
-	app.L.Remove(next)
+	app.list.Remove(next)
 	app.removeCursor(session)
 	ref(app.cursor).comma = comma
 	app.dirty = true
 }
 
-func (app *Application) save(session *pager.Session) bool {
-	fname, err := app.ReadLine(session, "Write to:", app.Name)
+func (app *Application) keyFuncSave(session *pager.Session) bool {
+	fname, err := app.readLine(session, "Write to:", app.Name)
 	if err != nil {
 		app.message = err.Error()
 		return false
@@ -533,8 +536,8 @@ func (app *Application) save(session *pager.Session) bool {
 		app.message = err.Error()
 		return false
 	}
-	Dump(app.L, app.format, fd)
-	fd.Write(app.trailing)
+	Dump(app.list, fd)
+	fd.Write(app.Trailing)
 	if err := fd.Close(); err != nil {
 		app.message = err.Error()
 		return false
@@ -545,14 +548,14 @@ func (app *Application) save(session *pager.Session) bool {
 	return true
 }
 
-func (app *Application) quit(session *pager.Session) bool {
+func (app *Application) keyFuncQuit(session *pager.Session) bool {
 	if !app.dirty {
 		return false // fallback to pager's quit
 	}
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
-	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]\x1B[0K")
+	io.WriteString(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]"+ansi.EraseLine)
 	key, err := session.GetKey()
 	if err != nil {
 		app.message = err.Error()
@@ -560,7 +563,7 @@ func (app *Application) quit(session *pager.Session) bool {
 	}
 	if key == "y" || key == "Y" {
 		// save and quit
-		if !app.save(session) {
+		if !app.keyFuncSave(session) {
 			return true
 		}
 		return false
@@ -578,7 +581,7 @@ func (app *Application) nextLine(session *pager.Session) {
 	if c == nil {
 		return
 	}
-	app.SetCursor(c)
+	app.setCursor(c)
 	app.csrline++
 	for app.csrline-app.winline >= session.Height {
 		session.Window = session.Window.Next()
@@ -586,15 +589,15 @@ func (app *Application) nextLine(session *pager.Session) {
 	}
 }
 
-func (app *Application) Handle(session *pager.Session, key string) (bool, error) {
+func (app *Application) handle(session *pager.Session, key string) (bool, error) {
 	switch key {
 	default:
 		return false, nil
-	case "j", "\x1B[B":
+	case "j", keys.Down, keys.CtrlN:
 		app.nextLine(session)
-	case "k", "\x1B[A":
+	case "k", keys.Up, keys.CtrlP:
 		if c := app.cursor.Prev(); c != nil {
-			app.SetCursor(c)
+			app.setCursor(c)
 			app.csrline--
 			for app.csrline < app.winline {
 				session.Window = session.Window.Prev()
@@ -602,33 +605,33 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 			}
 		}
 	case "<":
-		app.SetCursor(app.L.Front())
+		app.setCursor(app.list.Front())
 		session.Front()
 		app.winline = 0
 		app.csrline = 0
 	case ">":
-		app.SetCursor(app.L.Back())
+		app.setCursor(app.list.Back())
 		n := session.Back()
-		app.csrline = app.L.Len() - 1
-		app.winline = app.L.Len() - 1 - n
+		app.csrline = app.list.Len() - 1
+		app.winline = app.list.Len() - 1 - n
 	case " ", "b", keys.CtrlC, keys.CtrlG:
 	case "r":
-		app.replaceTypeAndValue(session, app.readNewValue)
+		app.keyFuncReplace(session, app.inputFormat)
 	case "R":
-		app.replaceTypeAndValue(session, app.readNewValue2)
+		app.keyFuncReplace(session, app.inputTypeAndValue)
 	case "o":
-		app.insertNewValue(session)
+		app.keyFuncInsert(session)
 	case "d":
-		app.removeLine(session)
+		app.keyFuncRemove(session)
 	case "w":
-		app.save(session)
+		app.keyFuncSave(session)
 	case "q":
-		return app.quit(session), nil
+		return app.keyFuncQuit(session), nil
 	}
 	return true, nil
 }
 
-func (app *Application) Status(session *pager.Session) (rv string) {
+func (app *Application) status(session *pager.Session) (rv string) {
 	var mark rune
 	if app.dirty {
 		mark = '*'
@@ -636,23 +639,40 @@ func (app *Application) Status(session *pager.Session) (rv string) {
 		mark = ' '
 	}
 	if app.message != "" {
-		rv = fmt.Sprintf("\x1B[1m%s\x1B[22m%c\x1B[0K", app.message, mark)
+		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+"%c"+ansi.EraseLine, app.message, mark)
 		app.message = ""
 	} else if app.Name != "" {
-		rv = fmt.Sprintf("\x1B[7m%s\x1B[27m%c\x1B[0K", app.Name, mark)
+		rv = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
 	} else {
-		rv = fmt.Sprintf("\x1B[1mJegan %s-%s-%s\x1B[22m\x1B[0K",
+		rv = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
 			version, runtime.GOOS, runtime.GOARCH)
 	}
 	return
 }
 
 func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
-	pager1 := &pager.Pager{
-		Status:  app.Status,
-		Handler: app.Handle,
+	if app.list == nil {
+		app.list = list.New()
 	}
-	return pager1.EventLoop(tty, app.L, ttyout)
+	if app.list.Len() <= 0 {
+		app.list.PushBack(newElement(Mark('{'), 0, false, nil))
+		app.list.PushBack(newElement(Mark('}'), 0, false, nil))
+	}
+	if app.cursor == nil {
+		app.cursor = app.list.Front()
+		ref(app.cursor).cursor = true
+	}
+	if sample := app.list.Front().Next(); sample != nil {
+		prefix := getPrefix(sample)
+		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
+			app.indent = prefix[pos+1:]
+		}
+	}
+	pager1 := &pager.Pager{
+		Status:  app.status,
+		Handler: app.handle,
+	}
+	return pager1.EventLoop(tty, app.list, ttyout)
 }
 
 func (app *Application) Close() error {

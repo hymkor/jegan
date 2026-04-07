@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"container/list"
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"unicode"
+	"strings"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -24,68 +23,41 @@ func debug(v ...any) {
 	}
 }
 
-type Format struct {
-	indent []byte
-}
-
-func getFormat(source []byte) *Format {
-	format := &Format{}
-	pos := bytes.IndexByte(source, '\n')
-	if pos < 0 {
-		return format
+func main1(r io.Reader, name string) error {
+	closer := func() error { return nil }
+	if c, ok := r.(io.Closer); ok {
+		closer = c.Close
 	}
-	format.indent = []byte{}
-	for {
-		pos++
-		if pos >= len(source) || !unicode.IsSpace(rune(source[pos])) {
-			return format
-		}
-		format.indent = append(format.indent, source[pos])
+	br, ok := r.(io.RuneScanner)
+	if !ok {
+		br = bufio.NewReader(r)
 	}
-}
+	app := &Application{Name: name}
+	defer app.Close()
 
-func main1(data []byte, name string) error {
-	br := bytes.NewReader(data)
-	var trailing []byte
-	var L *list.List
 	for {
 		v, err := unjson.Unmarshal(br)
-		if err != nil && !errors.Is(err, io.EOF) {
-			if name != "" {
-				err = fmt.Errorf("%s:%w", name, err)
-			} else {
-				err = fmt.Errorf("<STDIN>:%w", err)
-			}
-			return err
-		}
-		var e *unjson.ErrTrailingData
-		if errors.As(err, &e) {
-			err = e.Err
-			trailing = e.Trailing
-		}
-		if v == nil {
-			break
-		}
-		l := Read(v)
-		if l == nil {
-			break
-		}
-		if L == nil {
-			L = l
-		} else {
-			L.PushBackList(l)
-		}
 		if err != nil {
-			break
+			var e *unjson.ErrTrailingData
+			if errors.As(err, &e) {
+				err = e.Err
+				app.Trailing = e.Trailing
+			}
+			if errors.Is(err, io.EOF) {
+				app.Store(Read(v))
+				if err := closer(); err != nil {
+					return err
+				}
+				ttyout := colorable.NewColorableStdout()
+				return app.EventLoop(&tty8pe.Tty{}, ttyout)
+			}
+			if name == "" {
+				return fmt.Errorf("<STDIN>:%w", err)
+			}
+			return fmt.Errorf("%s:%w", name, err)
 		}
+		app.Store(Read(v))
 	}
-	app := newApplication(L)
-	defer app.Close()
-	app.Name = name
-	app.format = getFormat(data)
-	app.trailing = trailing
-	ttyout := colorable.NewColorableStdout()
-	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
 
 func mains(args []string) error {
@@ -95,19 +67,15 @@ func mains(args []string) error {
 	}
 	if len(args) < 1 {
 		if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			return main1([]byte{'{', '}'}, "")
+			return main1(strings.NewReader("{}"), "")
 		}
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
-		return main1(data, "")
+		return main1(io.NopCloser(os.Stdin), "")
 	}
-	data, err := os.ReadFile(args[0])
+	fd, err := os.Open(args[0])
 	if err != nil {
 		return err
 	}
-	return main1(data, args[0])
+	return main1(fd, args[0])
 }
 
 func main() {
