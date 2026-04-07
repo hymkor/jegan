@@ -33,13 +33,22 @@ type Application struct {
 	trailing []byte
 }
 
-func newApplication(L *list.List) *Application {
-	cursor := L.Front()
-	ref(cursor).cursor = true
+func newApplication() *Application {
+	return &Application{}
+}
 
-	return &Application{
-		L:      L,
-		cursor: cursor,
+func (app *Application) Store(v *list.List) {
+	if v == nil {
+		return
+	}
+	if app.L == nil {
+		app.L = v
+	} else {
+		app.L.PushBackList(v)
+	}
+	if app.cursor == nil {
+		app.cursor = app.L.Front()
+		ref(app.cursor).cursor = true
 	}
 }
 

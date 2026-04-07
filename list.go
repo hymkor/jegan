@@ -227,6 +227,9 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 }
 
 func Read(v *unjson.Entry) (L *list.List) {
+	if v == nil {
+		return nil
+	}
 	L = read(v, 0)
 	ref(L.Back()).comma = false
 	return L
