@@ -13,11 +13,12 @@ Features
 --------
 
 - Edit JSON/JSONL in a terminal-based interactive UI
-- Preserve original formatting as much as possible:
+- Preserve original formatting:
   - whitespace around tokens
   - indentation and line endings
   - object key order
   - literal representations (e.g. escape sequences)
+  - trailing non-JSON data as-is
 - Minimize unnecessary diffs when saving
 - Highlight modified values
 - Read JSON from files or standard input
