@@ -179,12 +179,9 @@ func (p *Pair) Dump(w io.Writer) {
 	p.Element.Dump(w)
 }
 
-func read(v any, nest int) (L *list.List) {
-	var prefix []byte
-	if t, ok := v.(*unjson.Entry); ok {
-		v = t.Value
-		prefix = t.Prefix
-	}
+func read(t *unjson.Entry, nest int) (L *list.List) {
+	v := t.Value
+	prefix := t.Prefix
 	L = list.New()
 	if x, ok := v.(unjson.Object); ok {
 		v = []unjson.KeyValuePair(x)
@@ -232,7 +229,7 @@ func read(v any, nest int) (L *list.List) {
 	return
 }
 
-func Read(v any) (L *list.List) {
+func Read(v *unjson.Entry) (L *list.List) {
 	L = read(v, 0)
 	ref(L.Back()).comma = false
 	return L

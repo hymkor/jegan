@@ -347,7 +347,7 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 	}
 }
 
-func Unmarshal(r io.RuneScanner) (any, error) {
+func Unmarshal(r io.RuneScanner) (*Entry, error) {
 	sc := newScanner(r)
 	v, err := readEntry(sc)
 	if err != nil {
