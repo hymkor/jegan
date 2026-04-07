@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"container/list"
 	"context"
@@ -20,6 +21,8 @@ import (
 	"github.com/hymkor/go-safewrite/perm"
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
+
+	"github.com/hymkor/jegan/internal/unjson"
 )
 
 type Application struct {
@@ -677,4 +680,30 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 
 func (app *Application) Close() error {
 	return perm.RestoreAll()
+}
+
+func (app *Application) Load(r io.Reader, name string) error {
+	br, ok := r.(io.RuneScanner)
+	if !ok {
+		br = bufio.NewReader(r)
+	}
+	for {
+		v, err := unjson.Unmarshal(br)
+		if err != nil {
+			var e *unjson.ErrTrailingData
+			if errors.As(err, &e) {
+				err = e.Err
+				app.Trailing = e.Trailing
+			}
+			if errors.Is(err, io.EOF) {
+				app.Store(Read(v))
+				return nil
+			}
+			if name == "" {
+				return fmt.Errorf("<STDIN>:%w", err)
+			}
+			return fmt.Errorf("%s:%w", name, err)
+		}
+		app.Store(Read(v))
+	}
 }
