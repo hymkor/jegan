@@ -76,6 +76,10 @@ func (e *Element) highlight(b *strings.Builder) {
 		b.WriteString(ansi.Default)
 		return
 	}
+	if x, ok := v.(*unjson.RawBytes); ok {
+		fmt.Fprintf(b, ansi.Red+"%q"+ansi.Default, x.String())
+		return
+	}
 	if x, ok := v.(*unjson.Literal); ok {
 		v = x.Value()
 	} else {
