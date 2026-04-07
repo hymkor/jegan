@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
+	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/jegan/internal/ansi"
@@ -53,14 +54,14 @@ func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 		line, ok := fetch(pager.Width)
 		if !ok {
 			for ; i < len(pager.cache) && i < pager.Height; i++ {
-				io.WriteString(out, "\x1B[0K\n")
+				io.WriteString(out, ansi.EraseLine+"\n")
 				pager.cache[i] = ""
 			}
 			break
 		}
 		if i >= len(pager.cache) || pager.cache[i] != line {
 			io.WriteString(out, pager.truncate(line))
-			io.WriteString(out, "\x1B[0K")
+			io.WriteString(out, ansi.EraseLine)
 		}
 		out.Write([]byte{'\n'})
 		if i < len(pager.cache) {
@@ -187,11 +188,11 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 			session.NextPage()
 		case "b":
 			session.PrevPage()
-		case "j", "\x1B[B":
+		case "j", keys.Down, keys.CtrlN:
 			session.Next()
-		case "k", "\x1B[A":
+		case "k", keys.Up, keys.CtrlP:
 			session.Prev()
-		case "\x03", "\a", "q":
+		case "q", keys.CtrlC, keys.CtrlG:
 			return nil
 		default:
 		}

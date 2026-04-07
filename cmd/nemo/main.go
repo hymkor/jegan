@@ -14,6 +14,7 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 
+	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
 )
 
@@ -44,7 +45,7 @@ func main1(source io.Reader, title string) error {
 	pager1 := &pager.Pager{
 		Status: func(_ *pager.Session) string {
 			if title != "" {
-				return fmt.Sprintf("\x1B[7m%s\x1B[0m", title)
+				return fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse, title)
 			}
 			return ""
 		},

@@ -59,7 +59,7 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
 		PromptWriter: func(w io.Writer) (int, error) {
-			return fmt.Fprintf(w, "\r%s \x1B[0K", prompt)
+			return fmt.Fprintf(w, "\r%s "+ansi.EraseLine, prompt)
 		},
 		LineFeedWriter: func(readline.Result, io.Writer) (int, error) {
 			return 0, nil
@@ -70,7 +70,7 @@ func (app *Application) ReadLine(session *pager.Session, prompt, defaults string
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
 	result, err := editor.ReadLine(context.Background())
-	io.WriteString(session.TtyOut, "\x1B[?25l")
+	io.WriteString(session.TtyOut, ansi.CursorOff)
 	if err == readline.CtrlC {
 		return "", errors.New("Canceled")
 	}
@@ -177,7 +177,7 @@ func (app *Application) readNewValue2(session *pager.Session, defaultv any) []an
 	for {
 		fmt.Fprint(session.TtyOut,
 			"\r's':string, 'n':number, 'u':null, "+
-				"'t':true, 'f':false, 'o':{}, 'a':[] ? \x1B[0K")
+				"'t':true, 'f':false, 'o':{}, 'a':[] ? "+ansi.EraseLine)
 		key, err := session.GetKey()
 		if err != nil {
 			app.message = err.Error()
@@ -552,7 +552,7 @@ func (app *Application) quit(session *pager.Session) bool {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
-	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]\x1B[0K")
+	fmt.Fprint(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]"+ansi.EraseLine)
 	key, err := session.GetKey()
 	if err != nil {
 		app.message = err.Error()
@@ -590,9 +590,9 @@ func (app *Application) Handle(session *pager.Session, key string) (bool, error)
 	switch key {
 	default:
 		return false, nil
-	case "j", "\x1B[B":
+	case "j", keys.Down, keys.CtrlN:
 		app.nextLine(session)
-	case "k", "\x1B[A":
+	case "k", keys.Up, keys.CtrlP:
 		if c := app.cursor.Prev(); c != nil {
 			app.SetCursor(c)
 			app.csrline--
@@ -636,12 +636,12 @@ func (app *Application) Status(session *pager.Session) (rv string) {
 		mark = ' '
 	}
 	if app.message != "" {
-		rv = fmt.Sprintf("\x1B[1m%s\x1B[22m%c\x1B[0K", app.message, mark)
+		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+"%c"+ansi.EraseLine, app.message, mark)
 		app.message = ""
 	} else if app.Name != "" {
-		rv = fmt.Sprintf("\x1B[7m%s\x1B[27m%c\x1B[0K", app.Name, mark)
+		rv = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
 	} else {
-		rv = fmt.Sprintf("\x1B[1mJegan %s-%s-%s\x1B[22m\x1B[0K",
+		rv = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
 			version, runtime.GOOS, runtime.GOARCH)
 	}
 	return
