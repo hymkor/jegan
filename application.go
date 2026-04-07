@@ -690,11 +690,6 @@ func (app *Application) Load(r io.Reader, name string) error {
 	for {
 		v, err := unjson.Unmarshal(br)
 		if err != nil {
-			var e *unjson.ErrTrailingData
-			if errors.As(err, &e) {
-				err = e.Err
-				app.Trailing = e.Trailing
-			}
 			if errors.Is(err, io.EOF) {
 				app.Store(Read(v))
 				return nil

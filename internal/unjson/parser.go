@@ -2,13 +2,12 @@ package unjson
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"unicode"
-
-	"encoding/json"
 )
 
 func read1st(br io.RuneScanner) ([]byte, rune, error) {
@@ -302,18 +301,13 @@ func readArray(br io.RuneScanner) (Array, error) {
 	}
 }
 
-type ErrTrailingData struct {
-	Err      error
-	Trailing []byte
-}
-
-func (e ErrTrailingData) Error() string { return e.Err.Error() }
-func (e ErrTrailingData) Unwrap() error { return e.Err }
-
 func readEntry(br io.RuneScanner) (*Entry, error) {
 	prefix, ch, err := read1st(br)
 	if err != nil {
-		return nil, &ErrTrailingData{Err: err, Trailing: prefix}
+		if len(prefix) <= 0 {
+			return nil, err
+		}
+		return &Entry{Value: &RawBytes{json: prefix}}, err
 	}
 	if ch == '"' {
 		s, err := readString(br)
@@ -337,13 +331,22 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 		a, err := readArray(br)
 		return &Entry{Prefix: prefix, Value: a}, err
 	}
-	token, err := readToken(br, ch)
-	if err != nil {
-		return nil, err
-	}
-	return nil, &ErrTrailingData{
-		Err:      &InvalidLiteralError{got: string(token)},
-		Trailing: append(prefix, token...),
+	var b bytes.Buffer
+	b.Write(prefix)
+	b.WriteRune(ch)
+	for {
+		ch, siz, err := br.ReadRune()
+		if err != nil && !errors.Is(err, io.EOF) {
+			rb := &RawBytes{json: b.Bytes()}
+			return &Entry{Value: rb}, err
+		}
+		if siz > 0 {
+			b.WriteRune(ch)
+		}
+		if err != nil {
+			rb := &RawBytes{json: b.Bytes()}
+			return &Entry{Value: rb}, err
+		}
 	}
 }
 
@@ -351,6 +354,9 @@ func Unmarshal(r io.RuneScanner) (*Entry, error) {
 	sc := newScanner(r)
 	v, err := readEntry(sc)
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return v, io.EOF
+		}
 		return nil, sc.WrapError(err)
 	}
 	return v, nil
