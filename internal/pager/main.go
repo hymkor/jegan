@@ -20,6 +20,7 @@ type Pager struct {
 	Height  int
 	Handler func(*Session, string) (bool, error)
 	Status  func(*Session) string
+	offset  int
 }
 
 func truncate(s string, width int) string {
@@ -48,6 +49,33 @@ func truncate(s string, width int) string {
 	return b.String()
 }
 
+func trimLeft(line string, offset int) string {
+	if offset == 0 {
+		return line
+	}
+	var buffer strings.Builder
+	escape := false
+	w := 0
+	for i, c := range line {
+		if c == '\x1B' {
+			escape = true
+		}
+		if w >= offset {
+			buffer.WriteString(line[i:])
+			break
+		}
+		if escape {
+			buffer.WriteRune(c)
+		} else {
+			w += runewidth.RuneWidth(c)
+		}
+		if ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') {
+			escape = false
+		}
+	}
+	return buffer.String()
+}
+
 func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 	i := 0
 	for i < pager.Height {
@@ -59,6 +87,7 @@ func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 			}
 			break
 		}
+		line = trimLeft(line, pager.offset)
 		if i >= len(pager.cache) || pager.cache[i] != line {
 			io.WriteString(out, truncate(line, pager.Width))
 			io.WriteString(out, ansi.EraseLine)
@@ -194,6 +223,12 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 			session.Prev()
 		case "q", keys.CtrlC, keys.CtrlG:
 			return nil
+		case "l", keys.Right, keys.CtrlF:
+			pager.offset++
+		case "h", keys.Left, keys.CtrlB:
+			if pager.offset > 0 {
+				pager.offset--
+			}
 		default:
 		}
 		rewind()
