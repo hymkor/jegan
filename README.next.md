@@ -90,8 +90,10 @@ jegan < some.json
 Key bindings
 ------------
 
-- `j`, `↓` : Move to the next item
-- `k`, `↑` : Move to the previous item
+- `j`, `↓`, `Ctrl-N` : Move to the next item
+- `k`, `↑`, `Ctrl-P` : Move to the previous item
+- `l`, `→`, `Ctrl-F` : Scroll the view to the right
+- `h`, `←`, `Ctrl-B` : Scroll the view to the left
 - `<` : Move to the first item
 - `>` : Move to the last item
 - `o` : Insert a new item below the cursor.

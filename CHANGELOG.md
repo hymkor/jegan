@@ -11,6 +11,9 @@ Changelog
 - Support JSONL with round-trip preservation (#16)
 - Treat trailing non-JSON data as a virtual element (RawBytes). Preserve and allow editing of such data (#19)
 - Support multiple input files and wildcards, and allow explicit stdin input using `-` (#18)
+- Add horizontal scrolling for long lines instead of truncating them (#22)
+  - `l`, Right Arrow, Ctrl-F: Scroll view to the right
+  - `h`, Left Arrow, Ctrl-B: Scroll view to the left
 
 v0.1.0
 ------
