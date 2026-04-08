@@ -9,12 +9,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-readline-skk"
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/go-safewrite"
@@ -55,7 +58,24 @@ func (app *Application) setCursor(c *list.Element) {
 	ref(app.cursor).cursor = true
 }
 
+var skkInitOnce sync.Once
+
+func skkInit() {
+	skkInitOnce.Do(func() {
+		env := os.Getenv("GOREADLINESKK")
+		if env != "" {
+			_, err := skk.Config{
+				MiniBuffer: skk.MiniBufferOnCurrentLine{},
+			}.SetupWithString(env)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+		}
+	})
+}
+
 func (app *Application) readLine(session *pager.Session, prompt, defaults string) (string, error) {
+	skkInit()
 	cursorPosition := 65535
 	if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
 		cursorPosition = readline.MojiCountInString(defaults) - 1
@@ -72,6 +92,12 @@ func (app *Application) readLine(session *pager.Session, prompt, defaults string
 		},
 		Cursor:  cursorPosition,
 		Default: defaults,
+		Highlight: []readline.Highlight{
+			skk.WhiteMarkerHighlight,
+			skk.BlackMarkerHighlight,
+		},
+		ResetColor:   "\x1B[0m",
+		DefaultColor: "\x1B[0m",
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
