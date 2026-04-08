@@ -115,6 +115,15 @@ type Session struct {
 	GetKey func() (string, error)
 }
 
+func (session *Session) UpdateStatus() {
+	if session.Status != nil {
+		line := session.Status(session)
+		session.TtyOut.Write([]byte{'\r'})
+		io.WriteString(session.TtyOut, Truncate(line, session.Width))
+		io.WriteString(session.TtyOut, ansi.EraseLine)
+	}
+}
+
 func (session *Session) Front() {
 	session.Window = session.List.Front()
 	session.WinPos = 0
@@ -175,41 +184,34 @@ type Displayer interface {
 	Display(width int) string
 }
 
-func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyout io.Writer) error {
-	session := &Session{
-		Pager:  pager,
-		Window: L.Front(),
-		List:   L,
-		GetKey: getkey,
-		TtyOut: ttyout,
-	}
-	io.WriteString(ttyout, ansi.CursorOff)
-	defer io.WriteString(ttyout, ansi.CursorOn+"\n")
+func (session *Session) EventLoop() error {
+	session.Window = session.List.Front()
+
+	io.WriteString(session.TtyOut, ansi.CursorOff)
+	defer io.WriteString(session.TtyOut, ansi.CursorOn+"\n")
 
 	for {
 		session.tail = session.Window
-		rewind := pager.Show(func(width int) (line string, ok bool) {
+		rewind := session.Show(func(width int) (line string, ok bool) {
 			if session.tail != nil {
 				if obj, okk := session.tail.Value.(Displayer); okk {
-					line, ok = obj.Display(pager.Width), true
+					line, ok = obj.Display(session.Width), true
 				} else {
 					line, ok = session.tail.Value.(string)
 				}
 				session.tail = session.tail.Next()
 			}
 			return
-		}, ttyout)
-		if pager.Status != nil {
-			s := pager.Status(session)
-			s = Truncate(s, pager.Width)
-			io.WriteString(ttyout, s)
-		}
-		key, err := getkey()
+		}, session.TtyOut)
+
+		session.UpdateStatus()
+
+		key, err := session.GetKey()
 		if err != nil {
 			return err
 		}
-		if pager.Handler != nil {
-			if ok, err := pager.Handler(session, key); err != nil {
+		if session.Handler != nil {
+			if ok, err := session.Handler(session, key); err != nil {
 				return err
 			} else if ok {
 				rewind()
@@ -232,12 +234,11 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		case "q", keys.CtrlC, keys.CtrlG:
 			return nil
 		case "l", keys.Right, keys.CtrlF:
-			pager.offset++
+			session.offset++
 		case "h", keys.Left, keys.CtrlB:
-			if pager.offset > 0 {
-				pager.offset--
+			if session.offset > 0 {
+				session.offset--
 			}
-		default:
 		}
 		rewind()
 	}
@@ -256,5 +257,12 @@ func (pager *Pager) EventLoop(tty ttyadapter.Tty, L *list.List, ttyout io.Writer
 	}
 	pager.Width = width
 	pager.Height = height - 1
-	return pager.eventLoop(tty.GetKey, L, ttyout)
+
+	session := &Session{
+		Pager:  pager,
+		List:   L,
+		GetKey: tty.GetKey,
+		TtyOut: ttyout,
+	}
+	return session.EventLoop()
 }
