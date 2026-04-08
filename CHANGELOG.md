@@ -14,6 +14,7 @@ Changelog
 - Add horizontal scrolling for long lines instead of truncating them (#22)
   - `l`, Right Arrow, Ctrl-F: Scroll view to the right
   - `h`, Left Arrow, Ctrl-B: Scroll view to the left
+- Add SKK-based Japanese input support using nyagosorg/go-readline-ny (#23)
 
 v0.1.0
 ------
