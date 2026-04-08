@@ -26,7 +26,7 @@ all:
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
 
 nemo:
-	$(GO) fmt "./cmd/nemo"
+	$(GO) fmt "./..."
 	$(SET) "CGO_ENABLED=0" && $(GO) build "./cmd/nemo"
 
 test:

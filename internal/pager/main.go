@@ -76,7 +76,7 @@ func trimLeft(line string, offset int) string {
 	return buffer.String()
 }
 
-func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
+func (pager *Pager) show(fetch func(int) (string, bool), out io.Writer) func() {
 	i := 0
 	for i < pager.Height {
 		line, ok := fetch(pager.Width)
@@ -184,7 +184,7 @@ type Displayer interface {
 	Display(width int) string
 }
 
-func (session *Session) EventLoop() error {
+func (session *Session) eventLoop() error {
 	session.Window = session.List.Front()
 
 	io.WriteString(session.TtyOut, ansi.CursorOff)
@@ -192,7 +192,7 @@ func (session *Session) EventLoop() error {
 
 	for {
 		session.tail = session.Window
-		rewind := session.Show(func(width int) (line string, ok bool) {
+		rewind := session.show(func(width int) (line string, ok bool) {
 			if session.tail != nil {
 				if obj, okk := session.tail.Value.(Displayer); okk {
 					line, ok = obj.Display(session.Width), true
@@ -264,5 +264,5 @@ func (pager *Pager) EventLoop(tty ttyadapter.Tty, L *list.List, ttyout io.Writer
 		GetKey: tty.GetKey,
 		TtyOut: ttyout,
 	}
-	return session.EventLoop()
+	return session.eventLoop()
 }

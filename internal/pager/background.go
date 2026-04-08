@@ -1,22 +1,25 @@
-package main
+package pager
 
 import (
+	"container/list"
+	"io"
+	"time"
+
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/jegan/internal/nonblock"
-	"github.com/hymkor/jegan/internal/pager"
 )
 
 type ttyX struct {
 	ttyadapter.Tty
-	nonBlock *nonblock.NonBlock[any]
-	work     func(any, error) bool
+	nonBlock *nonblock.NonBlock[Displayer]
+	work     func(Displayer, error) bool
 }
 
 func newTtyX(
 	tty ttyadapter.Tty,
-	dataGetter func() (any, error),
-	work func(any, error) bool) *ttyX {
+	dataGetter func() (Displayer, error),
+	work func(Displayer, error) bool) *ttyX {
 
 	return &ttyX{
 		Tty:      tty,
@@ -34,10 +37,18 @@ func (t *ttyX) Close() error {
 	return nil
 }
 
-func eventLoop(session *pager.Session,
+func (pager *Pager) EventLoopBackground(
 	tty ttyadapter.Tty,
-	getter func() (any, error),
-	store func(any, error) bool) error {
+	getter func() (Displayer, error),
+	store func(Displayer, error) bool,
+	L *list.List,
+	ttyout io.Writer) error {
+
+	session := &Session{
+		List:   L,
+		TtyOut: ttyout,
+		Pager:  pager,
+	}
 
 	if err := tty.Open(nil); err != nil {
 		return err
@@ -51,6 +62,17 @@ func eventLoop(session *pager.Session,
 	session.Pager.Width = width
 	session.Pager.Height = height - 1
 
+	const interval = 4
+	displayUpdateTime := time.Now().Add(time.Second / interval)
+	newStore := func(obj Displayer, err error) (cont bool) {
+		cont = store(obj, err)
+		if !cont || time.Now().After(displayUpdateTime) {
+			session.UpdateStatus()
+			displayUpdateTime = time.Now().Add(time.Second / interval)
+		}
+		return
+	}
+
 	i := 0
 	for {
 		data, err := getter()
@@ -60,11 +82,11 @@ func eventLoop(session *pager.Session,
 		}
 		i++
 		if i >= session.Pager.Height {
-			newTtyX1 := newTtyX(tty, getter, store)
+			newTtyX1 := newTtyX(tty, getter, newStore)
 			session.GetKey = newTtyX1.GetKey
 			defer newTtyX1.Close()
 			break
 		}
 	}
-	return session.EventLoop()
+	return session.eventLoop()
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
@@ -34,8 +33,8 @@ func (t textElement) Display(w int) string {
 func main1(source io.Reader, title string) error {
 	lines := list.New()
 
-	pager1 := &pager.Pager{
-		Status: func(s *pager.Session) string {
+	pg := &pager.Pager{
+		Status: func(session *pager.Session) string {
 			var b strings.Builder
 			if title != "" {
 				b.WriteString(ansi.Reverse)
@@ -43,31 +42,19 @@ func main1(source io.Reader, title string) error {
 				b.WriteString(ansi.Inverse)
 			}
 			L := lines.Len()
-			b.Write([]byte{' '})
-			start := s.WinPos
-			end := s.WinPos + s.Pager.Height - 1
+			start := session.WinPos
+			end := session.WinPos + session.Pager.Height - 1
 			if end > L {
 				end = L
 			}
-			fmt.Fprintf(&b, "%d-%d", start+1, end+1)
-			b.Write([]byte{'/'})
-			fmt.Fprintf(&b, "%d", lines.Len())
-			b.WriteString(ansi.EraseLine)
+			fmt.Fprintf(&b, " %d-%d / %d", start+1, end+1, L)
 			return b.String()
 		},
 	}
 
-	session := &pager.Session{
-		Pager:  pager1,
-		List:   lines,
-		TtyOut: colorable.NewColorableStdout(),
-	}
-
 	sc := bufio.NewScanner(source)
-	const interval = 4
-	displayUpdateTime := time.Now().Add(time.Second / interval)
 
-	dataGetter := func() (any, error) {
+	getter := func() (pager.Displayer, error) {
 		if sc.Scan() {
 			return textElement(sc.Text()), nil
 		}
@@ -77,20 +64,22 @@ func main1(source io.Reader, title string) error {
 		return nil, io.EOF
 	}
 
-	dataStore := func(obj any, err error) bool {
+	store := func(obj pager.Displayer, err error) bool {
 		if err != nil {
 			return false
 		}
 		if obj != nil {
 			lines.PushBack(obj)
 		}
-		if time.Now().After(displayUpdateTime) {
-			session.UpdateStatus()
-			displayUpdateTime = time.Now().Add(time.Second / interval)
-		}
 		return true
 	}
-	return eventLoop(session, &tty8pe.Tty{}, dataGetter, dataStore)
+
+	return pg.EventLoopBackground(
+		&tty8pe.Tty{},
+		getter,
+		store,
+		lines,
+		colorable.NewColorableStdout())
 }
 
 func mains(args []string) error {
