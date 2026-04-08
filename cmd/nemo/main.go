@@ -67,20 +67,33 @@ func main1(source io.Reader, title string) error {
 	var tty ttyadapter.Tty
 	lines := list.New()
 
+	var lastSession *pager.Session
 	pager1 := &pager.Pager{
 		Status: func(s *pager.Session) string {
+			var b strings.Builder
 			if title != "" {
-				pos := 0
-				if s != nil {
-					pos = s.WinPos
-				}
-				return fmt.Sprintf(
-					ansi.Reverse+"%s"+ansi.Inverse+" %d/%d ",
-					title,
-					pos,
-					lines.Len())
+				b.WriteString(ansi.Reverse)
+				b.WriteString(title)
+				b.WriteString(ansi.Inverse)
 			}
-			return ""
+			L := lines.Len()
+			b.Write([]byte{' '})
+			if s == nil {
+				s = lastSession
+			}
+			if s != nil {
+				lastSession = s
+				start := s.WinPos
+				end := s.WinPos + s.Pager.Height - 1
+				if end > L {
+					end = L
+				}
+				fmt.Fprintf(&b, "%d-%d", start+1, end+1)
+				b.Write([]byte{'/'})
+			}
+			fmt.Fprintf(&b, "%d", lines.Len())
+			b.WriteString(ansi.EraseLine)
+			return b.String()
 		},
 	}
 	ttyout := colorable.NewColorableStdout()
@@ -103,7 +116,10 @@ func main1(source io.Reader, title string) error {
 					if sc.Scan() {
 						return textElement(sc.Text()), nil
 					}
-					return nil, sc.Err()
+					if err := sc.Err(); err != nil {
+						return nil, err
+					}
+					return nil, io.EOF
 				},
 				func(obj any, err error) bool {
 					if err != nil {
