@@ -118,6 +118,33 @@ jegan < some.json
 - `w` : ファイルへ保存
 - `q` : 終了
 
+環境変数
+--------
+
+### RUNEWIDTH\_EASTASIAN
+
+Unicode で「曖昧幅」とされる文字の表示桁数を明示的に指定します。
+
+- 2桁幅にする場合：`set RUNEWIDTH_EASTASIAN=1`
+- 1桁幅にする場合：`set RUNEWIDTH_EASTASIAN=0`（`1` 以外の任意の1文字以上で可）
+
+### GOREADLINESKK
+
+環境変数 `GOREADLINESKK` に辞書ファイルを指定すると、[go-readline-skk] を利用した内蔵 SKK かな漢字変換[^SKK]が有効になります。
+
+- **Windows**
+  - `set GOREADLINESKK=SYSTEMJISYOPATH1;SYSTEMJISYOPATH2...;user=USERJISYOPATH`
+  - 例:
+    `set GOREADLINESKK=~/Share/Etc/SKK-JISYO.L;~/Share/Etc/SKK-JISYO.emoji;user=~/.go-skk-jisyo`
+- **Linux**
+  - `export GOREADLINESKK=SYSTEMJISYOPATH1:SYSTEMJISYOPATH2...:user=USERJISYOPATH`
+
+（注）`~` は Windows の `cmd.exe` 上でもアプリ側で `%USERPROFILE%` に自動展開されます。
+
+[^SKK]: Simple Kana to Kanji conversion program. One of the Japanese input method editors.
+
+[go-readline-skk]: https://github.com/nyaosorg/go-readline-skk
+
 Changelog
 ---------
 
