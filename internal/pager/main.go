@@ -23,7 +23,7 @@ type Pager struct {
 	offset  int
 }
 
-func truncate(s string, width int) string {
+func Truncate(s string, width int) string {
 	w := 0
 	ansi := false
 	overflow := false
@@ -89,7 +89,7 @@ func (pager *Pager) Show(fetch func(int) (string, bool), out io.Writer) func() {
 		}
 		line = trimLeft(line, pager.offset)
 		if i >= len(pager.cache) || pager.cache[i] != line {
-			io.WriteString(out, truncate(line, pager.Width))
+			io.WriteString(out, Truncate(line, pager.Width))
 			io.WriteString(out, ansi.EraseLine)
 		}
 		out.Write([]byte{'\n'})
@@ -193,7 +193,7 @@ func (pager *Pager) eventLoop(getkey func() (string, error), L *list.List, ttyou
 		}, ttyout)
 		if pager.Status != nil {
 			s := pager.Status(session)
-			s = truncate(s, pager.Width)
+			s = Truncate(s, pager.Width)
 			io.WriteString(ttyout, s)
 		}
 		key, err := getkey()
