@@ -68,11 +68,16 @@ func main1(source io.Reader, title string) error {
 	lines := list.New()
 
 	pager1 := &pager.Pager{
-		Status: func(_ *pager.Session) string {
+		Status: func(s *pager.Session) string {
 			if title != "" {
+				pos := 0
+				if s != nil {
+					pos = s.WinPos
+				}
 				return fmt.Sprintf(
-					ansi.Reverse+"%s"+ansi.Inverse+" %d ",
+					ansi.Reverse+"%s"+ansi.Inverse+" %d/%d ",
 					title,
+					pos,
 					lines.Len())
 			}
 			return ""

@@ -109,6 +109,7 @@ type Session struct {
 	*Pager
 	List   *list.List
 	Window *list.Element
+	WinPos int
 	tail   *list.Element
 	TtyOut io.Writer
 	GetKey func() (string, error)
@@ -116,6 +117,7 @@ type Session struct {
 
 func (session *Session) Front() {
 	session.Window = session.List.Front()
+	session.WinPos = 0
 }
 
 func (session *Session) rollup() (i int) {
@@ -125,6 +127,7 @@ func (session *Session) rollup() (i int) {
 			return
 		}
 		session.Window = w
+		session.WinPos--
 		i++
 	}
 	return
@@ -132,12 +135,14 @@ func (session *Session) rollup() (i int) {
 
 func (session *Session) Back() int {
 	session.Window = session.List.Back()
+	session.WinPos = session.List.Len() - 1
 	return session.rollup()
 }
 
 func (session *Session) NextPage() {
 	for i := 0; i < session.Height && session.tail != nil; i++ {
 		session.Window = session.Window.Next()
+		session.WinPos++
 		session.tail = session.tail.Next()
 	}
 }
@@ -145,6 +150,7 @@ func (session *Session) NextPage() {
 func (session *Session) PrevPage() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
+		session.WinPos--
 		session.rollup()
 	}
 }
@@ -153,6 +159,7 @@ func (session *Session) Next() {
 	if session.tail != nil {
 		if w := session.Window.Next(); w != nil {
 			session.Window = w
+			session.WinPos++
 		}
 	}
 }
@@ -160,6 +167,7 @@ func (session *Session) Next() {
 func (session *Session) Prev() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
+		session.WinPos--
 	}
 }
 
