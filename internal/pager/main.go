@@ -184,7 +184,7 @@ type Displayer interface {
 	Display(width int) string
 }
 
-func (session *Session) eventLoop() error {
+func (session *Session) EventLoop() error {
 	session.Window = session.List.Front()
 
 	io.WriteString(session.TtyOut, ansi.CursorOff)
@@ -264,5 +264,5 @@ func (pager *Pager) EventLoop(tty ttyadapter.Tty, L *list.List, ttyout io.Writer
 		GetKey: tty.GetKey,
 		TtyOut: ttyout,
 	}
-	return session.eventLoop()
+	return session.EventLoop()
 }
