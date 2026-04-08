@@ -1,4 +1,4 @@
-package pager
+package asyncpager
 
 import (
 	"container/list"
@@ -8,7 +8,12 @@ import (
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/jegan/internal/nonblock"
+	"github.com/hymkor/jegan/internal/pager"
 )
+
+type Displayer = pager.Displayer
+
+type Session = pager.Session
 
 type ttyX struct {
 	ttyadapter.Tty
@@ -37,7 +42,9 @@ func (t *ttyX) Close() error {
 	return nil
 }
 
-func (pager *Pager) EventLoopBackground(
+type Pager pager.Pager
+
+func (pg *Pager) EventLoop(
 	tty ttyadapter.Tty,
 	getter func() (Displayer, error),
 	store func(Displayer, error) bool,
@@ -47,7 +54,7 @@ func (pager *Pager) EventLoopBackground(
 	session := &Session{
 		List:   L,
 		TtyOut: ttyout,
-		Pager:  pager,
+		Pager:  (*pager.Pager)(pg),
 	}
 
 	if err := tty.Open(nil); err != nil {
@@ -88,5 +95,5 @@ func (pager *Pager) EventLoopBackground(
 			break
 		}
 	}
-	return session.eventLoop()
+	return session.EventLoop()
 }

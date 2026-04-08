@@ -14,7 +14,7 @@ import (
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/pager"
+	"github.com/hymkor/jegan/internal/asyncpager"
 )
 
 type textElement string
@@ -33,8 +33,8 @@ func (t textElement) Display(w int) string {
 func main1(source io.Reader, title string) error {
 	lines := list.New()
 
-	pg := &pager.Pager{
-		Status: func(session *pager.Session) string {
+	pg := &asyncpager.Pager{
+		Status: func(session *asyncpager.Session) string {
 			var b strings.Builder
 			if title != "" {
 				b.WriteString(ansi.Reverse)
@@ -54,7 +54,7 @@ func main1(source io.Reader, title string) error {
 
 	sc := bufio.NewScanner(source)
 
-	getter := func() (pager.Displayer, error) {
+	getter := func() (asyncpager.Displayer, error) {
 		if sc.Scan() {
 			return textElement(sc.Text()), nil
 		}
@@ -64,7 +64,7 @@ func main1(source io.Reader, title string) error {
 		return nil, io.EOF
 	}
 
-	store := func(obj pager.Displayer, err error) bool {
+	store := func(obj asyncpager.Displayer, err error) bool {
 		if err != nil {
 			return false
 		}
@@ -74,7 +74,7 @@ func main1(source io.Reader, title string) error {
 		return true
 	}
 
-	return pg.EventLoopBackground(
+	return pg.EventLoop(
 		&tty8pe.Tty{},
 		getter,
 		store,
