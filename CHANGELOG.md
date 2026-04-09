@@ -15,6 +15,10 @@ Changelog
   - `l`, Right Arrow, Ctrl-F: Scroll view to the right
   - `h`, Left Arrow, Ctrl-B: Scroll view to the left
 - Add SKK-based Japanese input support using nyagosorg/go-readline-ny (#23)
+- Improve JSON key input UX (#29)  
+  Quotes are now rendered as virtual characters when editing object keys.
+  This makes it clear that users do not need to type them explicitly,
+  preventing redundant input such as "\"foo\"".
 
 v0.1.0
 ------
