@@ -509,6 +509,32 @@ func (app *Application) removeCursor(session *pager.Session) {
 	}
 }
 
+func (app *Application) removeCursorAndNext() {
+	prev := app.cursor.Prev()
+	next := app.cursor.Next()
+	if next == nil {
+		return
+	}
+	newCurrent := next.Next()
+	if newCurrent == nil {
+		app.message = "Internal error: no valid cursor position after deletion"
+		return
+	}
+	comma := ref(next).comma
+
+	app.list.Remove(app.cursor)
+	app.list.Remove(next)
+
+	app.cursor = newCurrent
+	ref(newCurrent).cursor = true
+	if prev != nil {
+		m, ok := ref(prev).value.(Mark)
+		if !ok || (m != Mark('{') && m != Mark('[')) {
+			ref(prev).comma = comma
+		}
+	}
+}
+
 func (app *Application) keyFuncRemove(session *pager.Session) {
 	element := ref(app.cursor)
 	mark, ok := element.value.(Mark)
@@ -520,21 +546,20 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 		return
 	}
 	if element.nest == 0 {
+		app.message = "Cannot delete top-level object or array"
 		return
 	}
 	next := app.cursor.Next()
 	if next == nil {
+		app.message = "Unexpected state: missing element after '{' or '['"
 		return
 	}
 	n := ref(next)
 	if n.value != Mark(']') && n.value != Mark('}') {
+		app.message = "Cannot delete non-empty object or array"
 		return
 	}
-	comma := n.comma
-	app.list.Remove(next)
-	app.removeCursor(session)
-	ref(app.cursor).comma = comma
-	app.dirty = true
+	app.removeCursorAndNext()
 }
 
 func (app *Application) keyFuncSave(session *pager.Session) bool {
