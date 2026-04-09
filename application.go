@@ -75,13 +75,44 @@ func skkInit() {
 }
 
 func (app *Application) readLine(session *pager.Session, prompt, defaults string) (string, error) {
-	skkInit()
-	cursorPosition := 65535
-	if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
-		cursorPosition = readline.MojiCountInString(defaults) - 1
-	} else if len(defaults) > 5 && strings.HasSuffix(defaults, ".json") {
-		cursorPosition = readline.MojiCountInString(defaults) - 5
+	nop := func(*readline.Editor) {}
+	return app.readLineOpt(session, prompt, defaults, nop)
+}
+
+func (app *Application) readLinePath(session *pager.Session, prompt, defaults string) (string, error) {
+	opt := func(editor *readline.Editor) {
+		if len(defaults) > 5 && strings.HasSuffix(defaults, ".json") {
+			editor.Cursor = readline.MojiCountInString(defaults) - 5
+		}
 	}
+	return app.readLineOpt(session, prompt, defaults, opt)
+}
+
+func (app *Application) readLineElement(session *pager.Session, prompt, defaults string) (string, error) {
+	opt := func(editor *readline.Editor) {
+		if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
+			editor.Cursor = readline.MojiCountInString(defaults) - 1
+		}
+	}
+	return app.readLineOpt(session, prompt, defaults, opt)
+}
+
+func (app *Application) readLineKey(session *pager.Session) (string, error) {
+	opt := func(e *readline.Editor) {
+		e.OnAfterRender = func(B *readline.Buffer, availWidth int) {
+			if availWidth >= 1 {
+				B.Out.Write([]byte{'"'})
+			}
+		}
+		e.PromptWriter = func(w io.Writer) (int, error) {
+			return io.WriteString(w, "\rKey: \""+ansi.EraseLine)
+		}
+	}
+	return app.readLineOpt(session, "", "", opt)
+}
+
+func (app *Application) readLineOpt(session *pager.Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
+	skkInit()
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
 		PromptWriter: func(w io.Writer) (int, error) {
@@ -90,7 +121,7 @@ func (app *Application) readLine(session *pager.Session, prompt, defaults string
 		LineFeedWriter: func(readline.Result, io.Writer) (int, error) {
 			return 0, nil
 		},
-		Cursor:  cursorPosition,
+		Cursor:  65535,
 		Default: defaults,
 		Highlight: []readline.Highlight{
 			skk.WhiteMarkerHighlight,
@@ -101,6 +132,7 @@ func (app *Application) readLine(session *pager.Session, prompt, defaults string
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
+	opt(editor)
 	result, err := editor.ReadLine(context.Background())
 	io.WriteString(session.TtyOut, ansi.CursorOff)
 	if err == readline.CtrlC {
@@ -171,7 +203,7 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) []any 
 		}
 		defaults = string(b)
 	}
-	rawText, err := app.readLine(session, "New value:", defaults)
+	rawText, err := app.readLineElement(session, "New value:", defaults)
 	if err != nil {
 		app.message = err.Error()
 		return nil
@@ -380,7 +412,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		return
 	}
 	if element := ref(app.cursor); element.value == Mark('{') {
-		key, err := app.readLine(session, "Key: ", "")
+		key, err := app.readLineKey(session)
 		if err != nil {
 			return
 		}
@@ -426,7 +458,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		return
 	}
 	if isHashElement(app.cursor) {
-		key, err := app.readLine(session, "Key: ", "")
+		key, err := app.readLineKey(session)
 		if err != nil {
 			return
 		}
@@ -563,7 +595,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 }
 
 func (app *Application) keyFuncSave(session *pager.Session) bool {
-	fname, err := app.readLine(session, "Write to:", app.Name)
+	fname, err := app.readLinePath(session, "Write to:", app.Name)
 	if err != nil {
 		app.message = err.Error()
 		return false
