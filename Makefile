@@ -21,13 +21,15 @@ VERSION:=$(shell git describe --tags 2>$(NUL) || echo v0.0.0)
 GOOPT:=-ldflags "-s -w -X main.version=$(VERSION)"
 EXE:=$(shell $(GO) env GOEXE)
 
-all:
+build:
 	$(GO) fmt ./...
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
 
-nemo:
-	$(GO) fmt "./..."
-	$(SET) "CGO_ENABLED=0" && $(GO) build "./cmd/nemo"
+all:
+	$(GO) fmt ./...
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/testjson"
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/nemo"
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
 
 test:
 	$(GO) fmt ./...
