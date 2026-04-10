@@ -2,28 +2,46 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+### Data Integrity
+
 - Preserve original JSON formatting as much as possible when saving (#11, #12):
   - whitespace around tokens
   - indentation and line endings
   - object key order
   - literal representations (e.g. escape sequences)
+  - trailing non-JSON data is preserved as a virtual element (RawBytes) (#19)
+  - separators between top-level elements in JSONL (#16)
+
 - Highlight modified values (#14)
-- Support JSONL with round-trip preservation (#16)
-- Treat trailing non-JSON data as a virtual element (RawBytes). Preserve and allow editing of such data (#19)
-- Support multiple input files and wildcards, and allow explicit stdin input using `-` (#18)
-- Add horizontal scrolling for long lines instead of truncating them (#22)
-  - `l`, Right Arrow, Ctrl-F: Scroll view to the right
-  - `h`, Left Arrow, Ctrl-B: Scroll view to the left
+
+### Usability Improvements
+
+- Add horizontal scrolling for long lines (#22):
+  - `l`, Right Arrow, Ctrl-F: scroll right
+  - `h`, Left Arrow, Ctrl-B: scroll left
+
+- Normalize save/quit prompt behavior:
+  - Treat non-Yes/No input as cancel (#32)
+
+### Readline Improvements
+
 - Add SKK-based Japanese input support using nyagosorg/go-readline-ny (#23)
-- Improve JSON key input UX (#29)  
-  Quotes are now rendered as virtual characters when editing object keys.
-  This makes it clear that users do not need to type them explicitly,
-  preventing redundant input such as "\"foo\"".
-- Support standard I/O redirection (#31):
-  - UI is rendered to stderr when stdin is redirected
-  - Specifying `-` or an empty filename outputs data to stdout
+
+- Improve JSON key input UX (#29):
+  Quotes are now rendered automatically when editing object keys,
+  so users do not need to type them explicitly.
+
+### CLI and I/O Improvements
+
+- Support multiple input files and wildcards, and allow explicit stdin input using `-` (#18)
+
+- Support I/O redirection (#31):
+  - Render UI to stderr when stdin is redirected
+  - Output to stdout when `-` or an empty filename is specified
+
+### Bug Fixes
+
 - Fix modified mark (`*`) being appended to unrelated messages (#32)
-- Normalize save/quit prompt behavior: Treat non-Yes/No input as cancel (#32)
 
 v0.1.0
 ------
