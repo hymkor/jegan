@@ -19,6 +19,9 @@ Changelog
   Quotes are now rendered as virtual characters when editing object keys.
   This makes it clear that users do not need to type them explicitly,
   preventing redundant input such as "\"foo\"".
+- Support standard I/O redirection (#31):
+  - UI is rendered to stderr when stdin is redirected
+  - Specifying `-` or an empty filename outputs data to stdout
 
 v0.1.0
 ------
