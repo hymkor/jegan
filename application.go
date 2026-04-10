@@ -667,13 +667,9 @@ func (app *Application) writeFile(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) keyFuncQuit(session *pager.Session) bool {
-	const (
-		continueApplication = true
-		fallbackToPagerQuit = false
-	)
+func (app *Application) keyFuncQuit(session *pager.Session) pager.EventResult {
 	if !app.dirty {
-		return fallbackToPagerQuit
+		return pager.QuitApp
 	}
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
@@ -681,15 +677,15 @@ func (app *Application) keyFuncQuit(session *pager.Session) bool {
 	yesSave, err := askYesNo(session, "Quit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]")
 	if err != nil {
 		app.message = err.Error() // err includes cancel
-		return continueApplication
+		return pager.Handled
 	}
 	if yesSave {
 		if err := app.writeFile(session); err != nil {
 			app.message = err.Error()
-			return continueApplication
+			return pager.Handled
 		}
 	}
-	return fallbackToPagerQuit
+	return pager.QuitApp
 }
 
 func (app *Application) nextLine(session *pager.Session) {
@@ -705,10 +701,10 @@ func (app *Application) nextLine(session *pager.Session) {
 	}
 }
 
-func (app *Application) handle(session *pager.Session, key string) (bool, error) {
+func (app *Application) handle(session *pager.Session, key string) (pager.EventResult, error) {
 	switch key {
 	default:
-		return false, nil
+		return pager.PassToPager, nil
 	case "j", keys.Down, keys.CtrlN:
 		app.nextLine(session)
 	case "k", keys.Up, keys.CtrlP:
@@ -744,7 +740,7 @@ func (app *Application) handle(session *pager.Session, key string) (bool, error)
 	case "q":
 		return app.keyFuncQuit(session), nil
 	}
-	return true, nil
+	return pager.Handled, nil
 }
 
 func (app *Application) status(session *pager.Session) (rv string) {

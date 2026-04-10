@@ -14,11 +14,19 @@ import (
 	"github.com/hymkor/jegan/internal/ansi"
 )
 
+type EventResult int
+
+const (
+	Handled EventResult = iota
+	PassToPager
+	QuitApp
+)
+
 type Pager struct {
 	cache   []string
 	Width   int
 	Height  int
-	Handler func(*Session, string) (bool, error)
+	Handler func(*Session, string) (EventResult, error)
 	Status  func(*Session) string
 	offset  int
 }
@@ -211,11 +219,13 @@ func (session *Session) EventLoop() error {
 			return err
 		}
 		if session.Handler != nil {
-			if ok, err := session.Handler(session, key); err != nil {
+			if result, err := session.Handler(session, key); err != nil {
 				return err
-			} else if ok {
+			} else if result == Handled {
 				rewind()
 				continue
+			} else if result == QuitApp {
+				return nil
 			}
 		}
 		switch key {
