@@ -22,6 +22,8 @@ Changelog
 - Support standard I/O redirection (#31):
   - UI is rendered to stderr when stdin is redirected
   - Specifying `-` or an empty filename outputs data to stdout
+- Fix modified mark (`*`) being appended to unrelated messages (#32)
+- Normalize save/quit prompt behavior: Treat non-Yes/No input as cancel (#32)
 
 v0.1.0
 ------
