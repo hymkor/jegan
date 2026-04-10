@@ -195,7 +195,7 @@ func (session *Session) EventLoop() error {
 		rewind := session.show(func(width int) (line string, ok bool) {
 			if session.tail != nil {
 				if obj, okk := session.tail.Value.(Displayer); okk {
-					line, ok = obj.Display(session.Width), true
+					line, ok = obj.Display(session.offset+session.Width), true
 				} else {
 					line, ok = session.tail.Value.(string)
 				}
