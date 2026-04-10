@@ -12,18 +12,23 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-- Edit JSON/JSONL in a terminal-based interactive UI
-- Preserve original formatting:
-  - whitespace around tokens
-  - indentation and line endings
-  - object key order
-  - literal representations (e.g. escape sequences)
-  - trailing non-JSON data as-is
-- Minimize unnecessary diffs when saving
-- Highlight modified values
-- Read JSON from files or standard input
-- vi-like navigation (`j`/`k`) with intuitive editing commands (`r`, `o`, `d`)
-- Emacs-like readline support for value editing
+- **Edit JSON/JSONL in a terminal-based interactive UI**
+
+- **Minimal diffs on save**  
+  Unmodified parts of the document retain their original representation,
+  including whitespace, indentation, key order, literal formatting
+  (e.g. escape sequences), and even trailing non-JSON data.  
+  Only the actual changes you make appear in diffs, making it safe to edit real-world data.
+
+- **vi-like navigation with Emacs-style editing**  
+  Navigate with `j/k` and scroll horizontally with `h/l`.  
+  Use `o` to add items, and `r/R` to enter edit mode, where Emacs-style key bindings are available.
+
+- **Works with files and standard input**  
+  Open JSON/JSONL files directly or process piped input seamlessly.
+
+- **Visual feedback for changes**  
+  Modified values are highlighted in bold for easy identification.
 
 Install
 -------
