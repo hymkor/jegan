@@ -594,81 +594,102 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 	app.removeCursorAndNext()
 }
 
-func (app *Application) keyFuncSave(session *pager.Session) bool {
-	fname, err := app.readLinePath(session, "Write to:", app.Name)
+func askYesNo(session *pager.Session, message string) (bool, error) {
+	io.WriteString(session.TtyOut, ansi.CursorOn)
+	defer io.WriteString(session.TtyOut, ansi.CursorOff)
+
+	session.TtyOut.Write([]byte{'\r'})
+	io.WriteString(session.TtyOut, message)
+	io.WriteString(session.TtyOut, ansi.EraseLine)
+
+	ans, err := session.GetKey()
+	if err != nil {
+		return false, err
+	}
+	fmt.Fprintf(session.TtyOut, " %q", ans)
+	switch ans {
+	case "y", "Y":
+		return true, nil
+	case "n", "N":
+		return false, nil
+	default:
+		return false, errors.New("canceled")
+	}
+}
+
+func (app *Application) keyFuncSave(session *pager.Session) {
+	err := app.writeFile(session)
 	if err != nil {
 		app.message = err.Error()
-		return false
+	}
+}
+
+func (app *Application) writeFile(session *pager.Session) error {
+	fname, err := app.readLinePath(session, "Write to:", app.Name)
+	if err != nil {
+		return err
 	}
 	if fname == "" || fname == "-" {
 		Dump(app.list, os.Stdout)
 		os.Stdout.Write(app.Trailing)
 		app.dirty = false
-		return true
+		return nil
 	}
+	var callBackErr error
 	fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
-		io.WriteString(session.TtyOut, ansi.CursorOn)
-		defer io.WriteString(session.TtyOut, ansi.CursorOff)
-		for {
-			if info.ReadOnly() {
-				fmt.Fprintf(session.TtyOut, "\rOverwrite READONLY file %q ? ", info.Name)
-			} else {
-				fmt.Fprintf(session.TtyOut, "\rOverwrite file %q ? ", info.Name)
-			}
-			ans, err := session.GetKey()
-			if err != nil {
-				return false
-			}
-			if strings.EqualFold(ans, "y") {
-				return true
-			}
-			if strings.EqualFold(ans, "n") {
-				return false
-			}
+		var format string
+		if info.ReadOnly() {
+			format = "Overwrite READONLY file %q ?"
+		} else {
+			format = "Overwrite file %q ?"
 		}
+		ans, err := askYesNo(session, fmt.Sprintf(format, info.Name))
+		if err != nil {
+			callBackErr = err
+			return false
+		}
+		return ans
 	})
 	if err != nil {
-		app.message = err.Error()
-		return false
+		return err
+	}
+	if callBackErr != nil {
+		return callBackErr
 	}
 	Dump(app.list, fd)
 	fd.Write(app.Trailing)
 	if err := fd.Close(); err != nil {
-		app.message = err.Error()
-		return false
+		return err
 	}
 	perm.Track(fd)
 	app.Name = fname
 	app.dirty = false
-	return true
+	return nil
 }
 
 func (app *Application) keyFuncQuit(session *pager.Session) bool {
+	const (
+		continueApplication = true
+		fallbackToPagerQuit = false
+	)
 	if !app.dirty {
-		return false // fallback to pager's quit
+		return fallbackToPagerQuit
 	}
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
-	io.WriteString(session.TtyOut, "\rQuit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]"+ansi.EraseLine)
-	key, err := session.GetKey()
+	yesSave, err := askYesNo(session, "Quit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]")
 	if err != nil {
-		app.message = err.Error()
-		return true
+		app.message = err.Error() // err includes cancel
+		return continueApplication
 	}
-	if key == "y" || key == "Y" {
-		// save and quit
-		if !app.keyFuncSave(session) {
-			return true
+	if yesSave {
+		if err := app.writeFile(session); err != nil {
+			app.message = err.Error()
+			return continueApplication
 		}
-		return false
-	} else if key == "n" || key == "N" {
-		// does not save, but quit
-		return false // fallback to pager's quit
-	} else {
-		// cancel
-		return true
 	}
+	return fallbackToPagerQuit
 }
 
 func (app *Application) nextLine(session *pager.Session) {
@@ -727,16 +748,16 @@ func (app *Application) handle(session *pager.Session, key string) (bool, error)
 }
 
 func (app *Application) status(session *pager.Session) (rv string) {
-	var mark rune
-	if app.dirty {
-		mark = '*'
-	} else {
-		mark = ' '
-	}
 	if app.message != "" {
-		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+"%c"+ansi.EraseLine, app.message, mark)
+		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
 	} else if app.Name != "" {
+		var mark rune
+		if app.dirty {
+			mark = '*'
+		} else {
+			mark = ' '
+		}
 		rv = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
 	} else {
 		rv = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
