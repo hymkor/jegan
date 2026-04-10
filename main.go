@@ -23,14 +23,18 @@ func mains(args []string) error {
 	app := &Application{Name: strings.Join(args, "+")}
 	defer app.Close()
 
+	getTtyOut := colorable.NewColorableStdout
+
 	if len(args) <= 0 {
 		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
 			app.Load(os.Stdin, "")
 		}
+		getTtyOut = colorable.NewColorableStderr
 	} else {
 		for _, arg := range args {
 			if arg == "-" {
 				app.Load(os.Stdin, "")
+				getTtyOut = colorable.NewColorableStderr
 				continue
 			}
 			fnames, err := filepath.Glob(arg)
@@ -55,7 +59,7 @@ func mains(args []string) error {
 	if disable != nil {
 		defer disable()
 	}
-	ttyout := colorable.NewColorableStdout()
+	ttyout := getTtyOut()
 	return app.EventLoop(&tty8pe.Tty{}, ttyout)
 }
 
