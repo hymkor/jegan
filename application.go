@@ -727,16 +727,16 @@ func (app *Application) handle(session *pager.Session, key string) (bool, error)
 }
 
 func (app *Application) status(session *pager.Session) (rv string) {
-	var mark rune
-	if app.dirty {
-		mark = '*'
-	} else {
-		mark = ' '
-	}
 	if app.message != "" {
-		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+"%c"+ansi.EraseLine, app.message, mark)
+		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
 	} else if app.Name != "" {
+		var mark rune
+		if app.dirty {
+			mark = '*'
+		} else {
+			mark = ' '
+		}
 		rv = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
 	} else {
 		rv = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
