@@ -600,6 +600,12 @@ func (app *Application) keyFuncSave(session *pager.Session) bool {
 		app.message = err.Error()
 		return false
 	}
+	if fname == "" || fname == "-" {
+		Dump(app.list, os.Stdout)
+		os.Stdout.Write(app.Trailing)
+		app.dirty = false
+		return true
+	}
 	fd, err := safewrite.Open(fname, func(info *safewrite.Info) bool {
 		io.WriteString(session.TtyOut, ansi.CursorOn)
 		defer io.WriteString(session.TtyOut, ansi.CursorOff)
