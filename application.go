@@ -256,17 +256,20 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 			return nil
 		case "s":
 			text, err := app.readLineString(session, "New string:", fmt.Sprint(defaultv))
-			if err == nil {
-				return []any{text}
+			if err != nil {
+				session.TtyOut.Write([]byte{'\a'})
+				return nil
 			}
-			session.TtyOut.Write([]byte{'\a'})
+			return []any{text}
 		case "n":
 			text, err := app.readLine(session, "New number:", fmt.Sprint(defaultv))
+			if err != nil {
+				session.TtyOut.Write([]byte{'\a'})
+				return nil
+			}
+			newValue, err := strconv.ParseFloat(text, 64)
 			if err == nil {
-				newValue, err := strconv.ParseFloat(text, 64)
-				if err == nil {
-					return []any{newValue}
-				}
+				return []any{newValue}
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "u":
