@@ -132,6 +132,7 @@ func (app *Application) readLineOpt(session *pager.Session, prompt, defaults str
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
+	editor.BindKey(keys.CtrlL, readline.CmdRepaintLine)
 	opt(editor)
 	result, err := editor.ReadLine(context.Background())
 	io.WriteString(session.TtyOut, ansi.CursorOff)
