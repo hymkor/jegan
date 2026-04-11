@@ -97,7 +97,7 @@ func (app *Application) readLineElement(session *pager.Session, prompt, defaults
 	return app.readLineOpt(session, prompt, defaults, opt)
 }
 
-func (app *Application) readLineKey(session *pager.Session) (string, error) {
+func (app *Application) readLineString(session *pager.Session, prompt, defaults string) (string, error) {
 	opt := func(e *readline.Editor) {
 		e.OnAfterRender = func(B *readline.Buffer, availWidth int) {
 			if availWidth >= 1 {
@@ -105,10 +105,10 @@ func (app *Application) readLineKey(session *pager.Session) (string, error) {
 			}
 		}
 		e.PromptWriter = func(w io.Writer) (int, error) {
-			return io.WriteString(w, "\rKey: \""+ansi.EraseLine)
+			return fmt.Fprintf(w, "\r%s \"%s", prompt, ansi.EraseLine)
 		}
 	}
-	return app.readLineOpt(session, "", "", opt)
+	return app.readLineOpt(session, "", defaults, opt)
 }
 
 func (app *Application) readLineOpt(session *pager.Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
@@ -255,7 +255,7 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 			app.message = "Canceled"
 			return nil
 		case "s":
-			text, err := app.readLine(session, "New string:", fmt.Sprint(defaultv))
+			text, err := app.readLineString(session, "New string:", fmt.Sprint(defaultv))
 			if err == nil {
 				return []any{text}
 			}
@@ -412,7 +412,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		return
 	}
 	if element := ref(app.cursor); element.value == Mark('{') {
-		key, err := app.readLineKey(session)
+		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
 		}
@@ -458,7 +458,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		return
 	}
 	if isHashElement(app.cursor) {
-		key, err := app.readLineKey(session)
+		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
 		}
