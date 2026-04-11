@@ -101,7 +101,7 @@ func (app *Application) readLineString(session *pager.Session, prompt, defaults 
 	opt := func(e *readline.Editor) {
 		e.OnAfterRender = func(B *readline.Buffer, availWidth int) {
 			if availWidth >= 1 {
-				B.Out.Write([]byte{'"'})
+				B.Out.Write([]byte{'"', '\b'})
 			}
 		}
 		e.PromptWriter = func(w io.Writer) (int, error) {
