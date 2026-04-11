@@ -42,6 +42,9 @@ Changelog
 ### Bug Fixes
 
 - Fix modified mark (`*`) being appended to unrelated messages (#32)
+- Change Ctrl-L behavior during input (e.g. cell or filename editing) (#37):
+  - Redraw the current input instead of clearing the entire screen.
+  - Update go-readline-ny to v1.14.3 supporting redrawing the current input.
 
 v0.1.0
 ------
