@@ -27,13 +27,17 @@ func mains(args []string) error {
 
 	if len(args) <= 0 {
 		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			app.Load(os.Stdin, "")
+			if err := app.Load(os.Stdin, ""); err != nil {
+				return err
+			}
 		}
 		getTtyOut = colorable.NewColorableStderr
 	} else {
 		for _, arg := range args {
 			if arg == "-" {
-				app.Load(os.Stdin, "")
+				if err := app.Load(os.Stdin, ""); err != nil {
+					return err
+				}
 				getTtyOut = colorable.NewColorableStderr
 				continue
 			}
