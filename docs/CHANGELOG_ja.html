@@ -1142,6 +1142,20 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( <a href="CHANGELOG.html">English</a> / Japanese )</p>
+<h2 id="v021">v0.2.1</h2>
+<p>Apr 12, 2026</p>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</h3>
+<ul>
+<li>
+<p><code>[ ]</code> や <code>{ }</code> などのように、空のオブジェクトもしくは空の配列の中に１個以上の空白だけが含まれていると、<code>]</code> や <code>}</code> をうまく検出できず、ネストの個数が狂って上位のオブジェクトもしくは配列まで終ったことにしてしまう不具合を修正 (要素が1個でもあれば表面化しなかった ) (#40)</p>
+</li>
+<li>
+<p>内部で発生したエラーが上位に伝播する過程で消えてしまい、結果としてユーザーに表示されなかった不具合を修正 (#41)</p>
+</li>
+<li>
+<p>偶数個のバックスラッシュの直後の二重引用符が文字列終端扱いされない不具合を修正 (#42)</p>
+</li>
+</ul>
 <h2 id="v020">v0.2.0</h2>
 <p>Apr 12, 2026</p>
 <h3 id="%E3%83%87%E3%83%BC%E3%82%BF%E4%BF%9D%E8%AD%B7">データ保護</h3>
@@ -1185,7 +1199,7 @@ a.permalink:hover{
 </ul>
 </li>
 </ul>
-<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</h3>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</h3>
 <ul>
 <li>変更マーク(<code>*</code>)が関係ないメッセージにもついていた不具合を修正 (#32)</li>
 <li>セルやファイル名などの入力中の Ctrl-L の動作を変更 (#37)
@@ -1217,13 +1231,18 @@ a.permalink:hover{
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v021">v0.2.1</a>
+<ul>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</a></li>
+</ul>
+</li>
 <li><a href="#v020">v0.2.0</a>
 <ul>
 <li><a href="#%E3%83%87%E3%83%BC%E3%82%BF%E4%BF%9D%E8%AD%B7">データ保護</a></li>
 <li><a href="#%E6%93%8D%E4%BD%9C%E6%80%A7%E3%81%AE%E6%94%B9%E5%96%84">操作性の改善</a></li>
 <li><a href="#readline-%E6%94%B9%E5%96%84">Readline 改善</a></li>
 <li><a href="#%E8%B5%B7%E5%8B%95%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%A8%99%E6%BA%96%E5%85%A5%E5%87%BA%E5%8A%9B%E3%81%AE%E6%94%B9%E5%96%84">起動パラメータ・標準入出力の改善</a></li>
-<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</a></li>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</a></li>
 </ul>
 </li>
 <li><a href="#v010">v0.1.0</a></li>
