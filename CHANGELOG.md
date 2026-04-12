@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.2.0
+------
+Apr 12, 2026
+
 ### Data Integrity
 
 - Preserve original JSON formatting as much as possible when saving (#11, #12):

@@ -12,10 +12,22 @@ Jegan - ターミナル用JSONエディター
 特徴
 ----
 
-- ターミナルのユーザインターフェイスで JSON を編集します
-- JSON はファイルもしくは標準入力から読み取れます
-- vi 風のカーソル移動(`j`/`k`)、編集コマンド(`r`,`o`,`d`)
-- 項目編集に Emacs風 readline をサポート
+- **ターミナルのユーザインターフェイスで JSON/JSONL を編集**  
+  
+- **保存時の差分が最小**  
+  編集していない項目は、元のテキストの表現（項目周辺の空白、インデントと改行、
+オブジェクトのキーの順番、リテラルの表現（エスケープシーケンスなど）、ファイル末尾の JSON として解釈できないデータ）を極力維持します。  
+  そのため、本当に加えた変更だけが差分として現れます。実データを安全に編集したい場合に最適です。
+  
+- **vi風のカーソル移動、Emacs風の項目編集**  
+  `j/k` などで縦移動、`h/l` で横スクロール。  
+  `o` で項目追加、`r/R` で編集に入り、Emacs系のキーで値を編集できます。  
+
+- **ファイル／標準入力の両方に対応**  
+  JSON/JSONL ファイルを直接開くだけでなく、パイプ経由のデータも読み込めます。  
+
+- **変更の視覚的な表示**  
+  編集した項目はボールドで表示します。  
 
 インストール
 -----------
@@ -82,8 +94,10 @@ jegan < some.json
 キー操作
 --------
 
-- `j`, `↓` : 次の項目へ移動
-- `k`, `↑` : 前の項目へ移動
+- `j`, `↓`, `Ctrl-N` : 次の項目へ移動
+- `k`, `↑`, `Ctrl-P` : 前の項目へ移動
+- `l`, `→`, `Ctrl-F` : 表示範囲を右にスクロール
+- `h`, `←`, `Ctrl-B` : 表示範囲を左にスクロール
 - `<` : 最初の項目へ移動
 - `>` : 最後の項目へ移動
 - `o` : カーソル行の下へ項目を追加。
@@ -107,6 +121,33 @@ jegan < some.json
   ただし、空ではないオブジェクト・配列は削除できない
 - `w` : ファイルへ保存
 - `q` : 終了
+
+環境変数
+--------
+
+### RUNEWIDTH\_EASTASIAN
+
+Unicode で「曖昧幅」とされる文字の表示桁数を明示的に指定します。
+
+- 2桁幅にする場合：`set RUNEWIDTH_EASTASIAN=1`
+- 1桁幅にする場合：`set RUNEWIDTH_EASTASIAN=0`（`1` 以外の任意の1文字以上で可）
+
+### GOREADLINESKK
+
+環境変数 `GOREADLINESKK` に辞書ファイルを指定すると、[go-readline-skk] を利用した内蔵 SKK かな漢字変換[^SKK]が有効になります。
+
+- **Windows**
+  - `set GOREADLINESKK=SYSTEMJISYOPATH1;SYSTEMJISYOPATH2...;user=USERJISYOPATH`
+  - 例:
+    `set GOREADLINESKK=~/Share/Etc/SKK-JISYO.L;~/Share/Etc/SKK-JISYO.emoji;user=~/.go-skk-jisyo`
+- **Linux**
+  - `export GOREADLINESKK=SYSTEMJISYOPATH1:SYSTEMJISYOPATH2...:user=USERJISYOPATH`
+
+（注）`~` は Windows の `cmd.exe` 上でもアプリ側で `%USERPROFILE%` に自動展開されます。
+
+[^SKK]: Simple Kana to Kanji conversion program. One of the Japanese input method editors.
+
+[go-readline-skk]: https://github.com/nyaosorg/go-readline-skk
 
 Changelog
 ---------
