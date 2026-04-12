@@ -1142,6 +1142,14 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( English / <a href="CHANGELOG_ja.html">Japanese</a> )</p>
+<h2 id="v021">v0.2.1</h2>
+<p>Apr 12, 2026</p>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting (#40)</li>
+<li>Fix error propagation so messages are not lost (#41)</li>
+<li>Fix bug where <code>\&quot;</code> was incorrectly recognized as an escaped quote when preceded by an even number of backslashes (#42)</li>
+</ul>
 <h2 id="v020">v0.2.0</h2>
 <p>Apr 12, 2026</p>
 <h3 id="data-integrity">Data Integrity</h3>
@@ -1201,7 +1209,7 @@ so users do not need to type them explicitly.</p>
 </ul>
 </li>
 </ul>
-<h3 id="bug-fixes">Bug Fixes</h3>
+<h3 id="bug-fixes-1">Bug Fixes</h3>
 <ul>
 <li>Fix modified mark (<code>*</code>) being appended to unrelated messages (#32)</li>
 <li>Change Ctrl-L behavior during input (e.g. cell or filename editing) (#37):
@@ -1233,13 +1241,18 @@ so users do not need to type them explicitly.</p>
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v021">v0.2.1</a>
+<ul>
+<li><a href="#bug-fixes">Bug Fixes</a></li>
+</ul>
+</li>
 <li><a href="#v020">v0.2.0</a>
 <ul>
 <li><a href="#data-integrity">Data Integrity</a></li>
 <li><a href="#usability-improvements">Usability Improvements</a></li>
 <li><a href="#readline-improvements">Readline Improvements</a></li>
 <li><a href="#cli-and-io-improvements">CLI and I/O Improvements</a></li>
-<li><a href="#bug-fixes">Bug Fixes</a></li>
+<li><a href="#bug-fixes-1">Bug Fixes</a></li>
 </ul>
 </li>
 <li><a href="#v010">v0.1.0</a></li>
