@@ -6,6 +6,7 @@ Changelog
 
 - Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting (#40)
 - Fix error propagation so messages are not lost (#41)
+- Fix bug where `\"` was incorrectly recognized as an escaped quote when preceded by an even number of backslashes (#42)
 
 v0.2.0
 ------
