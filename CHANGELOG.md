@@ -4,6 +4,7 @@ Changelog
 
 - Support JSON wrapped in JavaScript assignments
   (as used in X/Twitter archives) (#44)
+- Show a simple progress animation during save (#45)
 
 v0.2.1
 ------
