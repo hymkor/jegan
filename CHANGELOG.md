@@ -2,6 +2,9 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Support JSON wrapped in JavaScript assignments
+  (as used in X/Twitter archives) (#44)
+
 v0.2.1
 ------
 Apr 12, 2026
