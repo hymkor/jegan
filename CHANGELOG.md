@@ -4,7 +4,8 @@ Changelog
 
 ### Bug Fixes
 
-- Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting
+- Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting (#40)
+- Fix error propagation so messages are not lost (#41)
 
 v0.2.0
 ------
