@@ -60,8 +60,14 @@ release:
 manifest:
 	$(GO) run github.com/hymkor/make-scoop-manifest@latest -all *-windows-*.zip > $(NAME).json
 
+docs:
+	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - A terminal JSON editor" -outline-in-sidebar -readme-to-index README.md > docs/index.html
+	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - A terminal JSON editor" -outline-in-sidebar -readme-to-index README_ja.md > docs/index_ja.html
+	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - Changelog " -outline-in-sidebar -readme-to-index CHANGELOG.md > docs/CHANGELOG.html
+	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - Changelog " -outline-in-sidebar -readme-to-index CHANGELOG_ja.md > docs/CHANGELOG_ja.html
+
 readme:
 	$(GO) run github.com/hymkor/example-into-readme@latest
 	$(GO) run github.com/hymkor/example-into-readme@latest -target README_ja.md
 
-.PHONY: all test dist _dist clean release manifest
+.PHONY: all test dist _dist clean release manifest docs
