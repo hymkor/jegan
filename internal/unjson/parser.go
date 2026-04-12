@@ -403,7 +403,7 @@ func Unmarshal(r io.RuneScanner) (*Entry, error) {
 	v, err := readEntry(sc)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return v, io.EOF
+			return v, err
 		}
 		return nil, sc.WrapError(err)
 	}

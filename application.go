@@ -805,7 +805,9 @@ func (app *Application) Load(r io.Reader, name string) error {
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				app.Store(Read(v))
-				return nil
+				if err == io.EOF {
+					return nil
+				}
 			}
 			if name == "" {
 				return fmt.Errorf("<STDIN>:%w", err)
