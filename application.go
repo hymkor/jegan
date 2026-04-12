@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/nyaosorg/go-inline-animation"
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-skk"
@@ -634,6 +635,10 @@ func (app *Application) writeFile(session *pager.Session) error {
 		return err
 	}
 	if fname == "" || fname == "-" {
+		session.TtyOut.Write([]byte{' '})
+		end := animation.Dots.Progress(session.TtyOut)
+		defer end()
+
 		Dump(app.list, os.Stdout)
 		os.Stdout.Write(app.Trailing)
 		app.dirty = false
@@ -660,6 +665,10 @@ func (app *Application) writeFile(session *pager.Session) error {
 	if callBackErr != nil {
 		return callBackErr
 	}
+	session.TtyOut.Write([]byte{' '})
+	end := animation.Dots.Progress(session.TtyOut)
+	defer end()
+
 	Dump(app.list, fd)
 	fd.Write(app.Trailing)
 	if err := fd.Close(); err != nil {
