@@ -1,6 +1,7 @@
 Jegan - A terminal JSON editor
 ==============================
 <!-- go run github.com/hymkor/example-into-readme/cmd/badges@latest | -->
+[![Go Test](https://github.com/hymkor/jegan/actions/workflows/go.yml/badge.svg)](https://github.com/hymkor/jegan/actions/workflows/go.yml)
 [![License](https://img.shields.io/badge/License-MIT-red)](https://github.com/hymkor/jegan/blob/master/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/hymkor/jegan.svg)](https://pkg.go.dev/github.com/hymkor/jegan)
 [![GitHub](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/hymkor/jegan)
