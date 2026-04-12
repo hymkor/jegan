@@ -98,7 +98,7 @@ func readString(br io.RuneScanner) (*Literal, error) {
 				json:  bin,
 			}, err
 		}
-		if ch == '\\' {
+		if !backslash && ch == '\\' {
 			backslash = true
 		} else {
 			backslash = false
