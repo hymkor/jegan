@@ -392,9 +392,15 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if nextElement.value == Mark(']') {
 			comma = false
-			todo = func() { setPrefix(next, prefix) }
+			outerPrefix := nextElement.prefix // prefix of ]
+			if len(outerPrefix) == 0 {
+				outerPrefix = prefix // prefix of [
+				todo = func() {
+					setPrefix(next, prefix)
+				}
+			}
 			nest = nextElement.nest + 1
-			newPrefix = joinBytes(prefix, app.indent)
+			newPrefix = joinBytes(outerPrefix, app.indent)
 		} else {
 			comma = true
 			nest = nextElement.nest
@@ -433,9 +439,13 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if element.value == Mark('}') {
 			comma = false
+			outerPrefix := element.prefix // prefix of }
+			if len(outerPrefix) == 0 {
+				outerPrefix = prefix
+				todo = func() { setPrefix(next, prefix) }
+			}
 			nest = element.nest + 1
-			newPrefix = joinBytes(prefix, app.indent)
-			todo = func() { setPrefix(next, prefix) }
+			newPrefix = joinBytes(outerPrefix, app.indent)
 		} else {
 			if isDuplicated(next, element.nest, key) {
 				app.message = fmt.Sprintf("\aduplicate key: %q", key)

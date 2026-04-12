@@ -72,4 +72,8 @@ func TestInsert(t *testing.T) {
 	test(t, `[]`, `o|"x"`, `["x"]`)
 	test(t, "[\n\t\"y\"\n]", `o|"x"`, "[\n\t\"x\",\n\t\"y\"\n]")
 	test(t, "[\n]", `o|"x"`, "[\n\"x\"\n]")
+	test(t, "[\n\t[]\n]", `j|o|"x"`, "[\n\t[\n\t\t\"x\"\n\t]\n]")
+
+	test(t, "{}", `o|x|0`, "{\"x\":0}")
+	test(t, "{\n}", `o|x|0`, "{\n\"x\":0\n}")
 }
