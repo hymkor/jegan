@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 
+	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 	"github.com/nyaosorg/go-windows-dbg"
 )
@@ -18,6 +20,8 @@ func debug(v ...any) {
 		dbg.Println(v...)
 	}
 }
+
+var flagAuto = flag.String("auto", "", "auto pilot")
 
 func mains(args []string) error {
 	app := &Application{Name: strings.Join(args, "+")}
@@ -64,11 +68,18 @@ func mains(args []string) error {
 		defer disable()
 	}
 	ttyout := getTtyOut()
-	return app.EventLoop(&tty8pe.Tty{}, ttyout)
+	var ttyin ttyadapter.Tty
+	if *flagAuto != "" {
+		ttyin = &autoPilot{script: *flagAuto}
+	} else {
+		ttyin = &tty8pe.Tty{}
+	}
+	return app.EventLoop(ttyin, ttyout)
 }
 
 func main() {
-	if err := mains(os.Args[1:]); err != nil {
+	flag.Parse()
+	if err := mains(flag.Args()); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
