@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+### Bug Fixes
+
+- Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting
+
 v0.2.0
 ------
 Apr 12, 2026

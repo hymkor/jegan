@@ -185,10 +185,20 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 	v := t.Value
 	prefix := t.Prefix
 	L = list.New()
-	if x, ok := v.(unjson.Object); ok {
-		v = []unjson.KeyValuePair(x)
-	} else if x, ok := v.(unjson.Array); ok {
-		v = []unjson.ArrayElement(x)
+	if x, ok := v.(*unjson.Object); ok {
+		if len(x.Pairs) <= 0 {
+			L.PushBack(newElement(Mark('{'), nest, false, prefix))
+			L.PushBack(newElement(Mark('}'), nest, true, x.Blank))
+			return
+		}
+		v = []unjson.KeyValuePair(x.Pairs)
+	} else if x, ok := v.(*unjson.Array); ok {
+		if len(x.Element) <= 0 {
+			L.PushBack(newElement(Mark('['), nest, false, prefix))
+			L.PushBack(newElement(Mark(']'), nest, true, x.Blank))
+			return
+		}
+		v = []unjson.ArrayElement(x.Element)
 	}
 	if x, ok := v.([]unjson.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))

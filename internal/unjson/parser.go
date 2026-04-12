@@ -8,7 +8,15 @@ import (
 	"io"
 	"strings"
 	"unicode"
+
+	"github.com/nyaosorg/go-windows-dbg"
 )
+
+func debug(s ...any) {
+	if false {
+		dbg.Println(s...)
+	}
+}
 
 func read1st(br io.RuneScanner) ([]byte, rune, error) {
 	var prefix bytes.Buffer
@@ -175,12 +183,20 @@ func (k KeyValuePair) GoString() string {
 		string(k.Last))
 }
 
-type Object []KeyValuePair
+type Object struct {
+	Pairs []KeyValuePair
+	Blank []byte // when len(pairs) == 0
+}
 
-func (o Object) GoString() string {
+func (o *Object) GoString() string {
 	var b strings.Builder
 	b.WriteByte('{')
-	for i, p := range o {
+	if len(o.Pairs) == 0 {
+		b.Write(o.Blank)
+		b.WriteByte('}')
+		return b.String()
+	}
+	for i, p := range o.Pairs {
 		if i > 0 {
 			b.WriteByte(',')
 		}
@@ -190,13 +206,19 @@ func (o Object) GoString() string {
 	return b.String()
 }
 
-func readObject(br io.RuneScanner) (Object, error) {
-	first, _, err := br.ReadRune()
+func readObject(br io.RuneScanner) (*Object, error) {
+	debug("Enter readObject")
+	defer debug("Leave readObject")
+
+	firstPrefix, first, err := read1st(br) // check '{'
+	// first, _, err := br.ReadRune()
 	if err != nil {
 		return nil, err
 	}
 	if first == '}' {
-		return []KeyValuePair{}, nil
+		return &Object{
+			Blank: firstPrefix,
+		}, nil
 	}
 	br.UnreadRune()
 
@@ -206,10 +228,15 @@ func readObject(br io.RuneScanner) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
+		if len(firstPrefix) > 0 {
+			preKey = append(preKey, firstPrefix...)
+			firstPrefix = nil
+		}
 		key, err := readString(br)
 		if err != nil {
 			return nil, err
 		}
+		debug("key:", key)
 		preVal, err := expectRune(br, ':')
 		if err != nil {
 			return nil, err
@@ -230,7 +257,7 @@ func readObject(br io.RuneScanner) (Object, error) {
 			Last:   last,
 		})
 		if ch == '}' {
-			return Object(pairs), nil
+			return &Object{Pairs: pairs}, nil
 		}
 		if ch != ',' {
 			return nil, &UnexpectedTokenError2{
@@ -250,12 +277,20 @@ func (a ArrayElement) GoString() string {
 	return fmt.Sprintf("%#v%s", a.Entry, string(a.PreComma))
 }
 
-type Array []ArrayElement
+type Array struct {
+	Element []ArrayElement
+	Blank   []byte
+}
 
 func (a Array) GoString() string {
 	var b strings.Builder
 	b.WriteByte('[')
-	for i, e := range a {
+	if len(a.Element) <= 0 {
+		b.Write(a.Blank)
+		b.WriteByte(']')
+		return b.String()
+	}
+	for i, e := range a.Element {
 		if i > 0 {
 			b.WriteByte(',')
 		}
@@ -265,20 +300,27 @@ func (a Array) GoString() string {
 	return b.String()
 }
 
-func readArray(br io.RuneScanner) (Array, error) {
-	first, _, err := br.ReadRune() // check '['
+func readArray(br io.RuneScanner) (*Array, error) {
+	debug("Enter readArray")
+	defer debug("Leave readEntry")
+
+	firstPrefix, first, err := read1st(br) // check '['
 	if err != nil {
 		return nil, err
 	}
 	var array1 []ArrayElement
 	if first == ']' {
-		return array1, nil
+		return &Array{Blank: firstPrefix}, nil
 	}
 	br.UnreadRune()
 	for {
 		token, err := readEntry(br)
 		if err != nil {
 			return nil, err
+		}
+		if len(firstPrefix) > 0 {
+			token.Prefix = append(firstPrefix, token.Prefix...)
+			firstPrefix = nil
 		}
 		prefix, ch, err := read1st(br)
 		if err != nil {
@@ -288,8 +330,9 @@ func readArray(br io.RuneScanner) (Array, error) {
 			Entry:    token,
 			PreComma: prefix,
 		})
+		debug("array:", len(array1))
 		if ch == ']' {
-			return Array(array1), nil
+			return &Array{Element: array1}, nil
 		}
 		if ch != ',' {
 			return nil, &UnexpectedTokenError2{
@@ -311,6 +354,7 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 	}
 	if ch == '"' {
 		s, err := readString(br)
+		debug("readString:", s)
 		return &Entry{Prefix: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := readNumber(br, ch)
@@ -337,14 +381,18 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 	for {
 		ch, siz, err := br.ReadRune()
 		if err != nil && !errors.Is(err, io.EOF) {
-			rb := &RawBytes{json: b.Bytes()}
+			bin := b.Bytes()
+			rb := &RawBytes{json: bin}
+			debug("RawBytes(1):", bin)
 			return &Entry{Value: rb}, err
 		}
 		if siz > 0 {
 			b.WriteRune(ch)
 		}
 		if err != nil {
-			rb := &RawBytes{json: b.Bytes()}
+			bin := b.Bytes()
+			debug("RawBytes(2):", b)
+			rb := &RawBytes{json: bin}
 			return &Entry{Value: rb}, err
 		}
 	}
