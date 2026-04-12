@@ -51,7 +51,7 @@ dist:
 	$(SET) "GOOS=linux"   && $(SET) "GOARCH=amd64" && $(MAKE) _dist
 
 bump:
-	$(GO) run github.com/hymkor/latest-notes@latest -suffix "-goinstall" -gosrc main CHANGELOG*.md > version.go
+	$(GO) run github.com/hymkor/latest-notes@latest -suffix "-goinstall" -gosrc jegan CHANGELOG*.md > version.go
 
 clean:
 	$(DEL) *.zip $(NAME)$(EXE)
