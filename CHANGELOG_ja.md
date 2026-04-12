@@ -2,6 +2,9 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+- JSON を変数に代入しただけのJavaScript 形式をサポートした
+  （X/Twitter のアーカイブなどで使用されている） (#44)
+
 v0.2.1
 ------
 Apr 12, 2026

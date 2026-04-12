@@ -391,9 +391,15 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 		}
 		if err != nil {
 			bin := b.Bytes()
-			debug("RawBytes(2):", b)
+			debug("RawBytes(2):", bin)
 			rb := &RawBytes{json: bin}
 			return &Entry{Value: rb}, err
+		}
+		if ch == '=' {
+			bin := b.Bytes()
+			debug("JavaScript equation ?:", bin)
+			rb := &RawBytes{json: bin}
+			return &Entry{Value: rb}, nil
 		}
 	}
 }
