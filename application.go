@@ -40,6 +40,7 @@ type Application struct {
 	message string
 	dirty   bool
 	indent  []byte
+	ttyin   ttyadapter.Tty
 }
 
 func (app *Application) Store(v *list.List) {
@@ -113,6 +114,9 @@ func (app *Application) readLineString(session *pager.Session, prompt, defaults 
 }
 
 func (app *Application) readLineOpt(session *pager.Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
+	if ap, ok := app.ttyin.(*autoPilot); ok {
+		return ap.next()
+	}
 	skkInit()
 	editor := &readline.Editor{
 		Writer: session.TtyOut,
@@ -776,6 +780,7 @@ func (app *Application) status(session *pager.Session) (rv string) {
 }
 
 func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
+	app.ttyin = tty
 	if app.list == nil {
 		app.list = list.New()
 	}
