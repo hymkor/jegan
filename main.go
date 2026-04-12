@@ -1,8 +1,6 @@
-package main
+package jegan
 
 import (
-	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,9 +19,11 @@ func debug(v ...any) {
 	}
 }
 
-var flagAuto = flag.String("auto", "", "auto pilot")
+type Config struct {
+	Auto string
+}
 
-func mains(args []string) error {
+func (c *Config) Run(args []string) error {
 	app := &Application{Name: strings.Join(args, "+")}
 	defer app.Close()
 
@@ -69,18 +69,10 @@ func mains(args []string) error {
 	}
 	ttyout := getTtyOut()
 	var ttyin ttyadapter.Tty
-	if *flagAuto != "" {
-		ttyin = &autoPilot{script: *flagAuto}
+	if c.Auto != "" {
+		ttyin = &autoPilot{script: c.Auto}
 	} else {
 		ttyin = &tty8pe.Tty{}
 	}
 	return app.EventLoop(ttyin, ttyout)
-}
-
-func main() {
-	flag.Parse()
-	if err := mains(flag.Args()); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
-	}
 }

@@ -25,20 +25,20 @@ EXE:=$(shell $(GO) env GOEXE)
 
 build:
 	$(GO) fmt ./...
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 
 all:
 	$(GO) fmt ./...
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/testjson"
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/nemo"
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 
 test:
 	$(GO) fmt ./...
 	$(GO) test -v ./...
 
 _dist:
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 	zip -9 $(NAME)-$(VERSION)-$(GOOS)-$(GOARCH).zip $(NAME)$(EXE)
 
 dist:
@@ -51,7 +51,7 @@ dist:
 	$(SET) "GOOS=linux"   && $(SET) "GOARCH=amd64" && $(MAKE) _dist
 
 bump:
-	$(GO) run github.com/hymkor/latest-notes@latest -suffix "-goinstall" -gosrc main CHANGELOG*.md > version.go
+	$(GO) run github.com/hymkor/latest-notes@latest -suffix "-goinstall" -gosrc jegan CHANGELOG*.md > version.go
 
 clean:
 	$(DEL) *.zip $(NAME)$(EXE)
@@ -72,5 +72,9 @@ docs:
 readme:
 	$(GO) run github.com/hymkor/example-into-readme@latest
 	$(GO) run github.com/hymkor/example-into-readme@latest -target README_ja.md
+draft:
+	$(GO) run github.com/hymkor/example-into-readme@latest -target draft/README.md
+	$(GO) run github.com/hymkor/example-into-readme@latest -target draft/README_ja.md
 
-.PHONY: all test dist _dist clean release manifest docs
+
+.PHONY: all test dist _dist clean release manifest docs draft

@@ -76,7 +76,7 @@ scoop install jegan
 ### Use "go install" (requires Go toolchain)
 
 ```
-go install github.com/hymkor/jegan@latest
+go install github.com/hymkor/jegan/cmd/jegan@latest
 ```
 
 Note: `go install` places the executable in `$HOME/go/bin` or `$GOPATH/bin`, so you need to add this directory to your `$PATH` to run `jegan`.
