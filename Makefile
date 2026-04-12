@@ -25,20 +25,20 @@ EXE:=$(shell $(GO) env GOEXE)
 
 build:
 	$(GO) fmt ./...
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 
 all:
 	$(GO) fmt ./...
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/testjson"
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/nemo"
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 
 test:
 	$(GO) fmt ./...
 	$(GO) test -v ./...
 
 _dist:
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT)
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
 	zip -9 $(NAME)-$(VERSION)-$(GOOS)-$(GOARCH).zip $(NAME)$(EXE)
 
 dist:
