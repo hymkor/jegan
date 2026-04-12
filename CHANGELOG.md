@@ -5,6 +5,7 @@ Changelog
 - Support JSON wrapped in JavaScript assignments
   (as used in X/Twitter archives) (#44)
 - Show a simple progress animation during save (#45)
+- Add `-auto` option to simulate key and readline inputs for testing (#46)
 
 v0.2.1
 ------
