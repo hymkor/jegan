@@ -72,5 +72,9 @@ docs:
 readme:
 	$(GO) run github.com/hymkor/example-into-readme@latest
 	$(GO) run github.com/hymkor/example-into-readme@latest -target README_ja.md
+draft:
+	$(GO) run github.com/hymkor/example-into-readme@latest -target draft/README.md
+	$(GO) run github.com/hymkor/example-into-readme@latest -target draft/README_ja.md
 
-.PHONY: all test dist _dist clean release manifest docs
+
+.PHONY: all test dist _dist clean release manifest docs draft

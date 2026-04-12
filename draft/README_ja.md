@@ -75,7 +75,7 @@ scoop install jegan
 ### "go install" を使う場合 (要Go言語開発環境)
 
 ```
-go install github.com/hymkor/jegan@latest
+go install github.com/hymkor/jegan/cmd/jegan@latest
 ```
 
 `go install` は `$HOME/go/bin` もしくは `$GOPATH/bin` へ実行ファイルを導入するので、`jegan` を実行するにはそのディレクトリを `$PATH` に追加する必要があります。
