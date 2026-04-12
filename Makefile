@@ -4,11 +4,13 @@ ifeq ($(OS),Windows_NT)
     WHICH=where.exe
     DEL=del
     NUL=nul
+    CP=cmd /c copy
 else
     SET=export
     WHICH=which
     DEL=rm
     NUL=/dev/null
+    CP=cp
 endif
 
 ifndef GO
@@ -65,6 +67,7 @@ docs:
 	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - A terminal JSON editor" -outline-in-sidebar -readme-to-index README_ja.md > docs/index_ja.html
 	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - Changelog " -outline-in-sidebar -readme-to-index CHANGELOG.md > docs/CHANGELOG.html
 	$(GO) run github.com/hymkor/minipage@latest -title "Jegan - Changelog " -outline-in-sidebar -readme-to-index CHANGELOG_ja.md > docs/CHANGELOG_ja.html
+	$(CP) demo.gif "docs/demo.gif"
 
 readme:
 	$(GO) run github.com/hymkor/example-into-readme@latest
