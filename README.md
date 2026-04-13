@@ -13,7 +13,9 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-- **Edit JSON/JSONL in a terminal-based interactive UI**
+- **Edit JSON in a terminal-based interactive UI**  
+  Supports not only JSON, but also JSONL and JSON wrapped in JavaScript assignments  
+  (as used in X/Twitter archives)
 
 - **Minimal diffs on save**  
   Unmodified parts of the document retain their original representation,
@@ -74,7 +76,7 @@ scoop install jegan
 ### Use "go install" (requires Go toolchain)
 
 ```
-go install github.com/hymkor/jegan@latest
+go install github.com/hymkor/jegan/cmd/jegan@latest
 ```
 
 Note: `go install` places the executable in `$HOME/go/bin` or `$GOPATH/bin`, so you need to add this directory to your `$PATH` to run `jegan`.
@@ -100,6 +102,8 @@ Key bindings
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
 - `h`, `←`, `Ctrl-B` : Scroll the view to the left
+- `Space`, `PageDown` : Move to the next page of items
+- `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
 - `>` : Move to the last item
 - `o` : Insert a new item below the cursor.
@@ -129,6 +133,11 @@ Changelog
 
 - [English](CHANGELOG.md)
 - [Japanese](CHANGELOG_ja.md)
+
+Acknowledgements
+----------------
+
+- [rinodrops (Rino)](https://github.com/rinodrops)
 
 Author
 ------
