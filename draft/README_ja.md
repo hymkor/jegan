@@ -160,6 +160,11 @@ Changelog
 - [English](CHANGELOG.md)
 - [Japanese](CHANGELOG_ja.md)
 
+Acknowledgements
+----------------
+
+- [rinodrops (Rino)](https://github.com/rinodrops)
+
 Author
 ------
 
