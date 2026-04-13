@@ -371,7 +371,7 @@ func leadingSpace(p *list.Element) []byte {
 	return p.Value.(interface{ LeadingSpace() []byte }).LeadingSpace()
 }
 
-func setPrefix(p *list.Element, v []byte) {
+func setLeadingSpace(p *list.Element, v []byte) {
 	p.Value.(interface{ SetLeadingSpace([]byte) }).SetLeadingSpace(v)
 }
 
@@ -398,7 +398,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix // prefix of [
 				todo = func() {
-					setPrefix(next, prefix)
+					setLeadingSpace(next, prefix)
 				}
 			}
 			nest = nextElement.nest + 1
@@ -444,7 +444,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			outerPrefix := element.spaceValue // prefix of }
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix
-				todo = func() { setPrefix(next, prefix) }
+				todo = func() { setLeadingSpace(next, prefix) }
 			}
 			nest = element.nest + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
