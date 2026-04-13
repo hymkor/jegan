@@ -185,7 +185,7 @@ func (app *Application) keyFuncReplace(
 		}
 		element.value = values[0]
 	case 2:
-		prefix := getPrefix(app.cursor)
+		prefix := leadingSpace(app.cursor)
 		prev()
 		app.list.InsertAfter(
 			newElement(values[1], element.nest, element.comma, prefix),
@@ -367,18 +367,12 @@ func isHashElement(p *list.Element) bool {
 	}
 }
 
-func getPrefix(p *list.Element) []byte {
-	if pair, ok := p.Value.(*Pair); ok {
-		return pair.preKey
-	}
-	return ref(p).prefix
+func leadingSpace(p *list.Element) []byte {
+	return p.Value.(interface{ LeadingSpace() []byte }).LeadingSpace()
 }
 
-func setPrefix(p *list.Element, prefix []byte) {
-	if pair, ok := p.Value.(*Pair); ok {
-		pair.preKey = prefix
-	}
-	ref(p).prefix = prefix
+func setLeadingSpace(p *list.Element, v []byte) {
+	p.Value.(interface{ SetLeadingSpace([]byte) }).SetLeadingSpace(v)
 }
 
 func joinBytes(args ...[]byte) []byte {
@@ -390,7 +384,7 @@ func joinBytes(args ...[]byte) []byte {
 }
 
 func (app *Application) keyFuncInsert(session *pager.Session) {
-	prefix := getPrefix(app.cursor)
+	prefix := leadingSpace(app.cursor)
 	if element := ref(app.cursor); element.value == Mark('[') {
 		next := app.cursor.Next()
 		nextElement := ref(next)
@@ -400,11 +394,11 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if nextElement.value == Mark(']') {
 			comma = false
-			outerPrefix := nextElement.prefix // prefix of ]
+			outerPrefix := nextElement.spaceValue // prefix of ]
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix // prefix of [
 				todo = func() {
-					setPrefix(next, prefix)
+					setLeadingSpace(next, prefix)
 				}
 			}
 			nest = nextElement.nest + 1
@@ -412,7 +406,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		} else {
 			comma = true
 			nest = nextElement.nest
-			newPrefix = getPrefix(next)
+			newPrefix = leadingSpace(next)
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
@@ -447,10 +441,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if element.value == Mark('}') {
 			comma = false
-			outerPrefix := element.prefix // prefix of }
+			outerPrefix := element.spaceValue // prefix of }
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix
-				todo = func() { setPrefix(next, prefix) }
+				todo = func() { setLeadingSpace(next, prefix) }
 			}
 			nest = element.nest + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
@@ -461,13 +455,13 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			}
 			comma = true
 			nest = element.nest
-			newPrefix = getPrefix(next)
+			newPrefix = leadingSpace(next)
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // { key:[]
 			p1 := newPair(key, values[0], nest, false)
-			p1.preKey = newPrefix
+			p1.spaceKey = newPrefix
 			e2 := newElement(values[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
@@ -476,7 +470,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.dirty = true
 		case 1: // { key:value
 			p1 := newPair(key, values[0], nest, comma)
-			p1.preKey = newPrefix
+			p1.spaceKey = newPrefix
 			app.list.InsertBefore(p1, next)
 			todo()
 			app.nextLine(session)
@@ -498,7 +492,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		switch len(values) {
 		case 2: // key:[],
 			p1 := newPair(key, values[0], element.nest, false)
-			p1.preKey = prefix
+			p1.spaceKey = prefix
 			e2 := newElement(values[1], element.nest, element.comma, nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
@@ -506,7 +500,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.dirty = true
 		case 1: // key:value,
 			p := newPair(key, values[0], element.nest, element.comma)
-			p.preKey = prefix
+			p.spaceKey = prefix
 			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
@@ -857,7 +851,7 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 		ref(app.cursor).cursor = true
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := getPrefix(sample)
+		prefix := leadingSpace(sample)
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}
