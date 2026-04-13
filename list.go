@@ -25,6 +25,25 @@ func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }
 
+type Node interface {
+	LeadingSpace() []byte
+	SetLeadingSpace(v []byte)
+	Nest() int
+	Comma() bool
+	SetComma(bool)
+	Value() any
+	SetValue(any)
+	SpaceCommaOrClose() []byte
+	SetCursor(bool)
+	SetSpaceCommaOrClose([]byte)
+	Display(int) string
+	Dump(w io.Writer)
+}
+
+func node(p *list.Element) Node {
+	return p.Value.(Node)
+}
+
 type Element struct {
 	value             any
 	nest              int
@@ -34,8 +53,18 @@ type Element struct {
 	spaceCommaOrClose []byte
 }
 
-func (e *Element) LeadingSpace() []byte     { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte) { e.spaceValue = v }
+func (e *Element) LeadingSpace() []byte      { return e.spaceValue }
+func (e *Element) SetLeadingSpace(v []byte)  { e.spaceValue = v }
+func (e *Element) Nest() int                 { return e.nest }
+func (e *Element) Comma() bool               { return e.comma }
+func (e *Element) SetComma(v bool)           { e.comma = v }
+func (e *Element) Value() any                { return e.value }
+func (e *Element) SetValue(v any)            { e.value = v }
+func (e *Element) SpaceCommaOrClose() []byte { return e.spaceCommaOrClose }
+func (e *Element) SetCursor(v bool)          { e.cursor = v }
+func (e *Element) SetSpaceCommaOrClose(v []byte) {
+	e.spaceCommaOrClose = v
+}
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
