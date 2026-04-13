@@ -102,6 +102,8 @@ Key bindings
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
 - `h`, `←`, `Ctrl-B` : Scroll the view to the left
+- `Space`, `PageDown` : Move to the next page of items
+- `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
 - `>` : Move to the last item
 - `o` : Insert a new item below the cursor.
