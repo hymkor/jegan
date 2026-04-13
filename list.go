@@ -80,6 +80,11 @@ func (e *Element) highlight(b *strings.Builder) {
 		fmt.Fprintf(b, ansi.Red+"%q"+ansi.Default, x.String())
 		return
 	}
+	if x, ok := v.(*modifiedLiteral); ok {
+		io.WriteString(b, ansi.Bold)
+		defer io.WriteString(b, ansi.Thin)
+		v = x.Literal
+	}
 	if x, ok := v.(*unjson.Literal); ok {
 		value := x.Value()
 		if _, ok := value.(string); ok {

@@ -196,6 +196,14 @@ func (app *Application) keyFuncReplace(
 	}
 }
 
+type modifiedLiteral struct {
+	*unjson.Literal
+}
+
+func newModifiedLiteral(v any, j string) *modifiedLiteral {
+	return &modifiedLiteral{Literal: unjson.NewLiteral(v, []byte(j))}
+}
+
 func (app *Application) inputFormat(session *pager.Session, defaultv any) []any {
 	var defaults string
 	if _, ok := defaultv.(struct{}); ok {
@@ -220,11 +228,11 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) []any 
 		var s string
 		err := json.Unmarshal([]byte(rawText), &s)
 		if err == nil {
-			return []any{s}
+			return []any{newModifiedLiteral(s, normText)}
 		}
 	}
 	if number, err := strconv.ParseFloat(normText, 64); err == nil {
-		return []any{number}
+		return []any{newModifiedLiteral(number, normText)}
 	}
 	if strings.EqualFold(normText, "null") {
 		return []any{nil}
