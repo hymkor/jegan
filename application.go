@@ -371,14 +371,14 @@ func getPrefix(p *list.Element) []byte {
 	if pair, ok := p.Value.(*Pair); ok {
 		return pair.spaceKey
 	}
-	return ref(p).prefix
+	return ref(p).spaceValue
 }
 
 func setPrefix(p *list.Element, prefix []byte) {
 	if pair, ok := p.Value.(*Pair); ok {
 		pair.spaceKey = prefix
 	}
-	ref(p).prefix = prefix
+	ref(p).spaceValue = prefix
 }
 
 func joinBytes(args ...[]byte) []byte {
@@ -400,7 +400,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if nextElement.value == Mark(']') {
 			comma = false
-			outerPrefix := nextElement.prefix // prefix of ]
+			outerPrefix := nextElement.spaceValue // prefix of ]
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix // prefix of [
 				todo = func() {
@@ -447,7 +447,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		todo := func() {}
 		if element.value == Mark('}') {
 			comma = false
-			outerPrefix := element.prefix // prefix of }
+			outerPrefix := element.spaceValue // prefix of }
 			if len(outerPrefix) == 0 {
 				outerPrefix = prefix
 				todo = func() { setPrefix(next, prefix) }

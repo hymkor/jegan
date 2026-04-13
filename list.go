@@ -26,16 +26,16 @@ func (m Mark) Json() []byte {
 }
 
 type Element struct {
-	value   any
-	nest    int
-	comma   bool
-	cursor  bool
-	prefix  []byte
-	postfix []byte
+	value      any
+	nest       int
+	comma      bool
+	cursor     bool
+	spaceValue []byte
+	postfix    []byte
 }
 
 func (e *Element) Dump(w io.Writer) {
-	w.Write(e.prefix)
+	w.Write(e.spaceValue)
 	if v, ok := e.value.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
@@ -171,10 +171,10 @@ func ref(e *list.Element) *Element {
 
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
-		value:  v,
-		nest:   i,
-		comma:  comma,
-		prefix: prefix}
+		value:      v,
+		nest:       i,
+		comma:      comma,
+		spaceValue: prefix}
 }
 
 func newPair(k string, v any, i int, comma bool) *Pair {
@@ -224,7 +224,7 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			n := newPair(key, first.value, nest+1, first.comma)
 			n.spaceKey = kv.SpaceKey
 			n.spaceColon = kv.SpaceColon
-			n.Element.prefix = kv.Value.SpaceValue
+			n.Element.spaceValue = kv.Value.SpaceValue
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {
