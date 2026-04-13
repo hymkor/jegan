@@ -25,6 +25,25 @@ func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }
 
+type Node interface {
+	LeadingSpace() []byte
+	SetLeadingSpace(v []byte)
+	Nest() int
+	Comma() bool
+	SetComma(bool)
+	Value() any
+	SetValue(any)
+	SpaceCommaOrClose() []byte
+	SetCursor(bool)
+	SetSpaceCommaOrClose([]byte)
+	Display(int) string
+	Dump(w io.Writer)
+}
+
+func node(p *list.Element) Node {
+	return p.Value.(Node)
+}
+
 type Element struct {
 	value             any
 	nest              int
@@ -34,8 +53,18 @@ type Element struct {
 	spaceCommaOrClose []byte
 }
 
-func (e *Element) LeadingSpace() []byte     { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte) { e.spaceValue = v }
+func (e *Element) LeadingSpace() []byte      { return e.spaceValue }
+func (e *Element) SetLeadingSpace(v []byte)  { e.spaceValue = v }
+func (e *Element) Nest() int                 { return e.nest }
+func (e *Element) Comma() bool               { return e.comma }
+func (e *Element) SetComma(v bool)           { e.comma = v }
+func (e *Element) Value() any                { return e.value }
+func (e *Element) SetValue(v any)            { e.value = v }
+func (e *Element) SpaceCommaOrClose() []byte { return e.spaceCommaOrClose }
+func (e *Element) SetCursor(v bool)          { e.cursor = v }
+func (e *Element) SetSpaceCommaOrClose(v []byte) {
+	e.spaceCommaOrClose = v
+}
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
@@ -167,14 +196,6 @@ func (pair *Pair) Display(w int) string {
 	return b.String()
 }
 
-func ref(e *list.Element) *Element {
-	pair, ok := e.Value.(*Pair)
-	if ok {
-		return &pair.Element
-	}
-	return e.Value.(*Element)
-}
-
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
 		value:      v,
@@ -233,16 +254,16 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			n.Element.spaceValue = kv.Value.SpaceValue
 			L.PushBack(n)
 			L.PushBackList(sub)
-			if sub.Len() >= 1 {
-				ref(sub.Back()).spaceCommaOrClose = kv.SpaceCommaOrClose
+			if sub.Len() > 0 {
+				node(sub.Back()).SetSpaceCommaOrClose(kv.SpaceCommaOrClose)
 			} else {
-				n.Element.spaceCommaOrClose = kv.SpaceCommaOrClose
+				n.SetSpaceCommaOrClose(kv.SpaceCommaOrClose)
 			}
 		}
-		back := ref(L.Back())
-		finalSpace := back.spaceCommaOrClose
-		back.spaceCommaOrClose = nil
-		back.comma = false
+		back := node(L.Back())
+		finalSpace := back.SpaceCommaOrClose()
+		back.SetSpaceCommaOrClose(nil)
+		back.SetComma(false)
 		L.PushBack(newElement(Mark('}'), nest, true, finalSpace))
 		return
 	}
@@ -250,13 +271,13 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
 			sub := read(v.Entry, nest+1)
-			ref(sub.Back()).spaceCommaOrClose = v.PreComma
+			node(sub.Back()).SetSpaceCommaOrClose(v.PreComma)
 			L.PushBackList(sub)
 		}
-		back := ref(L.Back())
-		finalSpace := back.spaceCommaOrClose
-		back.spaceCommaOrClose = nil
-		back.comma = false
+		back := node(L.Back())
+		finalSpace := back.SpaceCommaOrClose()
+		back.SetSpaceCommaOrClose(nil)
+		back.SetComma(false)
 		L.PushBack(newElement(Mark(']'), nest, true, finalSpace))
 		return
 
@@ -271,13 +292,13 @@ func Read(v *unjson.Entry) (L *list.List) {
 	}
 	L = read(v, 0)
 	if L != nil && L.Len() > 0 {
-		ref(L.Back()).comma = false
+		node(L.Back()).SetComma(false)
 	}
 	return L
 }
 
 func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
-		p.Value.(interface{ Dump(io.Writer) }).Dump(w)
+		node(p).Dump(w)
 	}
 }

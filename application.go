@@ -30,8 +30,7 @@ import (
 )
 
 type Application struct {
-	Name     string
-	Trailing []byte
+	Name string
 
 	list    *list.List
 	cursor  *list.Element
@@ -55,9 +54,9 @@ func (app *Application) Store(v *list.List) {
 }
 
 func (app *Application) setCursor(c *list.Element) {
-	ref(app.cursor).cursor = false
+	node(app.cursor).SetCursor(false)
 	app.cursor = c
-	ref(app.cursor).cursor = true
+	node(app.cursor).SetCursor(true)
 }
 
 var skkInitOnce sync.Once
@@ -151,19 +150,19 @@ func (app *Application) keyFuncReplace(
 	session *pager.Session,
 	input func(*pager.Session, any) []any) {
 
-	element := ref(app.cursor)
-	defaultv := element.value
+	element := node(app.cursor)
+	defaultv := element.Value()
 	if _, ok := defaultv.(*unjson.RawBytes); ok {
 		return
 	}
 	prev := func() bool { return false }
 
-	if v, ok := element.value.(Mark); ok {
+	if v, ok := element.Value().(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return
 		}
-		nextv, ok := ref(next).value.(Mark)
+		nextv, ok := node(next).Value().(Mark)
 		if !ok {
 			return
 		}
@@ -180,18 +179,18 @@ func (app *Application) keyFuncReplace(
 	values := input(session, defaultv)
 	switch len(values) {
 	case 1:
-		if prev() || element.value != values[0] {
+		if prev() || element.Value() != values[0] {
 			app.dirty = true
 		}
-		element.value = values[0]
+		element.SetValue(values[0])
 	case 2:
-		prefix := leadingSpace(app.cursor)
+		prefix := node(app.cursor).LeadingSpace()
 		prev()
 		app.list.InsertAfter(
-			newElement(values[1], element.nest, element.comma, prefix),
+			newElement(values[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.value = values[0]
-		element.comma = false
+		element.SetValue(values[0])
+		element.SetComma(false)
 		app.dirty = true
 	}
 }
@@ -303,13 +302,13 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 }
 
 func getIndex(cursor *list.Element) (index int) {
-	nest := ref(cursor).nest
+	nest := node(cursor).Nest()
 	for {
 		cursor = cursor.Prev()
 		if cursor == nil {
 			return -1
 		}
-		i := ref(cursor).nest
+		i := node(cursor).Nest()
 		if i < nest {
 			return
 		}
@@ -319,7 +318,7 @@ func getIndex(cursor *list.Element) (index int) {
 
 func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
-		i := ref(p).nest
+		i := node(p).Nest()
 		if i < nest {
 			break
 		}
@@ -331,7 +330,7 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 		}
 	}
 	for p := cursor.Next(); p != nil; p = p.Next() {
-		i := ref(p).nest
+		i := node(p).Nest()
 		if i < nest {
 			break
 		}
@@ -349,30 +348,22 @@ func isHashElement(p *list.Element) bool {
 	if _, ok := p.Value.(*Pair); ok {
 		return true
 	}
-	nest := ref(p).nest
+	nest := node(p).Nest()
 	for {
 		p = p.Prev()
 		if p == nil {
 			return false
 		}
-		element := ref(p)
-		i := element.nest
+		element := node(p)
+		i := element.Nest()
 		if i == nest {
 			if _, ok := p.Value.(*Pair); ok {
 				return true
 			}
 		} else if i < nest {
-			return element.value == Mark('{')
+			return element.Value() == Mark('{')
 		}
 	}
-}
-
-func leadingSpace(p *list.Element) []byte {
-	return p.Value.(interface{ LeadingSpace() []byte }).LeadingSpace()
-}
-
-func setLeadingSpace(p *list.Element, v []byte) {
-	p.Value.(interface{ SetLeadingSpace([]byte) }).SetLeadingSpace(v)
 }
 
 func joinBytes(args ...[]byte) []byte {
@@ -384,29 +375,29 @@ func joinBytes(args ...[]byte) []byte {
 }
 
 func (app *Application) keyFuncInsert(session *pager.Session) {
-	prefix := leadingSpace(app.cursor)
-	if element := ref(app.cursor); element.value == Mark('[') {
+	space := node(app.cursor).LeadingSpace()
+	if e := node(app.cursor); e.Value() == Mark('[') {
 		next := app.cursor.Next()
-		nextElement := ref(next)
+		nextElement := node(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.value == Mark(']') {
+		if nextElement.Value() == Mark(']') {
 			comma = false
-			outerPrefix := nextElement.spaceValue // prefix of ]
+			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
-				outerPrefix = prefix // prefix of [
+				outerPrefix = space // space before [
 				todo = func() {
-					setLeadingSpace(next, prefix)
+					nextElement.SetLeadingSpace(space)
 				}
 			}
-			nest = nextElement.nest + 1
+			nest = nextElement.Nest() + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
 		} else {
 			comma = true
-			nest = nextElement.nest
-			newPrefix = leadingSpace(next)
+			nest = nextElement.Nest()
+			newPrefix = nextElement.LeadingSpace()
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
@@ -428,34 +419,34 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		}
 		return
 	}
-	if element := ref(app.cursor); element.value == Mark('{') {
+	if e := node(app.cursor); e.Value() == Mark('{') {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
 		}
 		next := app.cursor.Next()
-		element = ref(next)
+		nextElement := node(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if element.value == Mark('}') {
+		if nextElement.Value() == Mark('}') {
 			comma = false
-			outerPrefix := element.spaceValue // prefix of }
+			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
-				outerPrefix = prefix
-				todo = func() { setLeadingSpace(next, prefix) }
+				outerPrefix = space
+				todo = func() { node(next).SetLeadingSpace(space) }
 			}
-			nest = element.nest + 1
+			nest = nextElement.Nest() + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
 		} else {
-			if isDuplicated(next, element.nest, key) {
+			if isDuplicated(next, nextElement.Nest(), key) {
 				app.message = fmt.Sprintf("\aduplicate key: %q", key)
 				return
 			}
 			comma = true
-			nest = element.nest
-			newPrefix = leadingSpace(next)
+			nest = nextElement.Nest()
+			newPrefix = nextElement.LeadingSpace()
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
@@ -483,80 +474,80 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		if err != nil {
 			return
 		}
-		element := ref(app.cursor)
-		if isDuplicated(app.cursor, element.nest, key) {
+		element := node(app.cursor)
+		if isDuplicated(app.cursor, element.Nest(), key) {
 			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // key:[],
-			p1 := newPair(key, values[0], element.nest, false)
-			p1.spaceKey = prefix
-			e2 := newElement(values[1], element.nest, element.comma, nil)
+			p1 := newPair(key, values[0], element.Nest(), false)
+			p1.spaceKey = space
+			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
-			p := newPair(key, values[0], element.nest, element.comma)
-			p.spaceKey = prefix
+			p := newPair(key, values[0], element.Nest(), element.Comma())
+			p.spaceKey = space
 			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
-		element.comma = true
+		element.SetComma(true)
 		return
 	}
 	if element, ok := app.cursor.Value.(*Element); ok {
-		index := getIndex(app.cursor)
-		if index < 0 {
+		nest := node(app.cursor).Nest()
+		if nest < 0 {
 			return
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // [ \n ],
-			e1 := newElement(values[0], element.nest, false, prefix)
-			e2 := newElement(values[1], element.nest, element.comma, nil)
+			e1 := newElement(values[0], element.Nest(), false, space)
+			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(e1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
-			e := newElement(values[0], element.nest, element.comma, prefix)
+			e := newElement(values[0], element.Nest(), element.Comma(), space)
 			app.list.InsertAfter(e, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		}
-		element.comma = true
+		element.SetComma(true)
 	}
 }
 
 func (app *Application) removeCursor(session *pager.Session) {
-	comma := ref(app.cursor).comma
+	comma := node(app.cursor).Comma()
 	if next := app.cursor.Next(); next != nil {
-		ref(app.cursor).cursor = false
+		node(app.cursor).SetCursor(false)
 		app.list.Remove(app.cursor)
 		app.cursor = next
-		ref(app.cursor).cursor = true
+		node(app.cursor).SetCursor(true)
 		if !comma {
 			if p := app.cursor.Prev(); p != nil {
-				ref(p).comma = false
+				node(p).SetComma(false)
 			}
 		}
 		app.dirty = true
 	} else if prev := app.cursor.Prev(); prev != nil {
-		ref(app.cursor).cursor = false
+		node(app.cursor).SetCursor(false)
 		app.list.Remove(app.cursor)
 		app.cursor = prev
-		ref(app.cursor).cursor = true
+		node(app.cursor).SetCursor(true)
 		app.csrline--
 		if app.csrline < app.winline {
 			session.Window = app.cursor
 			app.winline = app.csrline
 		}
 		if !comma {
-			ref(prev).comma = false
+			node(prev).SetComma(false)
 		}
 		app.dirty = true
 	}
@@ -573,24 +564,24 @@ func (app *Application) removeCursorAndNext() {
 		app.message = "Internal error: no valid cursor position after deletion"
 		return
 	}
-	comma := ref(next).comma
+	comma := node(next).Comma()
 
 	app.list.Remove(app.cursor)
 	app.list.Remove(next)
 
 	app.cursor = newCurrent
-	ref(newCurrent).cursor = true
+	node(newCurrent).SetCursor(true)
 	if prev != nil {
-		m, ok := ref(prev).value.(Mark)
+		m, ok := node(prev).Value().(Mark)
 		if !ok || (m != Mark('{') && m != Mark('[')) {
-			ref(prev).comma = comma
+			node(prev).SetComma(comma)
 		}
 	}
 }
 
 func (app *Application) keyFuncRemove(session *pager.Session) {
-	element := ref(app.cursor)
-	mark, ok := element.value.(Mark)
+	element := node(app.cursor)
+	mark, ok := element.Value().(Mark)
 	if !ok {
 		app.removeCursor(session)
 		return
@@ -598,7 +589,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 	if mark != Mark('{') && mark != Mark('[') {
 		return
 	}
-	if element.nest == 0 {
+	if element.Nest() == 0 {
 		app.message = "Cannot delete top-level object or array"
 		return
 	}
@@ -607,8 +598,8 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 		app.message = "Unexpected state: missing element after '{' or '['"
 		return
 	}
-	n := ref(next)
-	if n.value != Mark(']') && n.value != Mark('}') {
+	n := node(next)
+	if n.Value() != Mark(']') && n.Value() != Mark('}') {
 		app.message = "Cannot delete non-empty object or array"
 		return
 	}
@@ -656,7 +647,6 @@ func (app *Application) writeFile(session *pager.Session) error {
 		defer end()
 
 		Dump(app.list, os.Stdout)
-		os.Stdout.Write(app.Trailing)
 		app.dirty = false
 		return nil
 	}
@@ -686,7 +676,6 @@ func (app *Application) writeFile(session *pager.Session) error {
 	defer end()
 
 	Dump(app.list, fd)
-	fd.Write(app.Trailing)
 	if err := fd.Close(); err != nil {
 		return err
 	}
@@ -731,9 +720,9 @@ func (app *Application) nextLine(session *pager.Session) {
 }
 
 func (app *Application) keyFuncNextPage(session *pager.Session) {
-	ref(app.cursor).cursor = false
+	node(app.cursor).SetCursor(false)
 	defer func() {
-		ref(app.cursor).cursor = true
+		node(app.cursor).SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -749,9 +738,9 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 }
 
 func (app *Application) keyFuncPrevPage(session *pager.Session) {
-	ref(app.cursor).cursor = false
+	node(app.cursor).SetCursor(false)
 	defer func() {
-		ref(app.cursor).cursor = true
+		node(app.cursor).SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -848,10 +837,10 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()
-		ref(app.cursor).cursor = true
+		node(app.cursor).SetCursor(true)
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := leadingSpace(sample)
+		prefix := node(sample).LeadingSpace()
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}
