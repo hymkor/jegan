@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.3.0
+------
+Apr 14,2026
+
 - Support JSON wrapped in JavaScript assignments
   (as used in X/Twitter archives) (#44)
 - Show a simple progress animation during save (#45)

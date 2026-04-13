@@ -2,6 +2,10 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+v0.3.0
+------
+Apr 14,2026
+
 - JSON を変数に代入しただけのJavaScript 形式をサポートした
   （X/Twitter のアーカイブなどで使用されている） (#44)
 - ファイル保存の待ち時間中にテキストアニメーションを出すようにした (#45)
