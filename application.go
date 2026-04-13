@@ -369,14 +369,14 @@ func isHashElement(p *list.Element) bool {
 
 func getPrefix(p *list.Element) []byte {
 	if pair, ok := p.Value.(*Pair); ok {
-		return pair.preKey
+		return pair.spaceKey
 	}
 	return ref(p).prefix
 }
 
 func setPrefix(p *list.Element, prefix []byte) {
 	if pair, ok := p.Value.(*Pair); ok {
-		pair.preKey = prefix
+		pair.spaceKey = prefix
 	}
 	ref(p).prefix = prefix
 }
@@ -467,7 +467,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		switch len(values) {
 		case 2: // { key:[]
 			p1 := newPair(key, values[0], nest, false)
-			p1.preKey = newPrefix
+			p1.spaceKey = newPrefix
 			e2 := newElement(values[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
@@ -476,7 +476,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.dirty = true
 		case 1: // { key:value
 			p1 := newPair(key, values[0], nest, comma)
-			p1.preKey = newPrefix
+			p1.spaceKey = newPrefix
 			app.list.InsertBefore(p1, next)
 			todo()
 			app.nextLine(session)
@@ -498,7 +498,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		switch len(values) {
 		case 2: // key:[],
 			p1 := newPair(key, values[0], element.nest, false)
-			p1.preKey = prefix
+			p1.spaceKey = prefix
 			e2 := newElement(values[1], element.nest, element.comma, nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
@@ -506,7 +506,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.dirty = true
 		case 1: // key:value,
 			p := newPair(key, values[0], element.nest, element.comma)
-			p.preKey = prefix
+			p.spaceKey = prefix
 			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
