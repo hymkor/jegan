@@ -81,6 +81,15 @@ func (e *Element) highlight(b *strings.Builder) {
 		return
 	}
 	if x, ok := v.(*unjson.Literal); ok {
+		value := x.Value()
+		if _, ok := value.(string); ok {
+			highlightString(x.Json(), ansi.Magenta, b)
+			return
+		}
+		if _, ok := value.(float64); ok {
+			b.Write(x.Json())
+			return
+		}
 		v = x.Value()
 	} else {
 		io.WriteString(b, ansi.Bold)
