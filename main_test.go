@@ -41,6 +41,15 @@ func test(t *testing.T, source, operation, expect string) {
 	}
 }
 
+func testLoadError(t *testing.T, source string) {
+	t.Helper()
+	app := &Application{Name: "TEST"}
+	err := app.Load(strings.NewReader(source),"TEST SCRIPT")
+	if err == nil {
+		t.Fatalf("expected error, but succeeded: %s",source)
+	}
+}
+
 func testLoadSaveOnly(t *testing.T,source string){
 	t.Helper()
 	test(t, source,`k`, source)
@@ -65,6 +74,7 @@ func TestLoadSaveOnly(t *testing.T){
 	testLoadSaveOnly(t, "{\r\n}\r\n")
 	testLoadSaveOnly(t, "{\r\n\t\"one\":1\r\n}\r\n")
 	testLoadSaveOnly(t, "{\r\n\t\"one\" : 1\r\n}\r\n")
+	testLoadError(t ," { { { { { } } } } } ")
 }
 
 func TestInsert(t *testing.T) {
