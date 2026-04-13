@@ -7,6 +7,7 @@ Changelog
 - Show a simple progress animation during save (#45)
 - Add `-auto` option to simulate key and readline inputs for testing (#46)
 - Add page up/down navigation (Space / b, PageUp / PageDown) (#49)
+- Fix string rendering to preserve original representation (avoid HTML escaping) (#50)
 
 v0.2.1
 ------
