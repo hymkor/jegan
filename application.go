@@ -185,7 +185,7 @@ func (app *Application) keyFuncReplace(
 		}
 		element.value = values[0]
 	case 2:
-		prefix := getPrefix(app.cursor)
+		prefix := leadingSpace(app.cursor)
 		prev()
 		app.list.InsertAfter(
 			newElement(values[1], element.nest, element.comma, prefix),
@@ -367,7 +367,7 @@ func isHashElement(p *list.Element) bool {
 	}
 }
 
-func getPrefix(p *list.Element) []byte {
+func leadingSpace(p *list.Element) []byte {
 	return p.Value.(interface{ LeadingSpace() []byte }).LeadingSpace()
 }
 
@@ -384,7 +384,7 @@ func joinBytes(args ...[]byte) []byte {
 }
 
 func (app *Application) keyFuncInsert(session *pager.Session) {
-	prefix := getPrefix(app.cursor)
+	prefix := leadingSpace(app.cursor)
 	if element := ref(app.cursor); element.value == Mark('[') {
 		next := app.cursor.Next()
 		nextElement := ref(next)
@@ -406,7 +406,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		} else {
 			comma = true
 			nest = nextElement.nest
-			newPrefix = getPrefix(next)
+			newPrefix = leadingSpace(next)
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
@@ -455,7 +455,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			}
 			comma = true
 			nest = element.nest
-			newPrefix = getPrefix(next)
+			newPrefix = leadingSpace(next)
 		}
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
@@ -851,7 +851,7 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 		ref(app.cursor).cursor = true
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := getPrefix(sample)
+		prefix := leadingSpace(sample)
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}
