@@ -167,11 +167,11 @@ func (t Entry) GoString() string {
 }
 
 type KeyValuePair struct {
-	Key        string
-	Value      *Entry
-	SpaceKey   []byte
-	SpaceColon []byte
-	Last       []byte
+	Key               string
+	Value             *Entry
+	SpaceKey          []byte
+	SpaceColon        []byte
+	SpaceCommaOrClose []byte
 }
 
 func (k KeyValuePair) GoString() string {
@@ -180,7 +180,7 @@ func (k KeyValuePair) GoString() string {
 		k.Key,
 		string(k.SpaceColon),
 		k.Value,
-		string(k.Last))
+		string(k.SpaceCommaOrClose))
 }
 
 type Object struct {
@@ -250,11 +250,11 @@ func readObject(br io.RuneScanner) (*Object, error) {
 			return nil, err
 		}
 		pairs = append(pairs, KeyValuePair{
-			Key:        key.String(),
-			Value:      val,
-			SpaceKey:   preKey,
-			SpaceColon: preVal,
-			Last:       last,
+			Key:               key.String(),
+			Value:             val,
+			SpaceKey:          preKey,
+			SpaceColon:        preVal,
+			SpaceCommaOrClose: last,
 		})
 		if ch == '}' {
 			return &Object{Pairs: pairs}, nil

@@ -228,9 +228,9 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {
-				ref(sub.Back()).postfix = kv.Last
+				ref(sub.Back()).postfix = kv.SpaceCommaOrClose
 			} else {
-				n.Element.postfix = kv.Last
+				n.Element.postfix = kv.SpaceCommaOrClose
 			}
 		}
 		ref(L.Back()).comma = false
