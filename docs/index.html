@@ -1152,7 +1152,9 @@ a.permalink:hover{
 <h2 id="features">Features</h2>
 <ul>
 <li>
-<p><strong>Edit JSON/JSONL in a terminal-based interactive UI</strong></p>
+<p><strong>Edit JSON in a terminal-based interactive UI</strong><br />
+Supports not only JSON, but also JSONL and JSON wrapped in JavaScript assignments<br />
+(as used in X/Twitter archives)</p>
 </li>
 <li>
 <p><strong>Minimal diffs on save</strong><br />
@@ -1199,7 +1201,7 @@ eget hymkor/jegan
 scoop install jegan
 </code></pre>
 <h3 id="use-go-install-requires-go-toolchain">Use &quot;go install&quot; (requires Go toolchain)</h3>
-<pre><code>go install github.com/hymkor/jegan@latest
+<pre><code>go install github.com/hymkor/jegan/cmd/jegan@latest
 </code></pre>
 <p>Note: <code>go install</code> places the executable in <code>$HOME/go/bin</code> or <code>$GOPATH/bin</code>, so you need to add this directory to your <code>$PATH</code> to run <code>jegan</code>.</p>
 <!-- -->
@@ -1215,6 +1217,8 @@ scoop install jegan
 <li><code>k</code>, <code>↑</code>, <code>Ctrl-P</code> : Move to the previous item</li>
 <li><code>l</code>, <code>→</code>, <code>Ctrl-F</code> : Scroll the view to the right</li>
 <li><code>h</code>, <code>←</code>, <code>Ctrl-B</code> : Scroll the view to the left</li>
+<li><code>Space</code>, <code>PageDown</code> : Move to the next page of items</li>
+<li><code>b</code>, <code>PageUp</code>       : Move to the previous page of items</li>
 <li><code>&lt;</code> : Move to the first item</li>
 <li><code>&gt;</code> : Move to the last item</li>
 <li><code>o</code> : Insert a new item below the cursor.
