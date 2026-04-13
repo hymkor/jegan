@@ -13,7 +13,9 @@ Jegan - ターミナル用JSONエディター
 特徴
 ----
 
-- **ターミナルのユーザインターフェイスで JSON/JSONL を編集**  
+- **ターミナルのユーザインターフェイスで JSON を編集**  
+  JSON だけでなく、JSONL や、JSON を変数に代入しただけの JavaScript 形式※もサポート  
+  （※ X/Twitter のアーカイブなどで使用されている）
   
 - **保存時の差分が最小**  
   編集していない項目は、元のテキストの表現（項目周辺の空白、インデントと改行、
@@ -73,7 +75,7 @@ scoop install jegan
 ### "go install" を使う場合 (要Go言語開発環境)
 
 ```
-go install github.com/hymkor/jegan@latest
+go install github.com/hymkor/jegan/cmd/jegan@latest
 ```
 
 `go install` は `$HOME/go/bin` もしくは `$GOPATH/bin` へ実行ファイルを導入するので、`jegan` を実行するにはそのディレクトリを `$PATH` に追加する必要があります。
@@ -99,6 +101,8 @@ jegan < some.json
 - `k`, `↑`, `Ctrl-P` : 前の項目へ移動
 - `l`, `→`, `Ctrl-F` : 表示範囲を右にスクロール
 - `h`, `←`, `Ctrl-B` : 表示範囲を左にスクロール
+- `Space`, `PageDown` : 次のページへ移動
+- `b`, `PageUp`       : 前のページへ移動
 - `<` : 最初の項目へ移動
 - `>` : 最後の項目へ移動
 - `o` : カーソル行の下へ項目を追加。
