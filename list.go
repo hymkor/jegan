@@ -138,8 +138,8 @@ func (e *Element) Display(w int) string {
 type Pair struct {
 	key string
 	Element
-	spaceKey []byte
-	preCol   []byte
+	spaceKey   []byte
+	spaceColon []byte
 }
 
 func (pair *Pair) Display(w int) string {
@@ -190,7 +190,7 @@ func (p *Pair) Dump(w io.Writer) {
 	w.Write(p.spaceKey)
 	b, _ := json.Marshal(p.key)
 	w.Write(b)
-	w.Write(p.preCol)
+	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
 	p.Element.Dump(w)
 }
@@ -223,7 +223,7 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			first := sub.Remove(sub.Front()).(*Element)
 			n := newPair(key, first.value, nest+1, first.comma)
 			n.spaceKey = kv.SpaceKey
-			n.preCol = kv.SpaceColon
+			n.spaceColon = kv.SpaceColon
 			n.Element.prefix = kv.Value.SpaceValue
 			L.PushBack(n)
 			L.PushBackList(sub)
