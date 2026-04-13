@@ -34,6 +34,9 @@ type Element struct {
 	spaceCommaOrClose []byte
 }
 
+func (e *Element) LeadingSpace() []byte     { return e.spaceValue }
+func (e *Element) SetLeadingSpace(v []byte) { e.spaceValue = v }
+
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
 	if v, ok := e.value.(interface{ Json() []byte }); ok {
@@ -141,6 +144,9 @@ type Pair struct {
 	spaceKey   []byte
 	spaceColon []byte
 }
+
+func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
+func (p *Pair) SetLeadingSpace(v []byte) { p.spaceValue = v }
 
 func (pair *Pair) Display(w int) string {
 	var b strings.Builder

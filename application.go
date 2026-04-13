@@ -368,17 +368,11 @@ func isHashElement(p *list.Element) bool {
 }
 
 func getPrefix(p *list.Element) []byte {
-	if pair, ok := p.Value.(*Pair); ok {
-		return pair.spaceKey
-	}
-	return ref(p).spaceValue
+	return p.Value.(interface{ LeadingSpace() []byte }).LeadingSpace()
 }
 
-func setPrefix(p *list.Element, prefix []byte) {
-	if pair, ok := p.Value.(*Pair); ok {
-		pair.spaceKey = prefix
-	}
-	ref(p).spaceValue = prefix
+func setPrefix(p *list.Element, v []byte) {
+	p.Value.(interface{ SetLeadingSpace([]byte) }).SetLeadingSpace(v)
 }
 
 func joinBytes(args ...[]byte) []byte {
