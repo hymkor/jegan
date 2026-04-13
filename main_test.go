@@ -2,29 +2,35 @@ package jegan
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/mattn/go-colorable"
 )
 
 func test(t *testing.T, source, operation, expect string) {
 	t.Helper()
-	srcPath := filepath.Join(t.TempDir(), "source.json")
 	resPath := filepath.Join(t.TempDir(), "result.json")
 
-	operation = fmt.Sprintf("%s|w|%s|q", operation, resPath)
-	cfg := &Config{
-		Auto: operation,
-	}
-	err := os.WriteFile(srcPath, []byte(source), 0644)
+	app := &Application{Name: "TEST"}
+	err := app.Load(strings.NewReader(source),"TEST SCRIPT")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	err = cfg.Run([]string{srcPath})
+	ttyIn := &autoPilot{
+		script: fmt.Sprintf("%s|w|%s|q", operation, resPath),
+	}
+	ttyOut := io.Discard
+	if testing.Verbose() {
+		ttyOut = colorable.NewColorableStderr()
+	}
+	err = app.EventLoop(ttyIn, ttyOut)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	resultBin, err := os.ReadFile(resPath)
 	if err != nil {
 		t.Fatal(err.Error())
