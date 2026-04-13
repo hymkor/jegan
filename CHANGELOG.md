@@ -6,6 +6,7 @@ Changelog
   (as used in X/Twitter archives) (#44)
 - Show a simple progress animation during save (#45)
 - Add `-auto` option to simulate key and readline inputs for testing (#46)
+- Add page up/down navigation (Space / b, PageUp / PageDown) (#49)
 
 v0.2.1
 ------
