@@ -9,6 +9,10 @@ type Literal struct {
 	json  []byte
 }
 
+func NewLiteral(v any, j []byte) *Literal {
+	return &Literal{value: v, json: j}
+}
+
 func (L *Literal) Value() any      { return L.value }
 func (L *Literal) Json() []byte    { return L.json }
 func (L *Literal) String() string  { return fmt.Sprint(L.value) }

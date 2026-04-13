@@ -75,6 +75,9 @@ func TestLoadSaveOnly(t *testing.T) {
 	testLoadSaveOnly(t, "{\r\n\t\"one\":1\r\n}\r\n")
 	testLoadSaveOnly(t, "{\r\n\t\"one\" : 1\r\n}\r\n")
 	testLoadError(t, " { { { { { } } } } } ")
+
+	testLoadSaveOnly(t, `[ "<TEST>" ]`)
+	testLoadSaveOnly(t, `[ "\u003cTEST\u003e" ]`)
 }
 
 func TestInsert(t *testing.T) {
@@ -86,4 +89,11 @@ func TestInsert(t *testing.T) {
 
 	test(t, "{}", `o|x|0`, "{\"x\":0}")
 	test(t, "{\n}", `o|x|0`, "{\n\"x\":0\n}")
+
+	test(t, "[]", `o|"<TEST>"`, `["<TEST>"]`)
+	test(t, "[]", `o|"\u003cTEST\u003e"`, `["\u003cTEST\u003e"]`)
+}
+
+func TestReplace(t *testing.T) {
+	test(t, `[ "<TEST>" ]`, `j|r|"<TEST>"`, `[ "<TEST>" ]`)
 }
