@@ -8,7 +8,7 @@ Changelog
 - Add `-auto` option to simulate key and readline inputs for testing (#46)
 - Add page up/down navigation (Space / b, PageUp / PageDown) (#49)
 - Fix string rendering to preserve original representation (avoid HTML escaping) (#50)
-- Fix issue where newline before closing brace was lost when adding a new pair with "o" (#54)
+- Fix issue where newline before closing brace and comma placement were incorrect in saved output when adding a pair with "o" (#51, #54)
 
 v0.2.1
 ------
