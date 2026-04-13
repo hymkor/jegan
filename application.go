@@ -30,8 +30,7 @@ import (
 )
 
 type Application struct {
-	Name     string
-	Trailing []byte
+	Name string
 
 	list    *list.List
 	cursor  *list.Element
@@ -656,7 +655,6 @@ func (app *Application) writeFile(session *pager.Session) error {
 		defer end()
 
 		Dump(app.list, os.Stdout)
-		os.Stdout.Write(app.Trailing)
 		app.dirty = false
 		return nil
 	}
@@ -686,7 +684,6 @@ func (app *Application) writeFile(session *pager.Session) error {
 	defer end()
 
 	Dump(app.list, fd)
-	fd.Write(app.Trailing)
 	if err := fd.Close(); err != nil {
 		return err
 	}
