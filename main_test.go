@@ -89,9 +89,13 @@ func TestInsert(t *testing.T) {
 
 	test(t, "{}", `o|x|0`, "{\"x\":0}")
 	test(t, "{\n}", `o|x|0`, "{\n\"x\":0\n}")
+	test(t, "{\n\t\"one\":1\n}", `j|o|two|2`, "{\n\t\"one\":1,\n\t\"two\":2\n}")
+	test(t, "{\n\t\"one\":[]\n}", `j|o|two`, "{\n\t\"one\":[\n\t\t\"two\"\n\t]\n}")
+	test(t, "{\n\t\"one\":{}\n}", `j|o|two|2`, "{\n\t\"one\":{\n\t\t\"two\":2\n\t}\n}")
 
 	test(t, "[]", `o|"<TEST>"`, `["<TEST>"]`)
 	test(t, "[]", `o|"\u003cTEST\u003e"`, `["\u003cTEST\u003e"]`)
+	test(t, "[\n\t1\n]", `j|o|2`, "[\n\t1,\n\t2\n]")
 }
 
 func TestReplace(t *testing.T) {

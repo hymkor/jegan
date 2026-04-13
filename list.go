@@ -239,8 +239,11 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 				n.Element.spaceCommaOrClose = kv.SpaceCommaOrClose
 			}
 		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark('}'), nest, true, nil))
+		back := ref(L.Back())
+		finalSpace := back.spaceCommaOrClose
+		back.spaceCommaOrClose = nil
+		back.comma = false
+		L.PushBack(newElement(Mark('}'), nest, true, finalSpace))
 		return
 	}
 	if x, ok := v.([]unjson.ArrayElement); ok {
@@ -250,8 +253,11 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			ref(sub.Back()).spaceCommaOrClose = v.PreComma
 			L.PushBackList(sub)
 		}
-		ref(L.Back()).comma = false
-		L.PushBack(newElement(Mark(']'), nest, true, nil))
+		back := ref(L.Back())
+		finalSpace := back.spaceCommaOrClose
+		back.spaceCommaOrClose = nil
+		back.comma = false
+		L.PushBack(newElement(Mark(']'), nest, true, finalSpace))
 		return
 
 	}
