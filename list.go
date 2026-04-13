@@ -223,7 +223,7 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			first := sub.Remove(sub.Front()).(*Element)
 			n := newPair(key, first.value, nest+1, first.comma)
 			n.preKey = kv.SpaceKey
-			n.preCol = kv.PreCol
+			n.preCol = kv.SpaceColon
 			n.Element.prefix = kv.Value.SpaceValue
 			L.PushBack(n)
 			L.PushBackList(sub)
