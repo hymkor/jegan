@@ -26,12 +26,12 @@ func (m Mark) Json() []byte {
 }
 
 type Element struct {
-	value      any
-	nest       int
-	comma      bool
-	cursor     bool
-	spaceValue []byte
-	postfix    []byte
+	value             any
+	nest              int
+	comma             bool
+	cursor            bool
+	spaceValue        []byte
+	spaceCommaOrClose []byte
 }
 
 func (e *Element) Dump(w io.Writer) {
@@ -46,7 +46,7 @@ func (e *Element) Dump(w io.Writer) {
 			w.Write(b)
 		}
 	}
-	w.Write(e.postfix)
+	w.Write(e.spaceCommaOrClose)
 	if e.comma {
 		w.Write([]byte{','})
 	}
@@ -228,9 +228,9 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {
-				ref(sub.Back()).postfix = kv.SpaceCommaOrClose
+				ref(sub.Back()).spaceCommaOrClose = kv.SpaceCommaOrClose
 			} else {
-				n.Element.postfix = kv.SpaceCommaOrClose
+				n.Element.spaceCommaOrClose = kv.SpaceCommaOrClose
 			}
 		}
 		ref(L.Back()).comma = false
@@ -241,7 +241,7 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 		L.PushBack(newElement(Mark('['), nest, false, prefix))
 		for _, v := range x {
 			sub := read(v.Entry, nest+1)
-			ref(sub.Back()).postfix = v.PreComma
+			ref(sub.Back()).spaceCommaOrClose = v.PreComma
 			L.PushBackList(sub)
 		}
 		ref(L.Back()).comma = false
