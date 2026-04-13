@@ -746,6 +746,30 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 	}
 }
 
+func (app *Application) keyFuncPrevPage(session *pager.Session) {
+	ref(app.cursor).cursor = false
+	defer func() {
+		ref(app.cursor).cursor = true
+	}()
+
+	for i := 0; i < session.Height; i++ {
+		w := session.Window.Prev()
+		if w == nil {
+			break
+		}
+		session.Window = w
+		app.winline--
+	}
+	for i := 0; i < session.Height; i++ {
+		c := app.cursor.Prev()
+		if c == nil {
+			break
+		}
+		app.cursor = c
+		app.csrline--
+	}
+}
+
 func (app *Application) handle(session *pager.Session, key string) (pager.EventResult, error) {
 	switch key {
 	default:
@@ -773,7 +797,9 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		app.winline = app.list.Len() - 1 - n
 	case " ", keys.PageDown:
 		app.keyFuncNextPage(session)
-	case "b", keys.CtrlC, keys.CtrlG:
+	case "b", keys.PageUp:
+		app.keyFuncPrevPage(session)
+	case keys.CtrlC, keys.CtrlG:
 	case "r":
 		app.keyFuncReplace(session, app.inputFormat)
 	case "R":
