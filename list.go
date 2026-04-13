@@ -197,7 +197,7 @@ func (p *Pair) Dump(w io.Writer) {
 
 func read(t *unjson.Entry, nest int) (L *list.List) {
 	v := t.Value
-	prefix := t.Prefix
+	prefix := t.SpaceValue
 	L = list.New()
 	if x, ok := v.(*unjson.Object); ok {
 		if len(x.Pairs) <= 0 {
@@ -224,7 +224,7 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 			n := newPair(key, first.value, nest+1, first.comma)
 			n.preKey = kv.PreKey
 			n.preCol = kv.PreCol
-			n.Element.prefix = kv.Value.Prefix
+			n.Element.prefix = kv.Value.SpaceValue
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() >= 1 {

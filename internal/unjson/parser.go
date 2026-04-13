@@ -158,12 +158,12 @@ func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
 }
 
 type Entry struct {
-	Prefix []byte
-	Value  any
+	SpaceValue []byte
+	Value      any
 }
 
 func (t Entry) GoString() string {
-	return fmt.Sprintf("%s%#v", string(t.Prefix), t.Value)
+	return fmt.Sprintf("%s%#v", string(t.SpaceValue), t.Value)
 }
 
 type KeyValuePair struct {
@@ -319,7 +319,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 			return nil, err
 		}
 		if len(firstPrefix) > 0 {
-			token.Prefix = append(firstPrefix, token.Prefix...)
+			token.SpaceValue = append(firstPrefix, token.SpaceValue...)
 			firstPrefix = nil
 		}
 		prefix, ch, err := read1st(br)
@@ -355,25 +355,25 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 	if ch == '"' {
 		s, err := readString(br)
 		debug("readString:", s)
-		return &Entry{Prefix: prefix, Value: s}, err
+		return &Entry{SpaceValue: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := readNumber(br, ch)
-		return &Entry{Prefix: prefix, Value: n}, err
+		return &Entry{SpaceValue: prefix, Value: n}, err
 	} else if ch == 'n' {
 		v := &Literal{value: nil, json: []byte("null")}
-		return &Entry{Prefix: prefix, Value: v}, expectToken(br, ch, "null")
+		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
 		v := &Literal{value: false, json: []byte("false")}
-		return &Entry{Prefix: prefix, Value: v}, expectToken(br, ch, "false")
+		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
 	} else if ch == 't' {
 		v := &Literal{value: true, json: []byte("true")}
-		return &Entry{Prefix: prefix, Value: v}, expectToken(br, ch, "true")
+		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
-		return &Entry{Prefix: prefix, Value: o}, err
+		return &Entry{SpaceValue: prefix, Value: o}, err
 	} else if ch == '[' {
 		a, err := readArray(br)
-		return &Entry{Prefix: prefix, Value: a}, err
+		return &Entry{SpaceValue: prefix, Value: a}, err
 	}
 	var b bytes.Buffer
 	b.Write(prefix)
