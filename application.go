@@ -344,24 +344,36 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	return false
 }
 
-func isHashElement(p *list.Element) bool {
-	if _, ok := p.Value.(*Pair); ok {
-		return true
+func findPairBefore(p *list.Element) *Pair {
+	for ; p != nil; p = p.Prev() {
+		if pair, ok := p.Value.(*Pair); ok {
+			return pair
+		}
+	}
+	return nil
+}
+
+func findSameLevelPairBefore(p *list.Element) (*Pair, bool) {
+	if pair, ok := p.Value.(*Pair); ok {
+		return pair, true
 	}
 	nest := node(p).Nest()
 	for {
 		p = p.Prev()
 		if p == nil {
-			return false
+			return nil, false
 		}
 		element := node(p)
 		i := element.Nest()
 		if i == nest {
-			if _, ok := p.Value.(*Pair); ok {
-				return true
+			if pair, ok := p.Value.(*Pair); ok {
+				return pair, true
 			}
 		} else if i < nest {
-			return element.Value() == Mark('{')
+			if element.Value() != Mark('{') {
+				return nil, false
+			}
+			return findPairBefore(p), true
 		}
 	}
 }
@@ -424,6 +436,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		if err != nil {
 			return
 		}
+		sample := findPairBefore(app.cursor)
 		next := app.cursor.Next()
 		nextElement := node(next)
 		var comma bool
@@ -453,6 +466,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		case 2: // { key:[]
 			p1 := newPair(key, values[0], nest, false)
 			p1.spaceKey = newPrefix
+			if sample != nil {
+				p1.spaceColon = sample.spaceColon
+				p1.spaceValue = sample.spaceValue
+			}
 			e2 := newElement(values[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
@@ -462,6 +479,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		case 1: // { key:value
 			p1 := newPair(key, values[0], nest, comma)
 			p1.spaceKey = newPrefix
+			if sample != nil {
+				p1.spaceColon = sample.spaceColon
+				p1.spaceValue = sample.spaceValue
+			}
 			app.list.InsertBefore(p1, next)
 			todo()
 			app.nextLine(session)
@@ -469,7 +490,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		}
 		return
 	}
-	if isHashElement(app.cursor) {
+	if sample, ok := findSameLevelPairBefore(app.cursor); ok {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
@@ -484,6 +505,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		case 2: // key:[],
 			p1 := newPair(key, values[0], element.Nest(), false)
 			p1.spaceKey = space
+			if sample != nil {
+				p1.spaceColon = sample.spaceColon
+				p1.spaceValue = sample.spaceValue
+			}
 			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
@@ -492,6 +517,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		case 1: // key:value,
 			p := newPair(key, values[0], element.Nest(), element.Comma())
 			p.spaceKey = space
+			if sample != nil {
+				p.spaceColon = sample.spaceColon
+				p.spaceValue = sample.spaceValue
+			}
 			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
 			app.dirty = true

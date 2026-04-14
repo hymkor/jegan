@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Preserve colon spacing when adding object pairs with "o" (#57)
+
 v0.3.0
 ------
 Apr 14,2026
