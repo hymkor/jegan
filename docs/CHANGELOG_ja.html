@@ -1142,6 +1142,12 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( <a href="CHANGELOG.html">English</a> / Japanese )</p>
+<h2 id="v031">v0.3.1</h2>
+<p>Apr 14,2026</p>
+<ul>
+<li>&quot;o&quot; でオブジェクトのペアを追加した際、コロン前後の空白が既存の書式に合わせて補完されるように改善 (#57)</li>
+<li>JSONとして解釈されないテキストの表示を改善。二重引用符で囲まないようにし、改行復帰などの空白文字は単純空白(U+0020)化。エスケープシーケンスは除去しつつ、可視文字はそのまま表示するように変更 (Thanks to @rinodrops, #51, #58)</li>
+</ul>
 <h2 id="v030">v0.3.0</h2>
 <p>Apr 14,2026</p>
 <ul>
@@ -1151,7 +1157,7 @@ a.permalink:hover{
 <li>テスト用に１キー入力とreadlineをエミュレートするオプション <code>-auto</code> を追加 (#46)</li>
 <li>ページ単位の移動を追加 (Space / b, PageUp / PageDown) (#49)</li>
 <li>文字列の表示でオリジナルの表現が維持されない問題を修正 (HTML エスケープ処理回避) (#50)</li>
-<li>&quot;o&quot; でオブジェクトの最後のペアの後に新ペアを追加した時、保存したデータでは中括弧前の改行が不適切な場所に置かれてしまう問題を修正 (#51, #54)</li>
+<li>&quot;o&quot; でオブジェクトの最後のペアの後に新ペアを追加した時、保存したデータでは中括弧前の改行が不適切な場所に置かれてしまう問題を修正 (Thanks to @rinodrops, #51, #54)</li>
 </ul>
 <h2 id="v021">v0.2.1</h2>
 <p>Apr 12, 2026</p>
@@ -1242,6 +1248,7 @@ a.permalink:hover{
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>
 <li><a href="#v021">v0.2.1</a>
 <ul>

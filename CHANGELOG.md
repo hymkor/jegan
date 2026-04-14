@@ -2,8 +2,12 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.3.1
+------
+Apr 14,2026
+
 - Preserve colon spacing when adding object pairs with "o" (#57)
-- Improve rendering of non-JSON text by normalizing whitespace and preserving visible characters instead of escaped string representation (#51, #58)
+- Improve rendering of non-JSON text by normalizing whitespace and preserving visible characters instead of escaped string representation (Thanks to @rinodrops, #51, #58)
 
 v0.3.0
 ------
@@ -15,7 +19,7 @@ Apr 14,2026
 - Add `-auto` option to simulate key and readline inputs for testing (#46)
 - Add page up/down navigation (Space / b, PageUp / PageDown) (#49)
 - Fix string rendering to preserve original representation (avoid HTML escaping) (#50)
-- Fix issue where newline before closing brace and comma placement were incorrect in saved output when adding a pair with "o" (#51, #54)
+- Fix issue where newline before closing brace and comma placement were incorrect in saved output when adding a pair with "o" (Thanks to @rinodrops, #51, #54)
 
 v0.2.1
 ------
