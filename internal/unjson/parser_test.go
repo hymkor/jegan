@@ -17,7 +17,7 @@ func TestReadObject(t *testing.T) {
 	}
 }
 
-func TestArray(t *testing.T) {
+func TestReadArray(t *testing.T) {
 	source := `[ 1  ,    []    ,{} ,  4 ]`
 	array, err := readArray(strings.NewReader(source[1:]))
 	if err != nil {
@@ -29,7 +29,7 @@ func TestArray(t *testing.T) {
 	}
 }
 
-func TestReadItem(t *testing.T) {
+func TestReadEntry(t *testing.T) {
 	source := `[ { "1": 2, "3": [ 1,2,  3], "5":6 },7,  8, 9  ]`
 	token, err := readEntry(strings.NewReader(source))
 	if err != nil {
