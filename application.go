@@ -301,21 +301,6 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 	}
 }
 
-func getIndex(cursor *list.Element) (index int) {
-	nest := node(cursor).Nest()
-	for {
-		cursor = cursor.Prev()
-		if cursor == nil {
-			return -1
-		}
-		i := node(cursor).Nest()
-		if i < nest {
-			return
-		}
-		index++
-	}
-}
-
 func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
 		i := node(p).Nest()
