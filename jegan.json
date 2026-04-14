@@ -1,16 +1,16 @@
 {
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "A terminal JSON Editor",
     "homepage": "https://github.com/hymkor/jegan",
     "license": "MIT License",
     "architecture": {
         "32bit": {
-            "url": "https://github.com/hymkor/jegan/releases/download/v0.3.0/jegan-v0.3.0-windows-386.zip",
-            "hash": "505bb6650f3089c367b844f74a76f234d520dfcfbe824ceb4db5dc0e15128403"
+            "url": "https://github.com/hymkor/jegan/releases/download/v0.3.1/jegan-v0.3.1-windows-386.zip",
+            "hash": "84ab1d56965fd96f9daff83c7a34c3b6140abda55cb677ded7823b5abfd7ef0c"
         },
         "64bit": {
-            "url": "https://github.com/hymkor/jegan/releases/download/v0.3.0/jegan-v0.3.0-windows-amd64.zip",
-            "hash": "f1d631fc44b313270ee2315ceaa83b3e4e530f6d8339f01c350378c564ffa42c"
+            "url": "https://github.com/hymkor/jegan/releases/download/v0.3.1/jegan-v0.3.1-windows-amd64.zip",
+            "hash": "d89524c041518394591d704f1e4bb5e4f5a10f39ace8fb40c838bd9e38bf548c"
         }
     },
     "bin": "jegan.exe",
