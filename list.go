@@ -224,15 +224,6 @@ func newElement(v any, i int, comma bool, prefix []byte) *Element {
 		spaceValue: prefix}
 }
 
-func newPair(k string, v any, i int, comma bool) *Pair {
-	return &Pair{
-		key: k,
-		Element: Element{
-			value: v,
-			nest:  i,
-			comma: comma}}
-}
-
 func (p *Pair) Dump(w io.Writer) {
 	w.Write(p.spaceKey)
 	b, _ := json.Marshal(p.key)
@@ -264,14 +255,19 @@ func read(t *unjson.Entry, nest int) (L *list.List) {
 	if x, ok := v.([]unjson.KeyValuePair); ok {
 		L.PushBack(newElement(Mark('{'), nest, false, prefix))
 		for _, kv := range x {
-			key := kv.Key
-			val := kv.Value
-			sub := read(val, nest+1)
+			sub := read(kv.Value, nest+1)
 			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, nest+1, first.comma)
-			n.spaceKey = kv.SpaceKey
-			n.spaceColon = kv.SpaceColon
-			n.Element.spaceValue = kv.Value.SpaceValue
+			n := &Pair{
+				spaceKey:   kv.SpaceKey,
+				key:        kv.Key,
+				spaceColon: kv.SpaceColon,
+				Element: Element{
+					spaceValue: kv.Value.SpaceValue,
+					value:      first.value,
+					nest:       nest + 1,
+					comma:      first.comma,
+				},
+			}
 			L.PushBack(n)
 			L.PushBackList(sub)
 			if sub.Len() > 0 {

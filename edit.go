@@ -316,8 +316,15 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // { key:[]
-			p1 := newPair(key, values[0], nest, false)
-			p1.spaceKey = newPrefix
+			p1 := &Pair{
+				spaceKey: newPrefix,
+				key:      key,
+				Element: Element{
+					value: values[0],
+					nest:  nest,
+					comma: false,
+				},
+			}
 			if sample != nil {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
@@ -329,8 +336,15 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // { key:value
-			p1 := newPair(key, values[0], nest, comma)
-			p1.spaceKey = newPrefix
+			p1 := &Pair{
+				spaceKey: newPrefix,
+				key:      key,
+				Element: Element{
+					value: values[0],
+					nest:  nest,
+					comma: comma,
+				},
+			}
 			if sample != nil {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
@@ -355,8 +369,15 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		values := app.inputFormat(session, struct{}{})
 		switch len(values) {
 		case 2: // key:[],
-			p1 := newPair(key, values[0], element.Nest(), false)
-			p1.spaceKey = space
+			p1 := &Pair{
+				spaceKey: space,
+				key:      key,
+				Element: Element{
+					value: values[0],
+					nest:  element.Nest(),
+					comma: false,
+				},
+			}
 			if sample != nil {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
@@ -367,8 +388,15 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
-			p := newPair(key, values[0], element.Nest(), element.Comma())
-			p.spaceKey = space
+			p := &Pair{
+				spaceKey: space,
+				key:      key,
+				Element: Element{
+					value: values[0],
+					nest:  element.Nest(),
+					comma: element.Comma(),
+				},
+			}
 			if sample != nil {
 				p.spaceColon = sample.spaceColon
 				p.spaceValue = sample.spaceValue
