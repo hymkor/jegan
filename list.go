@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
@@ -109,7 +110,26 @@ func (e *Element) highlight(b *strings.Builder) {
 		return
 	}
 	if x, ok := v.(*unjson.RawBytes); ok {
-		fmt.Fprintf(b, ansi.Red+"%q"+ansi.Default, x.String())
+		b.WriteString(ansi.Red)
+		escape := false
+		for _, v := range x.String() {
+			if escape {
+				if ('a' <= v && v <= 'z') || ('A' <= v && v <= 'Z') {
+					escape = false
+				}
+				continue
+			}
+			if v == '\x1B' {
+				escape = true
+				continue
+			}
+			if unicode.IsSpace(v) {
+				b.Write([]byte{' '})
+			} else {
+				b.WriteRune(v)
+			}
+		}
+		b.WriteString(ansi.Default)
 		return
 	}
 	if x, ok := v.(*modifiedLiteral); ok {
