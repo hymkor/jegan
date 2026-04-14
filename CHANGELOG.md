@@ -3,6 +3,7 @@ Changelog
 ( English / [Japanese](CHANGELOG_ja.md) )
 
 - Preserve colon spacing when adding object pairs with "o" (#57)
+- Improve rendering of non-JSON text by normalizing whitespace and preserving visible characters instead of escaped string representation (#51, #58)
 
 v0.3.0
 ------
