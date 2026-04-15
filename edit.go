@@ -3,6 +3,7 @@ package jegan
 import (
 	"container/list"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -15,23 +16,23 @@ import (
 
 func (app *Application) keyFuncReplace(
 	session *pager.Session,
-	input func(*pager.Session, any) []any) {
+	input func(*pager.Session, any) ([]any, error)) error {
 
 	element := ref(app.cursor)
 	defaultv := element.Value()
 	if _, ok := defaultv.(*unjson.RawBytes); ok {
-		return
+		return nil
 	}
 	prev := func() bool { return false }
 
 	if v, ok := element.Value().(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
-			return
+			return nil
 		}
 		nextv, ok := ref(next).Value().(Mark)
 		if !ok {
-			return
+			return nil
 		}
 		if v == objStart && nextv == objEnd {
 			defaultv = map[string]any{}
@@ -40,10 +41,13 @@ func (app *Application) keyFuncReplace(
 			defaultv = []any{}
 			prev = func() bool { app.list.Remove(next); return true }
 		} else {
-			return
+			return nil
 		}
 	}
-	values := input(session, defaultv)
+	values, err := input(session, defaultv)
+	if err != nil {
+		return err
+	}
 	switch len(values) {
 	case 1:
 		if prev() || element.Value() != values[0] {
@@ -60,6 +64,7 @@ func (app *Application) keyFuncReplace(
 		element.SetComma(false)
 		app.dirty = true
 	}
+	return nil
 }
 
 type modifiedLiteral struct {
@@ -70,7 +75,7 @@ func newModifiedLiteral(v any, j string) *modifiedLiteral {
 	return &modifiedLiteral{Literal: unjson.NewLiteral(v, []byte(j))}
 }
 
-func (app *Application) inputFormat(session *pager.Session, defaultv any) []any {
+func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any, error) {
 	var defaults string
 	if _, ok := defaultv.(struct{}); ok {
 		defaults = ""
@@ -79,14 +84,13 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) []any 
 	} else {
 		b, err := json.Marshal(defaultv)
 		if err != nil {
-			debug("(*Application) inputFormat: json.Marshal:", err.Error(), "for", defaultv)
+			return nil, err
 		}
 		defaults = string(b)
 	}
 	rawText, err := app.readLineElement(session, "New value:", defaults)
 	if err != nil {
-		app.message = err.Error()
-		return nil
+		return nil, err
 	}
 	normText := strings.TrimSpace(rawText)
 
@@ -94,31 +98,31 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) []any 
 		var s string
 		err := json.Unmarshal([]byte(rawText), &s)
 		if err == nil {
-			return []any{newModifiedLiteral(s, normText)}
+			return []any{newModifiedLiteral(s, normText)}, nil
 		}
 	}
 	if number, err := strconv.ParseFloat(normText, 64); err == nil {
-		return []any{newModifiedLiteral(number, normText)}
+		return []any{newModifiedLiteral(number, normText)}, nil
 	}
 	if strings.EqualFold(normText, "null") {
-		return []any{nil}
+		return []any{nil}, nil
 	}
 	if strings.EqualFold(normText, "true") {
-		return []any{true}
+		return []any{true}, nil
 	}
 	if strings.EqualFold(normText, "false") {
-		return []any{false}
+		return []any{false}, nil
 	}
 	if normText == "{}" {
-		return []any{objStart, objEnd}
+		return []any{objStart, objEnd}, nil
 	}
 	if normText == "[]" {
-		return []any{arrayStart, arrayEnd}
+		return []any{arrayStart, arrayEnd}, nil
 	}
-	return []any{rawText}
+	return []any{rawText}, nil
 }
 
-func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) []any {
+func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) ([]any, error) {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
@@ -127,41 +131,37 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 				"'t':true, 'f':false, 'o':{}, 'a':[] ? "+ansi.EraseLine)
 		key, err := session.GetKey()
 		if err != nil {
-			app.message = err.Error()
-			return nil
+			return nil, err
 		}
 		switch key {
 		case "\a":
-			app.message = "Canceled"
-			return nil
+			return nil, errCanceled
 		case "s":
 			text, err := app.readLineString(session, "New string:", fmt.Sprint(defaultv))
 			if err != nil {
-				session.TtyOut.Write([]byte{'\a'})
-				return nil
+				return nil, err
 			}
-			return []any{text}
+			return []any{text}, nil
 		case "n":
 			text, err := app.readLine(session, "New number:", fmt.Sprint(defaultv))
 			if err != nil {
-				session.TtyOut.Write([]byte{'\a'})
-				return nil
+				return nil, err
 			}
 			newValue, err := strconv.ParseFloat(text, 64)
 			if err == nil {
-				return []any{newValue}
+				return []any{newValue}, nil
 			}
 			session.TtyOut.Write([]byte{'\a'})
 		case "u":
-			return []any{nil}
+			return []any{nil}, nil
 		case "t":
-			return []any{true}
+			return []any{true}, nil
 		case "f":
-			return []any{false}
+			return []any{false}, nil
 		case "o":
-			return []any{objStart, objEnd}
+			return []any{objStart, objEnd}, nil
 		case "a":
-			return []any{arrayStart, arrayEnd}
+			return []any{arrayStart, arrayEnd}, nil
 		default:
 			session.TtyOut.Write([]byte{'\a'})
 		}
@@ -238,7 +238,7 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
-func (app *Application) keyFuncInsert(session *pager.Session) {
+func (app *Application) keyFuncInsert(session *pager.Session) error {
 	space := ref(app.cursor).LeadingSpace()
 	if e := ref(app.cursor); e.Value() == arrayStart {
 		next := app.cursor.Next()
@@ -263,7 +263,10 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values := app.inputFormat(session, struct{}{})
+		values, err := app.inputFormat(session, struct{}{})
+		if err != nil {
+			return err
+		}
 		switch len(values) {
 		case 2: // [\n[\n],\n
 			e1 := newElement(values[0], nest, false, newPrefix)
@@ -281,12 +284,12 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.nextLine(session)
 			app.dirty = true
 		}
-		return
+		return nil
 	}
 	if e := ref(app.cursor); e.Value() == objStart {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
-			return
+			return err
 		}
 		sample := findPairBefore(app.cursor)
 		next := app.cursor.Next()
@@ -306,14 +309,16 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			newPrefix = joinBytes(outerPrefix, app.indent)
 		} else {
 			if isDuplicated(next, nextElement.Nest(), key) {
-				app.message = fmt.Sprintf("\aduplicate key: %q", key)
-				return
+				return fmt.Errorf("duplicate key: %q", key)
 			}
 			comma = true
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values := app.inputFormat(session, struct{}{})
+		values, err := app.inputFormat(session, struct{}{})
+		if err != nil {
+			return err
+		}
 		switch len(values) {
 		case 2: // { key:[]
 			p1 := &Pair{
@@ -354,19 +359,21 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.nextLine(session)
 			app.dirty = true
 		}
-		return
+		return nil
 	}
 	if sample, ok := findSameLevelPairBefore(app.cursor); ok {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
-			return
+			return err
 		}
 		element := ref(app.cursor)
 		if isDuplicated(app.cursor, element.Nest(), key) {
-			app.message = fmt.Sprintf("\aduplicate key: %q", key)
-			return
+			return fmt.Errorf("duplicate key: %q", key)
 		}
-		values := app.inputFormat(session, struct{}{})
+		values, err := app.inputFormat(session, struct{}{})
+		if err != nil {
+			return err
+		}
 		switch len(values) {
 		case 2: // key:[],
 			p1 := &Pair{
@@ -406,14 +413,17 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			app.dirty = true
 		}
 		element.SetComma(true)
-		return
+		return nil
 	}
 	if element, ok := app.cursor.Value.(*Element); ok {
 		nest := ref(app.cursor).Nest()
 		if nest < 0 {
-			return
+			return nil
 		}
-		values := app.inputFormat(session, struct{}{})
+		values, err := app.inputFormat(session, struct{}{})
+		if err != nil {
+			return nil
+		}
 		switch len(values) {
 		case 2: // [ \n ],
 			e1 := newElement(values[0], element.Nest(), false, space)
@@ -430,6 +440,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		}
 		element.SetComma(true)
 	}
+	return nil
 }
 
 func (app *Application) removeCursor(session *pager.Session) {
@@ -462,16 +473,15 @@ func (app *Application) removeCursor(session *pager.Session) {
 	}
 }
 
-func (app *Application) removeCursorAndNext() {
+func (app *Application) removeCursorAndNext() error {
 	prev := app.cursor.Prev()
 	next := app.cursor.Next()
 	if next == nil {
-		return
+		return nil
 	}
 	newCurrent := next.Next()
 	if newCurrent == nil {
-		app.message = "Internal error: no valid cursor position after deletion"
-		return
+		return errors.New("Internal error: no valid cursor position after deletion")
 	}
 	comma := ref(next).Comma()
 
@@ -486,31 +496,29 @@ func (app *Application) removeCursorAndNext() {
 			ref(prev).SetComma(comma)
 		}
 	}
+	return nil
 }
 
-func (app *Application) keyFuncRemove(session *pager.Session) {
+func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
 	mark, ok := element.Value().(Mark)
 	if !ok {
 		app.removeCursor(session)
-		return
+		return nil
 	}
 	if mark != objStart && mark != arrayStart {
-		return
+		return nil
 	}
 	if element.Nest() == 0 {
-		app.message = "Cannot delete top-level object or array"
-		return
+		return errors.New("Cannot delete top-level object or array")
 	}
 	next := app.cursor.Next()
 	if next == nil {
-		app.message = "Unexpected state: missing element after '{' or '['"
-		return
+		return errors.New("Unexpected state: missing element after '{' or '['")
 	}
 	n := ref(next)
 	if n.Value() != arrayEnd && n.Value() != objEnd {
-		app.message = "Cannot delete non-empty object or array"
-		return
+		return errors.New("Cannot delete non-empty object or array")
 	}
-	app.removeCursorAndNext()
+	return app.removeCursorAndNext()
 }

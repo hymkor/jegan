@@ -17,11 +17,8 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func (app *Application) keyFuncSave(session *pager.Session) {
-	err := app.writeFile(session)
-	if err != nil {
-		app.message = err.Error()
-	}
+func (app *Application) keyFuncSave(session *pager.Session) error {
+	return app.writeFile(session)
 }
 
 func (app *Application) writeFile(session *pager.Session) error {
@@ -73,25 +70,23 @@ func (app *Application) writeFile(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) keyFuncQuit(session *pager.Session) pager.EventResult {
+func (app *Application) keyFuncQuit(session *pager.Session) (pager.EventResult, error) {
 	if !app.dirty {
-		return pager.QuitApp
+		return pager.QuitApp, nil
 	}
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
 	yesSave, err := askYesNo(session, "Quit: Save changes ? ['y': save, 'n': quit without saving, other: cancel]")
 	if err != nil {
-		app.message = err.Error() // err includes cancel
-		return pager.Handled
+		return pager.Handled, err // err includes cancel
 	}
 	if yesSave {
 		if err := app.writeFile(session); err != nil {
-			app.message = err.Error()
-			return pager.Handled
+			return pager.Handled, err
 		}
 	}
-	return pager.QuitApp
+	return pager.QuitApp, nil
 }
 func (app *Application) Load(r io.Reader, name string) error {
 	br, ok := r.(io.RuneScanner)

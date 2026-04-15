@@ -17,6 +17,8 @@ import (
 	"github.com/hymkor/jegan/internal/pager"
 )
 
+var errCanceled = errors.New("Canceled")
+
 var skkInitOnce sync.Once
 
 func skkInit() {
@@ -99,7 +101,7 @@ func (app *Application) readLineOpt(session *pager.Session, prompt, defaults str
 	result, err := editor.ReadLine(context.Background())
 	io.WriteString(session.TtyOut, ansi.CursorOff)
 	if err == readline.CtrlC {
-		return "", errors.New("Canceled")
+		return "", errCanceled
 	}
 	return result, err
 }

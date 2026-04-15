@@ -92,6 +92,8 @@ func (app *Application) keyFuncPrevPage(session *pager.Session) {
 }
 
 func (app *Application) handle(session *pager.Session, key string) (pager.EventResult, error) {
+	result := pager.Handled
+	var err error
 	switch key {
 	default:
 		return pager.PassToPager, nil
@@ -119,24 +121,28 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		app.keyFuncPrevPage(session)
 	case keys.CtrlC, keys.CtrlG:
 	case "r":
-		app.keyFuncReplace(session, app.inputFormat)
+		err = app.keyFuncReplace(session, app.inputFormat)
 	case "R":
-		app.keyFuncReplace(session, app.inputTypeAndValue)
+		err = app.keyFuncReplace(session, app.inputTypeAndValue)
 	case "o":
-		app.keyFuncInsert(session)
+		err = app.keyFuncInsert(session)
 	case "d":
-		app.keyFuncRemove(session)
+		err = app.keyFuncRemove(session)
 	case "w":
-		app.keyFuncSave(session)
+		err = app.keyFuncSave(session)
 	case "q":
-		return app.keyFuncQuit(session), nil
+		result, err = app.keyFuncQuit(session)
 	}
-	return pager.Handled, nil
+	if err != nil {
+		app.message = err.Error()
+		debug(app.message)
+	}
+	return result, nil
 }
 
-func (app *Application) status(session *pager.Session) (rv string) {
+func (app *Application) status(session *pager.Session) (text string) {
 	if app.message != "" {
-		rv = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
+		text = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
 	} else if app.Name != "" {
 		var mark rune
@@ -145,9 +151,9 @@ func (app *Application) status(session *pager.Session) (rv string) {
 		} else {
 			mark = ' '
 		}
-		rv = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
+		text = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
 	} else {
-		rv = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
+		text = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
 			version, runtime.GOOS, runtime.GOARCH)
 	}
 	return

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -161,7 +162,11 @@ func (e *Element) highlight(b *strings.Builder) {
 		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := v.(string); ok {
-		jsonBin, _ := json.Marshal(s)
+		jsonBin, err := json.Marshal(s)
+		if err != nil {
+			debug("(*Element) highlight", s, err.Error())
+			jsonBin = []byte(strconv.Quote(s))
+		}
 		highlightString(jsonBin, ansi.Magenta, b)
 	} else if v == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
@@ -213,7 +218,11 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	jsonBin, _ := json.Marshal(pair.key)
+	jsonBin, err := json.Marshal(pair.key)
+	if err != nil {
+		debug("(*Pair) Display", pair.key, err.Error())
+		jsonBin = []byte(strconv.Quote(pair.key))
+	}
 	highlightString(jsonBin, ansi.Yellow, &b)
 	b.WriteString(": ")
 	pair.Element.highlight(&b)
@@ -235,7 +244,11 @@ func newElement(v any, i int, comma bool, prefix []byte) *Element {
 
 func (p *Pair) Dump(w io.Writer) {
 	w.Write(p.spaceKey)
-	b, _ := json.Marshal(p.key)
+	b, err := json.Marshal(p.key)
+	if err != nil {
+		debug("(*Pair) Dump", p.key, err.Error())
+		b = []byte(strconv.Quote(p.key))
+	}
 	w.Write(b)
 	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
