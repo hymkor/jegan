@@ -44,8 +44,8 @@ func main1(source io.Reader, title string) error {
 			L := lines.Len()
 			start := session.WinPos
 			end := session.WinPos + session.Pager.Height - 1
-			if end > L {
-				end = L
+			if end+1 > L {
+				end = L - 1
 			}
 			fmt.Fprintf(&b, " %d-%d / %d", start+1, end+1, L)
 			return b.String()
