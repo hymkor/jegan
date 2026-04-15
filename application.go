@@ -159,8 +159,8 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 		app.list = list.New()
 	}
 	if app.list.Len() <= 0 {
-		app.list.PushBack(newElement(Mark('{'), 0, false, nil))
-		app.list.PushBack(newElement(Mark('}'), 0, false, nil))
+		app.list.PushBack(newElement(objStart, 0, false, nil))
+		app.list.PushBack(newElement(objEnd, 0, false, nil))
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()

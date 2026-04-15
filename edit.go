@@ -33,10 +33,10 @@ func (app *Application) keyFuncReplace(
 		if !ok {
 			return
 		}
-		if v == Mark('{') && nextv == Mark('}') {
+		if v == objStart && nextv == objEnd {
 			defaultv = map[string]any{}
 			prev = func() bool { app.list.Remove(next); return true }
-		} else if v == Mark('[') && nextv == Mark(']') {
+		} else if v == arrayStart && nextv == arrayEnd {
 			defaultv = []any{}
 			prev = func() bool { app.list.Remove(next); return true }
 		} else {
@@ -110,10 +110,10 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) []any 
 		return []any{false}
 	}
 	if normText == "{}" {
-		return []any{Mark('{'), Mark('}')}
+		return []any{objStart, objEnd}
 	}
 	if normText == "[]" {
-		return []any{Mark('['), Mark(']')}
+		return []any{arrayStart, arrayEnd}
 	}
 	return []any{rawText}
 }
@@ -159,9 +159,9 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 		case "f":
 			return []any{false}
 		case "o":
-			return []any{Mark('{'), Mark('}')}
+			return []any{objStart, objEnd}
 		case "a":
-			return []any{Mark('['), Mark(']')}
+			return []any{arrayStart, arrayEnd}
 		default:
 			session.TtyOut.Write([]byte{'\a'})
 		}
@@ -222,7 +222,7 @@ func findSameLevelPairBefore(p *list.Element) (*Pair, bool) {
 				return pair, true
 			}
 		} else if i < nest {
-			if element.Value() != Mark('{') {
+			if element.Value() != objStart {
 				return nil, false
 			}
 			return findPairBefore(p), true
@@ -240,14 +240,14 @@ func joinBytes(args ...[]byte) []byte {
 
 func (app *Application) keyFuncInsert(session *pager.Session) {
 	space := ref(app.cursor).LeadingSpace()
-	if e := ref(app.cursor); e.Value() == Mark('[') {
+	if e := ref(app.cursor); e.Value() == arrayStart {
 		next := app.cursor.Next()
 		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == Mark(']') {
+		if nextElement.Value() == arrayEnd {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -283,7 +283,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		}
 		return
 	}
-	if e := ref(app.cursor); e.Value() == Mark('{') {
+	if e := ref(app.cursor); e.Value() == objStart {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
@@ -295,7 +295,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == Mark('}') {
+		if nextElement.Value() == objEnd {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
@@ -482,7 +482,7 @@ func (app *Application) removeCursorAndNext() {
 	ref(newCurrent).SetCursor(true)
 	if prev != nil {
 		m, ok := ref(prev).Value().(Mark)
-		if !ok || (m != Mark('{') && m != Mark('[')) {
+		if !ok || (m != objStart && m != arrayStart) {
 			ref(prev).SetComma(comma)
 		}
 	}
@@ -495,7 +495,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 		app.removeCursor(session)
 		return
 	}
-	if mark != Mark('{') && mark != Mark('[') {
+	if mark != objStart && mark != arrayStart {
 		return
 	}
 	if element.Nest() == 0 {
@@ -508,7 +508,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 		return
 	}
 	n := ref(next)
-	if n.Value() != Mark(']') && n.Value() != Mark('}') {
+	if n.Value() != arrayEnd && n.Value() != objEnd {
 		app.message = "Cannot delete non-empty object or array"
 		return
 	}

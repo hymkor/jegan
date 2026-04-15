@@ -47,6 +47,7 @@ func parseArgs(args []string, load func(io.Reader, string) error) (useStdin bool
 				return
 			}
 			if err = load(fd, fn); err != nil {
+				fd.Close()
 				return
 			}
 			if err = fd.Close(); err != nil {

@@ -8,7 +8,7 @@ import (
 
 func readPairs(prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List {
 	L := list.New()
-	L.PushBack(newElement(Mark('{'), nest, false, prefix))
+	L.PushBack(newElement(objStart, nest, false, prefix))
 	for _, pair := range pairs {
 		sub := read(pair.Value, nest+1)
 
@@ -34,15 +34,15 @@ func readPairs(prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List 
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
-	L.PushBack(newElement(Mark('}'), nest, true, finalSpace))
+	L.PushBack(newElement(objEnd, nest, true, finalSpace))
 	return L
 }
 
 func readObject(prefix []byte, object *unjson.Object, nest int) *list.List {
 	if len(object.Pairs) <= 0 {
 		L := list.New()
-		L.PushBack(newElement(Mark('{'), nest, false, prefix))
-		L.PushBack(newElement(Mark('}'), nest, true, object.Blank))
+		L.PushBack(newElement(objStart, nest, false, prefix))
+		L.PushBack(newElement(objEnd, nest, true, object.Blank))
 		return L
 	}
 	return readPairs(prefix, object.Pairs, nest)
@@ -50,7 +50,7 @@ func readObject(prefix []byte, object *unjson.Object, nest int) *list.List {
 
 func readElements(prefix []byte, elements []unjson.ArrayElement, nest int) *list.List {
 	L := list.New()
-	L.PushBack(newElement(Mark('['), nest, false, prefix))
+	L.PushBack(newElement(arrayStart, nest, false, prefix))
 	for _, element := range elements {
 		sub := read(element.Entry, nest+1)
 		ref(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
@@ -60,15 +60,15 @@ func readElements(prefix []byte, elements []unjson.ArrayElement, nest int) *list
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
-	L.PushBack(newElement(Mark(']'), nest, true, finalSpace))
+	L.PushBack(newElement(arrayEnd, nest, true, finalSpace))
 	return L
 }
 
 func readArray(prefix []byte, array *unjson.Array, nest int) *list.List {
 	if len(array.Element) <= 0 {
 		L := list.New()
-		L.PushBack(newElement(Mark('['), nest, false, prefix))
-		L.PushBack(newElement(Mark(']'), nest, true, array.Blank))
+		L.PushBack(newElement(arrayStart, nest, false, prefix))
+		L.PushBack(newElement(arrayEnd, nest, true, array.Blank))
 		return L
 	}
 	return readElements(prefix, array.Element, nest)

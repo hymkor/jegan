@@ -86,6 +86,13 @@ func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }
 
+const (
+	objStart   = Mark('{')
+	objEnd     = Mark('}')
+	arrayStart = Mark('[')
+	arrayEnd   = Mark(']')
+)
+
 func highlightString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
 	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
