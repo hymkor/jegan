@@ -10,14 +10,7 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
-	"github.com/nyaosorg/go-windows-dbg"
 )
-
-func debug(v ...any) {
-	if false {
-		dbg.Println(v...)
-	}
-}
 
 func parseArgs(args []string, load func(io.Reader, string) error) (useStdin bool, names []string, err error) {
 	if len(args) <= 0 {

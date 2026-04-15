@@ -25,7 +25,7 @@ EXE:=$(shell $(GO) env GOEXE)
 
 build:
 	$(GO) fmt ./...
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) -tags debug "./cmd/jegan"
 
 all:
 	$(GO) fmt ./...
