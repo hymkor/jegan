@@ -12,31 +12,19 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-type Mark rune
-
-func (m Mark) String() string {
-	return string(rune(m))
-}
-
-func (m Mark) GoString() string {
-	return string(rune(m))
-}
-
-func (m Mark) Json() []byte {
-	return []byte{byte(m)}
-}
-
 type Line interface {
 	LeadingSpace() []byte
 	SetLeadingSpace(v []byte)
-	Nest() int
-	Comma() bool
-	SetComma(bool)
 	Value() any
 	SetValue(any)
 	SpaceCommaOrClose() []byte
-	SetCursor(bool)
 	SetSpaceCommaOrClose([]byte)
+	Comma() bool
+	SetComma(bool)
+
+	Nest() int
+	SetCursor(bool)
+
 	Display(int) string
 	Dump(w io.Writer)
 }
@@ -46,26 +34,25 @@ func ref(p *list.Element) Line {
 }
 
 type Element struct {
-	value             any
-	nest              int
-	comma             bool
-	cursor            bool
 	spaceValue        []byte
+	value             any
 	spaceCommaOrClose []byte
+	comma             bool
+
+	nest   int
+	cursor bool
 }
 
-func (e *Element) LeadingSpace() []byte      { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte)  { e.spaceValue = v }
-func (e *Element) Nest() int                 { return e.nest }
-func (e *Element) Comma() bool               { return e.comma }
-func (e *Element) SetComma(v bool)           { e.comma = v }
-func (e *Element) Value() any                { return e.value }
-func (e *Element) SetValue(v any)            { e.value = v }
-func (e *Element) SpaceCommaOrClose() []byte { return e.spaceCommaOrClose }
-func (e *Element) SetCursor(v bool)          { e.cursor = v }
-func (e *Element) SetSpaceCommaOrClose(v []byte) {
-	e.spaceCommaOrClose = v
-}
+func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
+func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
+func (e *Element) Value() any                    { return e.value }
+func (e *Element) SetValue(v any)                { e.value = v }
+func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
+func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
+func (e *Element) Comma() bool                   { return e.comma }
+func (e *Element) SetComma(v bool)               { e.comma = v }
+func (e *Element) Nest() int                     { return e.nest }
+func (e *Element) SetCursor(v bool)              { e.cursor = v }
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
@@ -83,6 +70,20 @@ func (e *Element) Dump(w io.Writer) {
 	if e.comma {
 		w.Write([]byte{','})
 	}
+}
+
+type Mark rune
+
+func (m Mark) String() string {
+	return string(rune(m))
+}
+
+func (m Mark) GoString() string {
+	return string(rune(m))
+}
+
+func (m Mark) Json() []byte {
+	return []byte{byte(m)}
 }
 
 func highlightString(s []byte, color string, b *strings.Builder) {
@@ -188,10 +189,10 @@ func (e *Element) Display(w int) string {
 }
 
 type Pair struct {
-	key string
-	Element
 	spaceKey   []byte
+	key        string
 	spaceColon []byte
+	Element
 }
 
 func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
@@ -218,10 +219,11 @@ func (pair *Pair) Display(w int) string {
 
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
+		spaceValue: prefix,
 		value:      v,
-		nest:       i,
 		comma:      comma,
-		spaceValue: prefix}
+		nest:       i,
+	}
 }
 
 func (p *Pair) Dump(w io.Writer) {
