@@ -71,7 +71,7 @@ func (app *Application) readLineString(session *pager.Session, prompt, defaults 
 }
 
 func (app *Application) readLineOpt(session *pager.Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
-	if ap, ok := app.ttyin.(*autoPilot); ok {
+	if ap, ok := app.ttyIn.(*autoPilot); ok {
 		return ap.next()
 	}
 	skkInit()

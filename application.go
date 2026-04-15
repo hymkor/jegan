@@ -25,7 +25,7 @@ type Application struct {
 	message string
 	dirty   bool
 	indent  []byte
-	ttyin   ttyadapter.Tty
+	ttyIn   ttyadapter.Tty
 }
 
 func (app *Application) Store(v *list.List) {
@@ -153,8 +153,8 @@ func (app *Application) status(session *pager.Session) (rv string) {
 	return
 }
 
-func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
-	app.ttyin = tty
+func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error {
+	app.ttyIn = ttyIn
 	if app.list == nil {
 		app.list = list.New()
 	}
@@ -176,7 +176,7 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 		Status:  app.status,
 		Handler: app.handle,
 	}
-	return pager1.EventLoop(tty, app.list, ttyout)
+	return pager1.EventLoop(ttyIn, app.list, ttyOut)
 }
 
 func (app *Application) Close() error {

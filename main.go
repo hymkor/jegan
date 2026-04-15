@@ -67,12 +67,12 @@ func (c *Config) Run(args []string) error {
 	if disable != nil {
 		defer disable()
 	}
-	ttyout := getTtyOut()
-	var ttyin ttyadapter.Tty
+	ttyOut := getTtyOut()
+	var ttyIn ttyadapter.Tty
 	if c.Auto != "" {
-		ttyin = &autoPilot{script: c.Auto}
+		ttyIn = &autoPilot{script: c.Auto}
 	} else {
-		ttyin = &tty8pe.Tty{}
+		ttyIn = &tty8pe.Tty{}
 	}
-	return app.EventLoop(ttyin, ttyout)
+	return app.EventLoop(ttyIn, ttyOut)
 }
