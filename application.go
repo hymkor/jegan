@@ -22,7 +22,6 @@ type Application struct {
 	list    *list.List
 	cursor  *list.Element
 	csrline int
-	winline int
 	message string
 	dirty   bool
 	indent  []byte
@@ -53,9 +52,8 @@ func (app *Application) nextLine(session *pager.Session) {
 	}
 	app.setCursor(c)
 	app.csrline++
-	for app.csrline-app.winline >= session.Height {
-		session.Window = session.Window.Next()
-		app.winline++
+	for app.csrline-session.WinPos >= session.Height {
+		session.MoveNextLine()
 	}
 }
 
@@ -72,8 +70,7 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 		}
 		app.cursor = c
 		app.csrline++
-		session.Window = session.Window.Next()
-		app.winline++
+		session.MoveNextLine()
 	}
 }
 
@@ -83,14 +80,7 @@ func (app *Application) keyFuncPrevPage(session *pager.Session) {
 		ref(app.cursor).SetCursor(true)
 	}()
 
-	for i := 0; i < session.Height; i++ {
-		w := session.Window.Prev()
-		if w == nil {
-			break
-		}
-		session.Window = w
-		app.winline--
-	}
+	session.MovePrevPage()
 	for i := 0; i < session.Height; i++ {
 		c := app.cursor.Prev()
 		if c == nil {
@@ -111,21 +101,18 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		if c := app.cursor.Prev(); c != nil {
 			app.setCursor(c)
 			app.csrline--
-			for app.csrline < app.winline {
-				session.Window = session.Window.Prev()
-				app.winline--
+			for app.csrline < session.WinPos {
+				session.MovePrevLine()
 			}
 		}
 	case "<":
 		app.setCursor(app.list.Front())
-		session.MoveFront()
-		app.winline = 0
 		app.csrline = 0
+		session.MoveFront()
 	case ">":
 		app.setCursor(app.list.Back())
-		n := session.MoveBack()
 		app.csrline = app.list.Len() - 1
-		app.winline = app.list.Len() - 1 - n
+		session.MoveBack()
 	case " ", keys.PageDown:
 		app.keyFuncNextPage(session)
 	case "b", keys.PageUp:

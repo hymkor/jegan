@@ -451,9 +451,9 @@ func (app *Application) removeCursor(session *pager.Session) {
 		app.cursor = prev
 		ref(app.cursor).SetCursor(true)
 		app.csrline--
-		if app.csrline < app.winline {
+		if app.csrline < session.WinPos {
 			session.Window = app.cursor
-			app.winline = app.csrline
+			session.WinPos = app.csrline
 		}
 		if !comma {
 			ref(prev).SetComma(false)
