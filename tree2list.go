@@ -11,19 +11,22 @@ func readPairs(prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List 
 	L.PushBack(newElement(Mark('{'), nest, false, prefix))
 	for _, pair := range pairs {
 		sub := read(pair.Value, nest+1)
-		first := sub.Remove(sub.Front()).(*Element)
-		newFirst := &Pair{
+
+		front := sub.Front()
+		orgF := ref(front)
+		newF := &Pair{
 			spaceKey:   pair.SpaceKey,
 			key:        pair.Key,
 			spaceColon: pair.SpaceColon,
 			Element: Element{
 				spaceValue: pair.Value.SpaceValue,
-				value:      first.value,
-				comma:      first.comma,
+				value:      orgF.Value(),
+				comma:      orgF.Comma(),
 				nest:       nest + 1,
 			},
 		}
-		sub.PushFront(newFirst)
+		front.Value = newF
+
 		ref(sub.Back()).SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
 		L.PushBackList(sub)
 	}
