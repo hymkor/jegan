@@ -26,7 +26,7 @@ func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }
 
-type Node interface {
+type Line interface {
 	LeadingSpace() []byte
 	SetLeadingSpace(v []byte)
 	Nest() int
@@ -41,8 +41,8 @@ type Node interface {
 	Dump(w io.Writer)
 }
 
-func node(p *list.Element) Node {
-	return p.Value.(Node)
+func ref(p *list.Element) Line {
+	return p.Value.(Line)
 }
 
 type Element struct {
@@ -235,6 +235,6 @@ func (p *Pair) Dump(w io.Writer) {
 
 func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
-		node(p).Dump(w)
+		ref(p).Dump(w)
 	}
 }

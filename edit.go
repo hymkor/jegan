@@ -17,7 +17,7 @@ func (app *Application) keyFuncReplace(
 	session *pager.Session,
 	input func(*pager.Session, any) []any) {
 
-	element := node(app.cursor)
+	element := ref(app.cursor)
 	defaultv := element.Value()
 	if _, ok := defaultv.(*unjson.RawBytes); ok {
 		return
@@ -29,7 +29,7 @@ func (app *Application) keyFuncReplace(
 		if next == nil {
 			return
 		}
-		nextv, ok := node(next).Value().(Mark)
+		nextv, ok := ref(next).Value().(Mark)
 		if !ok {
 			return
 		}
@@ -51,7 +51,7 @@ func (app *Application) keyFuncReplace(
 		}
 		element.SetValue(values[0])
 	case 2:
-		prefix := node(app.cursor).LeadingSpace()
+		prefix := ref(app.cursor).LeadingSpace()
 		prev()
 		app.list.InsertAfter(
 			newElement(values[1], element.Nest(), element.Comma(), prefix),
@@ -170,7 +170,7 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 
 func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
-		i := node(p).Nest()
+		i := ref(p).Nest()
 		if i < nest {
 			break
 		}
@@ -182,7 +182,7 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 		}
 	}
 	for p := cursor.Next(); p != nil; p = p.Next() {
-		i := node(p).Nest()
+		i := ref(p).Nest()
 		if i < nest {
 			break
 		}
@@ -209,13 +209,13 @@ func findSameLevelPairBefore(p *list.Element) (*Pair, bool) {
 	if pair, ok := p.Value.(*Pair); ok {
 		return pair, true
 	}
-	nest := node(p).Nest()
+	nest := ref(p).Nest()
 	for {
 		p = p.Prev()
 		if p == nil {
 			return nil, false
 		}
-		element := node(p)
+		element := ref(p)
 		i := element.Nest()
 		if i == nest {
 			if pair, ok := p.Value.(*Pair); ok {
@@ -239,10 +239,10 @@ func joinBytes(args ...[]byte) []byte {
 }
 
 func (app *Application) keyFuncInsert(session *pager.Session) {
-	space := node(app.cursor).LeadingSpace()
-	if e := node(app.cursor); e.Value() == Mark('[') {
+	space := ref(app.cursor).LeadingSpace()
+	if e := ref(app.cursor); e.Value() == Mark('[') {
 		next := app.cursor.Next()
-		nextElement := node(next)
+		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
@@ -283,14 +283,14 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		}
 		return
 	}
-	if e := node(app.cursor); e.Value() == Mark('{') {
+	if e := ref(app.cursor); e.Value() == Mark('{') {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return
 		}
 		sample := findPairBefore(app.cursor)
 		next := app.cursor.Next()
-		nextElement := node(next)
+		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
@@ -300,7 +300,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
 				outerPrefix = space
-				todo = func() { node(next).SetLeadingSpace(space) }
+				todo = func() { ref(next).SetLeadingSpace(space) }
 			}
 			nest = nextElement.Nest() + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
@@ -361,7 +361,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		if err != nil {
 			return
 		}
-		element := node(app.cursor)
+		element := ref(app.cursor)
 		if isDuplicated(app.cursor, element.Nest(), key) {
 			app.message = fmt.Sprintf("\aduplicate key: %q", key)
 			return
@@ -409,7 +409,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 		return
 	}
 	if element, ok := app.cursor.Value.(*Element); ok {
-		nest := node(app.cursor).Nest()
+		nest := ref(app.cursor).Nest()
 		if nest < 0 {
 			return
 		}
@@ -433,30 +433,30 @@ func (app *Application) keyFuncInsert(session *pager.Session) {
 }
 
 func (app *Application) removeCursor(session *pager.Session) {
-	comma := node(app.cursor).Comma()
+	comma := ref(app.cursor).Comma()
 	if next := app.cursor.Next(); next != nil {
-		node(app.cursor).SetCursor(false)
+		ref(app.cursor).SetCursor(false)
 		app.list.Remove(app.cursor)
 		app.cursor = next
-		node(app.cursor).SetCursor(true)
+		ref(app.cursor).SetCursor(true)
 		if !comma {
 			if p := app.cursor.Prev(); p != nil {
-				node(p).SetComma(false)
+				ref(p).SetComma(false)
 			}
 		}
 		app.dirty = true
 	} else if prev := app.cursor.Prev(); prev != nil {
-		node(app.cursor).SetCursor(false)
+		ref(app.cursor).SetCursor(false)
 		app.list.Remove(app.cursor)
 		app.cursor = prev
-		node(app.cursor).SetCursor(true)
+		ref(app.cursor).SetCursor(true)
 		app.csrline--
 		if app.csrline < app.winline {
 			session.Window = app.cursor
 			app.winline = app.csrline
 		}
 		if !comma {
-			node(prev).SetComma(false)
+			ref(prev).SetComma(false)
 		}
 		app.dirty = true
 	}
@@ -473,23 +473,23 @@ func (app *Application) removeCursorAndNext() {
 		app.message = "Internal error: no valid cursor position after deletion"
 		return
 	}
-	comma := node(next).Comma()
+	comma := ref(next).Comma()
 
 	app.list.Remove(app.cursor)
 	app.list.Remove(next)
 
 	app.cursor = newCurrent
-	node(newCurrent).SetCursor(true)
+	ref(newCurrent).SetCursor(true)
 	if prev != nil {
-		m, ok := node(prev).Value().(Mark)
+		m, ok := ref(prev).Value().(Mark)
 		if !ok || (m != Mark('{') && m != Mark('[')) {
-			node(prev).SetComma(comma)
+			ref(prev).SetComma(comma)
 		}
 	}
 }
 
 func (app *Application) keyFuncRemove(session *pager.Session) {
-	element := node(app.cursor)
+	element := ref(app.cursor)
 	mark, ok := element.Value().(Mark)
 	if !ok {
 		app.removeCursor(session)
@@ -507,7 +507,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) {
 		app.message = "Unexpected state: missing element after '{' or '['"
 		return
 	}
-	n := node(next)
+	n := ref(next)
 	if n.Value() != Mark(']') && n.Value() != Mark('}') {
 		app.message = "Cannot delete non-empty object or array"
 		return

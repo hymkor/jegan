@@ -41,9 +41,9 @@ func (app *Application) Store(v *list.List) {
 }
 
 func (app *Application) setCursor(c *list.Element) {
-	node(app.cursor).SetCursor(false)
+	ref(app.cursor).SetCursor(false)
 	app.cursor = c
-	node(app.cursor).SetCursor(true)
+	ref(app.cursor).SetCursor(true)
 }
 
 func (app *Application) nextLine(session *pager.Session) {
@@ -60,9 +60,9 @@ func (app *Application) nextLine(session *pager.Session) {
 }
 
 func (app *Application) keyFuncNextPage(session *pager.Session) {
-	node(app.cursor).SetCursor(false)
+	ref(app.cursor).SetCursor(false)
 	defer func() {
-		node(app.cursor).SetCursor(true)
+		ref(app.cursor).SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -78,9 +78,9 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 }
 
 func (app *Application) keyFuncPrevPage(session *pager.Session) {
-	node(app.cursor).SetCursor(false)
+	ref(app.cursor).SetCursor(false)
 	defer func() {
-		node(app.cursor).SetCursor(true)
+		ref(app.cursor).SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -177,10 +177,10 @@ func (app *Application) EventLoop(tty ttyadapter.Tty, ttyout io.Writer) error {
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()
-		node(app.cursor).SetCursor(true)
+		ref(app.cursor).SetCursor(true)
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := node(sample).LeadingSpace()
+		prefix := ref(sample).LeadingSpace()
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}

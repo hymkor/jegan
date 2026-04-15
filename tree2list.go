@@ -24,10 +24,10 @@ func readPairs(prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List 
 			},
 		}
 		sub.PushFront(newFirst)
-		node(sub.Back()).SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
+		ref(sub.Back()).SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
 		L.PushBackList(sub)
 	}
-	back := node(L.Back())
+	back := ref(L.Back())
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
@@ -50,10 +50,10 @@ func readElements(prefix []byte, elements []unjson.ArrayElement, nest int) *list
 	L.PushBack(newElement(Mark('['), nest, false, prefix))
 	for _, element := range elements {
 		sub := read(element.Entry, nest+1)
-		node(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
+		ref(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
 		L.PushBackList(sub)
 	}
-	back := node(L.Back())
+	back := ref(L.Back())
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
@@ -91,7 +91,7 @@ func Read(v *unjson.Entry) *list.List {
 	}
 	L := read(v, 0)
 	if L != nil && L.Len() > 0 {
-		node(L.Back()).SetComma(false)
+		ref(L.Back()).SetComma(false)
 	}
 	return L
 }
