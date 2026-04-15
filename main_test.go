@@ -11,9 +11,9 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-var _ Node = &Element{}
+var _ Line = &Element{}
 
-var _ Node = &Pair{}
+var _ Line = &Pair{}
 
 func test(t *testing.T, source, operation, expect string) {
 	t.Helper()

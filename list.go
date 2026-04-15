@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -12,60 +13,47 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-type Mark rune
-
-func (m Mark) String() string {
-	return string(rune(m))
-}
-
-func (m Mark) GoString() string {
-	return string(rune(m))
-}
-
-func (m Mark) Json() []byte {
-	return []byte{byte(m)}
-}
-
-type Node interface {
+type Line interface {
 	LeadingSpace() []byte
 	SetLeadingSpace(v []byte)
-	Nest() int
-	Comma() bool
-	SetComma(bool)
 	Value() any
 	SetValue(any)
 	SpaceCommaOrClose() []byte
-	SetCursor(bool)
 	SetSpaceCommaOrClose([]byte)
+	Comma() bool
+	SetComma(bool)
+
+	Nest() int
+	SetCursor(bool)
+
 	Display(int) string
 	Dump(w io.Writer)
 }
 
-func node(p *list.Element) Node {
-	return p.Value.(Node)
+func ref(p *list.Element) Line {
+	return p.Value.(Line)
 }
 
 type Element struct {
-	value             any
-	nest              int
-	comma             bool
-	cursor            bool
 	spaceValue        []byte
+	value             any
 	spaceCommaOrClose []byte
+	comma             bool
+
+	nest   int
+	cursor bool
 }
 
-func (e *Element) LeadingSpace() []byte      { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte)  { e.spaceValue = v }
-func (e *Element) Nest() int                 { return e.nest }
-func (e *Element) Comma() bool               { return e.comma }
-func (e *Element) SetComma(v bool)           { e.comma = v }
-func (e *Element) Value() any                { return e.value }
-func (e *Element) SetValue(v any)            { e.value = v }
-func (e *Element) SpaceCommaOrClose() []byte { return e.spaceCommaOrClose }
-func (e *Element) SetCursor(v bool)          { e.cursor = v }
-func (e *Element) SetSpaceCommaOrClose(v []byte) {
-	e.spaceCommaOrClose = v
-}
+func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
+func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
+func (e *Element) Value() any                    { return e.value }
+func (e *Element) SetValue(v any)                { e.value = v }
+func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
+func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
+func (e *Element) Comma() bool                   { return e.comma }
+func (e *Element) SetComma(v bool)               { e.comma = v }
+func (e *Element) Nest() int                     { return e.nest }
+func (e *Element) SetCursor(v bool)              { e.cursor = v }
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
@@ -84,6 +72,27 @@ func (e *Element) Dump(w io.Writer) {
 		w.Write([]byte{','})
 	}
 }
+
+type Mark rune
+
+func (m Mark) String() string {
+	return string(rune(m))
+}
+
+func (m Mark) GoString() string {
+	return string(rune(m))
+}
+
+func (m Mark) Json() []byte {
+	return []byte{byte(m)}
+}
+
+const (
+	objStart   = Mark('{')
+	objEnd     = Mark('}')
+	arrayStart = Mark('[')
+	arrayEnd   = Mark(']')
+)
 
 func highlightString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
@@ -153,7 +162,11 @@ func (e *Element) highlight(b *strings.Builder) {
 		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := v.(string); ok {
-		jsonBin, _ := json.Marshal(s)
+		jsonBin, err := json.Marshal(s)
+		if err != nil {
+			debug("(*Element) highlight", s, err.Error())
+			jsonBin = []byte(strconv.Quote(s))
+		}
 		highlightString(jsonBin, ansi.Magenta, b)
 	} else if v == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
@@ -188,10 +201,10 @@ func (e *Element) Display(w int) string {
 }
 
 type Pair struct {
-	key string
-	Element
 	spaceKey   []byte
+	key        string
 	spaceColon []byte
+	Element
 }
 
 func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
@@ -205,7 +218,11 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	jsonBin, _ := json.Marshal(pair.key)
+	jsonBin, err := json.Marshal(pair.key)
+	if err != nil {
+		debug("(*Pair) Display", pair.key, err.Error())
+		jsonBin = []byte(strconv.Quote(pair.key))
+	}
 	highlightString(jsonBin, ansi.Yellow, &b)
 	b.WriteString(": ")
 	pair.Element.highlight(&b)
@@ -218,107 +235,28 @@ func (pair *Pair) Display(w int) string {
 
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
+		spaceValue: prefix,
 		value:      v,
-		nest:       i,
 		comma:      comma,
-		spaceValue: prefix}
-}
-
-func newPair(k string, v any, i int, comma bool) *Pair {
-	return &Pair{
-		key: k,
-		Element: Element{
-			value: v,
-			nest:  i,
-			comma: comma}}
+		nest:       i,
+	}
 }
 
 func (p *Pair) Dump(w io.Writer) {
 	w.Write(p.spaceKey)
-	b, _ := json.Marshal(p.key)
+	b, err := json.Marshal(p.key)
+	if err != nil {
+		debug("(*Pair) Dump", p.key, err.Error())
+		b = []byte(strconv.Quote(p.key))
+	}
 	w.Write(b)
 	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
 	p.Element.Dump(w)
 }
 
-func read(t *unjson.Entry, nest int) (L *list.List) {
-	v := t.Value
-	prefix := t.SpaceValue
-	L = list.New()
-	if x, ok := v.(*unjson.Object); ok {
-		if len(x.Pairs) <= 0 {
-			L.PushBack(newElement(Mark('{'), nest, false, prefix))
-			L.PushBack(newElement(Mark('}'), nest, true, x.Blank))
-			return
-		}
-		v = []unjson.KeyValuePair(x.Pairs)
-	} else if x, ok := v.(*unjson.Array); ok {
-		if len(x.Element) <= 0 {
-			L.PushBack(newElement(Mark('['), nest, false, prefix))
-			L.PushBack(newElement(Mark(']'), nest, true, x.Blank))
-			return
-		}
-		v = []unjson.ArrayElement(x.Element)
-	}
-	if x, ok := v.([]unjson.KeyValuePair); ok {
-		L.PushBack(newElement(Mark('{'), nest, false, prefix))
-		for _, kv := range x {
-			key := kv.Key
-			val := kv.Value
-			sub := read(val, nest+1)
-			first := sub.Remove(sub.Front()).(*Element)
-			n := newPair(key, first.value, nest+1, first.comma)
-			n.spaceKey = kv.SpaceKey
-			n.spaceColon = kv.SpaceColon
-			n.Element.spaceValue = kv.Value.SpaceValue
-			L.PushBack(n)
-			L.PushBackList(sub)
-			if sub.Len() > 0 {
-				node(sub.Back()).SetSpaceCommaOrClose(kv.SpaceCommaOrClose)
-			} else {
-				n.SetSpaceCommaOrClose(kv.SpaceCommaOrClose)
-			}
-		}
-		back := node(L.Back())
-		finalSpace := back.SpaceCommaOrClose()
-		back.SetSpaceCommaOrClose(nil)
-		back.SetComma(false)
-		L.PushBack(newElement(Mark('}'), nest, true, finalSpace))
-		return
-	}
-	if x, ok := v.([]unjson.ArrayElement); ok {
-		L.PushBack(newElement(Mark('['), nest, false, prefix))
-		for _, v := range x {
-			sub := read(v.Entry, nest+1)
-			node(sub.Back()).SetSpaceCommaOrClose(v.PreComma)
-			L.PushBackList(sub)
-		}
-		back := node(L.Back())
-		finalSpace := back.SpaceCommaOrClose()
-		back.SetSpaceCommaOrClose(nil)
-		back.SetComma(false)
-		L.PushBack(newElement(Mark(']'), nest, true, finalSpace))
-		return
-
-	}
-	L.PushBack(newElement(v, nest, true, prefix))
-	return
-}
-
-func Read(v *unjson.Entry) (L *list.List) {
-	if v == nil {
-		return nil
-	}
-	L = read(v, 0)
-	if L != nil && L.Len() > 0 {
-		node(L.Back()).SetComma(false)
-	}
-	return L
-}
-
 func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
-		node(p).Dump(w)
+		ref(p).Dump(w)
 	}
 }
