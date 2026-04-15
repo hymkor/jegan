@@ -132,7 +132,7 @@ func (session *Session) UpdateStatus() {
 	}
 }
 
-func (session *Session) Front() {
+func (session *Session) MoveFront() {
 	session.Window = session.List.Front()
 	session.WinPos = 0
 }
@@ -150,13 +150,13 @@ func (session *Session) rollup() (i int) {
 	return
 }
 
-func (session *Session) Back() int {
+func (session *Session) MoveBack() int {
 	session.Window = session.List.Back()
 	session.WinPos = session.List.Len() - 1
 	return session.rollup()
 }
 
-func (session *Session) NextPage() {
+func (session *Session) MoveNextPage() {
 	for i := 0; i < session.Height && session.tail != nil; i++ {
 		session.Window = session.Window.Next()
 		session.WinPos++
@@ -164,7 +164,7 @@ func (session *Session) NextPage() {
 	}
 }
 
-func (session *Session) PrevPage() {
+func (session *Session) MovePrevPage() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
 		session.WinPos--
@@ -172,7 +172,7 @@ func (session *Session) PrevPage() {
 	}
 }
 
-func (session *Session) Next() {
+func (session *Session) MoveNextLine() {
 	if session.tail != nil {
 		if w := session.Window.Next(); w != nil {
 			session.Window = w
@@ -181,7 +181,7 @@ func (session *Session) Next() {
 	}
 }
 
-func (session *Session) Prev() {
+func (session *Session) MovePrevLine() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
 		session.WinPos--
@@ -230,17 +230,17 @@ func (session *Session) EventLoop() error {
 		}
 		switch key {
 		case "<":
-			session.Front()
+			session.MoveFront()
 		case ">":
-			session.Back()
+			session.MoveBack()
 		case " ":
-			session.NextPage()
+			session.MoveNextPage()
 		case "b":
-			session.PrevPage()
+			session.MovePrevPage()
 		case "j", keys.Down, keys.CtrlN:
-			session.Next()
+			session.MoveNextLine()
 		case "k", keys.Up, keys.CtrlP:
-			session.Prev()
+			session.MovePrevLine()
 		case "q", keys.CtrlC, keys.CtrlG:
 			return nil
 		case "l", keys.Right, keys.CtrlF:

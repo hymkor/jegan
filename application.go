@@ -118,12 +118,12 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		}
 	case "<":
 		app.setCursor(app.list.Front())
-		session.Front()
+		session.MoveFront()
 		app.winline = 0
 		app.csrline = 0
 	case ">":
 		app.setCursor(app.list.Back())
-		n := session.Back()
+		n := session.MoveBack()
 		app.csrline = app.list.Len() - 1
 		app.winline = app.list.Len() - 1 - n
 	case " ", keys.PageDown:
