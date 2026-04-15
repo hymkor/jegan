@@ -1,9 +1,9 @@
 package jegan
 
 import (
+	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -19,60 +19,79 @@ func debug(v ...any) {
 	}
 }
 
+func parseArgs(args []string, load func(io.Reader, string) error) (useStdin bool, names []string, err error) {
+	if len(args) <= 0 {
+		useStdin = true
+		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
+			err = load(os.Stdin, "")
+		}
+		return
+	}
+	for _, arg := range args {
+		if arg == "-" {
+			useStdin = true
+			if err = load(os.Stdin, ""); err != nil {
+				return
+			}
+			continue
+		}
+		var fnames []string
+		fnames, err = filepath.Glob(arg)
+		if err != nil || len(fnames) <= 0 {
+			fnames = []string{arg}
+		}
+		for _, fn := range fnames {
+			var fd *os.File
+			fd, err = os.Open(fn)
+			if err != nil {
+				return
+			}
+			if err = load(fd, fn); err != nil {
+				return
+			}
+			if err = fd.Close(); err != nil {
+				return
+			}
+			names = append(names, fn)
+		}
+	}
+	return
+}
+
 type Config struct {
 	Auto string
 }
 
 func (c *Config) Run(args []string) error {
-	app := &Application{Name: strings.Join(args, "+")}
+	app := &Application{}
 	defer app.Close()
 
-	getTtyOut := colorable.NewColorableStdout
-
-	if len(args) <= 0 {
-		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			if err := app.Load(os.Stdin, ""); err != nil {
-				return err
-			}
-		}
-		getTtyOut = colorable.NewColorableStderr
-	} else {
-		for _, arg := range args {
-			if arg == "-" {
-				if err := app.Load(os.Stdin, ""); err != nil {
-					return err
-				}
-				getTtyOut = colorable.NewColorableStderr
-				continue
-			}
-			fnames, err := filepath.Glob(arg)
-			if err != nil || len(fnames) <= 0 {
-				fnames = []string{arg}
-			}
-			for _, fn := range fnames {
-				fd, err := os.Open(fn)
-				if err != nil {
-					return err
-				}
-				if err := app.Load(fd, fn); err != nil {
-					return err
-				}
-				if err := fd.Close(); err != nil {
-					return err
-				}
-			}
-		}
-	}
 	disable := colorable.EnableColorsStdout(nil)
 	if disable != nil {
 		defer disable()
 	}
-	ttyOut := getTtyOut()
+
 	var ttyIn ttyadapter.Tty
 	if c.Auto != "" {
 		ttyIn = &autoPilot{script: c.Auto}
 	} else {
 		ttyIn = &tty8pe.Tty{}
 	}
+
+	useStdin, names, err := parseArgs(args, app.Load)
+	if err != nil {
+		return err
+	}
+	if len(names) == 1 {
+		app.Name = names[0]
+	}
+
+	var ttyOut io.Writer
+	if useStdin {
+		ttyOut = colorable.NewColorableStderr()
+	} else {
+		ttyOut = colorable.NewColorableStdout()
+	}
+
 	return app.EventLoop(ttyIn, ttyOut)
 }
