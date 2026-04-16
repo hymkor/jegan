@@ -2,6 +2,8 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+- ステータスラインで、カーソル行の JSON パスを表示するようにした (#62)
+
 v0.3.1
 ------
 Apr 14,2026
