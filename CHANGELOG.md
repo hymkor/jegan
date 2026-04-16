@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Add current JSON path display in status line (#62)
+
 v0.3.1
 ------
 Apr 14,2026
