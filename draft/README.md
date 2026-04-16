@@ -125,6 +125,7 @@ Key bindings
 - `R` : Modify the item at the cursor (explicitly specify the value type)
 - `d` : Delete the item at the cursor  
   Non-empty objects and arrays cannot be deleted
+- `Ctrl-C`: Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
 

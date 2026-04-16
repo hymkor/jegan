@@ -3,6 +3,7 @@ Changelog
 ( [English](CHANGELOG.md) / Japanese )
 
 - ステータスラインで、カーソル行の JSON パスと設定値を表示するようにした (#62, #63)
+- 現在の JSON パスと値をコピーするショートカット(Ctrl-C) を追加 (#64)
 
 v0.3.1
 ------
