@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/atotto/clipboard"
+
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/unjson"
@@ -554,4 +556,29 @@ func (app *Application) keyFuncRemove(session *pager.Session) error {
 		return errors.New("Cannot delete non-empty object or array")
 	}
 	return app.removeCursorAndNext()
+}
+
+func (app *Application) keyFuncCopy(session *pager.Session) error {
+	r := ref(app.cursor)
+	var buffer strings.Builder
+	r.Path().Dump(&buffer)
+
+	v := r.Value()
+	if _, ok := v.(Mark); !ok {
+		buffer.WriteString(" = ")
+		if f, ok := v.(interface{ Json() []byte }); ok {
+			buffer.Write(f.Json())
+		} else {
+			bin, err := json.Marshal(v)
+			if err != nil {
+				fmt.Fprint(&buffer, v)
+			} else {
+				buffer.Write(bin)
+			}
+		}
+	}
+	s := buffer.String()
+	app.message = s
+	clipboard.WriteAll(s)
+	return nil
 }

@@ -120,7 +120,7 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		app.keyFuncNextPage(session)
 	case "b", keys.PageUp:
 		app.keyFuncPrevPage(session)
-	case keys.CtrlC, keys.CtrlG:
+	case keys.CtrlG:
 	case "r":
 		err = app.keyFuncReplace(session, app.inputFormat)
 	case "R":
@@ -129,6 +129,8 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		err = app.keyFuncInsert(session)
 	case "d":
 		err = app.keyFuncRemove(session)
+	case keys.CtrlC:
+		err = app.keyFuncCopy(session)
 	case "w":
 		err = app.keyFuncSave(session)
 	case "q":

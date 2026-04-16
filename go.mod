@@ -3,6 +3,7 @@ module github.com/hymkor/jegan
 go 1.20
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/hymkor/go-safewrite v0.4.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
