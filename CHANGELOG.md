@@ -3,6 +3,7 @@ Changelog
 ( English / [Japanese](CHANGELOG_ja.md) )
 
 - Display current JSON path and value in status line (#62, #63)
+- Add shortcut (Ctrl-C) to copy current path and value (#64)
 
 v0.3.1
 ------
