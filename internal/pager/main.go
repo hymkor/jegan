@@ -127,7 +127,8 @@ func (session *Session) UpdateStatus() {
 	if session.Status != nil {
 		line := session.Status(session)
 		session.TtyOut.Write([]byte{'\r'})
-		io.WriteString(session.TtyOut, Truncate(line, session.Width))
+		io.WriteString(session.TtyOut,
+			Truncate(trimLeft(line, session.offset), session.Width))
 		io.WriteString(session.TtyOut, ansi.EraseLine)
 	}
 }
