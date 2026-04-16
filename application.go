@@ -27,6 +27,9 @@ type Application struct {
 	dirty   bool
 	indent  []byte
 	ttyIn   ttyadapter.Tty
+
+	search func() error
+	revert func() error
 }
 
 func (app *Application) Store(v *list.List) {
@@ -107,6 +110,18 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 			for app.csrline < session.WinPos {
 				session.MovePrevLine()
 			}
+		}
+	case "/":
+		err = app.keyFuncSearch(session, false)
+	case "?":
+		err = app.keyFuncSearch(session, true)
+	case "n":
+		if app.search != nil {
+			err = app.search()
+		}
+	case "N":
+		if app.revert != nil {
+			err = app.revert()
 		}
 	case "<":
 		app.setCursor(app.list.Front())
