@@ -77,23 +77,21 @@ func newModifiedLiteral(v any, j string) *modifiedLiteral {
 	return &modifiedLiteral{Literal: unjson.NewLiteral(v, []byte(j))}
 }
 
-func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any, error) {
-	var defaults string
-	if _, ok := defaultv.(struct{}); ok {
-		defaults = ""
-	} else if v, ok := defaultv.(interface{ Json() []byte }); ok {
-		defaults = string(v.Json())
-	} else {
-		b, err := json.Marshal(defaultv)
-		if err != nil {
-			return nil, err
-		}
-		defaults = string(b)
+func makeDefaultFormat(v any) string {
+	if _, ok := v.(struct{}); ok {
+		return ""
 	}
-	rawText, err := app.readLineElement(session, "New value:", defaults)
+	if v, ok := v.(interface{ Json() []byte }); ok {
+		return string(v.Json())
+	}
+	bin, err := json.Marshal(v)
 	if err != nil {
-		return nil, err
+		return fmt.Sprintf("%q", v)
 	}
+	return string(bin)
+}
+
+func inputToAny(rawText string) ([]any, error) {
 	normText := strings.TrimSpace(rawText)
 
 	if len(normText) >= 2 && normText[0] == '"' && normText[len(normText)-1] == '"' {
@@ -122,6 +120,15 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any
 		return []any{arrayStart, arrayEnd}, nil
 	}
 	return []any{rawText}, nil
+}
+
+func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any, error) {
+	defaults := makeDefaultFormat(defaultv)
+	text, err := app.readLineElement(session, "New value:", defaults)
+	if err != nil {
+		return nil, err
+	}
+	return inputToAny(text)
 }
 
 func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) ([]any, error) {

@@ -4,6 +4,17 @@ Changelog
 
 - Display current JSON path and value in status line (#62, #63)
 - Add shortcut (Ctrl-C) to copy current path and value (#64)
+- Value search feature (#65)
+  - `/` : search forward
+  - `?` : search backward
+  - `n` : repeat search in the same direction
+  - `N` : repeat search in the opposite direction
+  - Search applies to values only (keys are ignored)
+  - Search input follows the same rules as the `o` command:
+    - `"text"` → string
+    - `123`, `1.23` → number
+    - `true`, `false`, `nil` → literals
+    - others → treated as a string
 
 v0.3.1
 ------
