@@ -159,9 +159,13 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 }
 
 func (e *Element) highlight(b *strings.Builder) {
+	e.highlightWithoutComma(b)
 	if e.comma {
-		defer b.WriteByte(',')
+		b.WriteByte(',')
 	}
+}
+
+func (e *Element) highlightWithoutComma(b *strings.Builder) {
 	v := e.value
 	if m, ok := v.(Mark); ok {
 		b.WriteString(ansi.Red)
