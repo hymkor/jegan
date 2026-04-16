@@ -2,7 +2,7 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
-- Add current JSON path display in status line (#62)
+- Display current JSON path and value in status line (#62, #63)
 
 v0.3.1
 ------
