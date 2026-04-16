@@ -238,8 +238,25 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
+func reflectIndex(p *list.Element, nest int, plusminus int) {
+	for ; p != nil; p = p.Next() {
+		r := ref(p)
+		if n := r.Nest(); n < nest {
+			return
+		} else if n > nest {
+			continue
+		}
+		if path := r.Path(); path != nil {
+			if v := r.Value(); v != objEnd && v != arrayEnd {
+				path.index += plusminus
+			}
+		}
+	}
+}
+
 func (app *Application) keyFuncInsert(session *pager.Session) error {
 	space := ref(app.cursor).LeadingSpace()
+	currentNest := ref(app.cursor).Nest()
 	if e := ref(app.cursor); e.Value() == arrayStart {
 		next := app.cursor.Next()
 		nextElement := ref(next)
@@ -269,17 +286,21 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		}
 		switch len(values) {
 		case 2: // [\n[\n],\n
+			reflectIndex(app.cursor.Next(), currentNest+1, +1)
 			e1 := newElement(values[0], nest, false, newPrefix)
+			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
 			e2 := newElement(values[1], nest, comma, nil)
+			e2.SetPath(e1.Path())
 			app.list.InsertBefore(e1, next)
 			app.list.InsertBefore(e2, next)
 			todo()
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // [\n value
-			app.list.InsertBefore(
-				newElement(values[0], nest, comma, newPrefix),
-				next)
+			reflectIndex(app.cursor.Next(), currentNest+1, +1)
+			e1 := newElement(values[0], nest, comma, newPrefix)
+			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
+			app.list.InsertBefore(e1, next)
 			todo()
 			app.nextLine(session)
 			app.dirty = true
@@ -426,14 +447,21 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		}
 		switch len(values) {
 		case 2: // [ \n ],
+			reflectIndex(app.cursor.Next(), currentNest, +1)
 			e1 := newElement(values[0], element.Nest(), false, space)
 			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
+			j := ref(app.cursor).Path()
+			e1.SetPath(j.parent.ChildIndex(j.index + 1))
+			e2.SetPath(e1.Path())
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(e1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // value,
+			reflectIndex(app.cursor.Next(), currentNest, +1)
 			e := newElement(values[0], element.Nest(), element.Comma(), space)
+			j := ref(app.cursor).Path()
+			e.SetPath(j.parent.ChildIndex(j.index + 1))
 			app.list.InsertAfter(e, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
@@ -444,9 +472,11 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 }
 
 func (app *Application) removeCursor(session *pager.Session) {
-	comma := ref(app.cursor).Comma()
+	r := ref(app.cursor)
+	comma := r.Comma()
 	if next := app.cursor.Next(); next != nil {
-		ref(app.cursor).SetCursor(false)
+		r.SetCursor(false)
+		nest := r.Nest()
 		app.list.Remove(app.cursor)
 		app.cursor = next
 		ref(app.cursor).SetCursor(true)
@@ -456,6 +486,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 			}
 		}
 		app.dirty = true
+		reflectIndex(app.cursor, nest, -1)
 	} else if prev := app.cursor.Prev(); prev != nil {
 		ref(app.cursor).SetCursor(false)
 		app.list.Remove(app.cursor)
@@ -474,6 +505,7 @@ func (app *Application) removeCursor(session *pager.Session) {
 }
 
 func (app *Application) removeCursorAndNext() error {
+	nest := ref(app.cursor).Nest()
 	prev := app.cursor.Prev()
 	next := app.cursor.Next()
 	if next == nil {
@@ -496,6 +528,7 @@ func (app *Application) removeCursorAndNext() error {
 			ref(prev).SetComma(comma)
 		}
 	}
+	reflectIndex(app.cursor, nest, -1)
 	return nil
 }
 

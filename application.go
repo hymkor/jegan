@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"strings"
 
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
@@ -145,13 +146,20 @@ func (app *Application) status(session *pager.Session) (text string) {
 		text = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
 	} else if app.Name != "" {
-		var mark rune
+		var b strings.Builder
+
+		b.WriteString(ansi.Reverse)
+		b.WriteString(app.Name)
+		b.WriteString(ansi.Inverse)
 		if app.dirty {
-			mark = '*'
+			b.WriteString("* ")
 		} else {
-			mark = ' '
+			b.WriteString("  ")
 		}
-		text = fmt.Sprintf(ansi.Reverse+"%s"+ansi.Inverse+"%c"+ansi.EraseLine, app.Name, mark)
+		ref(app.cursor).Path().Dump(&b)
+		b.WriteString(ansi.EraseLine)
+
+		text = b.String()
 	} else {
 		text = fmt.Sprintf(ansi.Bold+"Jegan %s-%s-%s"+ansi.Thin+ansi.EraseLine,
 			version, runtime.GOOS, runtime.GOARCH)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -12,6 +13,50 @@ import (
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
 )
+
+type JsonPath struct {
+	parent *JsonPath
+	text   string
+	index  int
+}
+
+func (j *JsonPath) ChildIndex(i int) *JsonPath {
+	return &JsonPath{
+		parent: j,
+		index:  i,
+	}
+}
+
+func (j *JsonPath) ChildKey(key string) *JsonPath {
+	return &JsonPath{
+		parent: j,
+		text:   key,
+		index:  -1,
+	}
+}
+
+var rxSymbol = regexp.MustCompile("^[_A-Za-z][_A-Za-z0-9]*$")
+
+func (j *JsonPath) Dump(w io.Writer) {
+	if j == nil {
+		return
+	}
+	if j.parent != nil {
+		j.parent.Dump(w)
+	}
+	if j.text != "" {
+		if rxSymbol.MatchString(j.text) {
+			fmt.Fprintf(w, ".%s", j.text)
+		} else {
+			fmt.Fprintf(w, ".%q", j.text)
+		}
+	} else {
+		if j.parent == nil {
+			w.Write([]byte{'.'})
+		}
+		fmt.Fprintf(w, "[%d]", j.index)
+	}
+}
 
 type Line interface {
 	LeadingSpace() []byte
@@ -25,6 +70,9 @@ type Line interface {
 
 	Nest() int
 	SetCursor(bool)
+
+	Path() *JsonPath
+	SetPath(*JsonPath)
 
 	Display(int) string
 	Dump(w io.Writer)
@@ -42,6 +90,7 @@ type Element struct {
 
 	nest   int
 	cursor bool
+	path   *JsonPath
 }
 
 func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
@@ -54,6 +103,8 @@ func (e *Element) Comma() bool                   { return e.comma }
 func (e *Element) SetComma(v bool)               { e.comma = v }
 func (e *Element) Nest() int                     { return e.nest }
 func (e *Element) SetCursor(v bool)              { e.cursor = v }
+func (e *Element) Path() *JsonPath               { return e.path }
+func (e *Element) SetPath(v *JsonPath)           { e.path = v }
 
 func (e *Element) Dump(w io.Writer) {
 	w.Write(e.spaceValue)
