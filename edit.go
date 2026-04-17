@@ -27,19 +27,19 @@ func (app *Application) keyFuncReplace(
 	}
 	prev := func() bool { return false }
 
-	if v, ok := element.Value().(Mark); ok {
+	if v, ok := unwrap(element.Value()).(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := ref(next).Value().(Mark)
+		nextv, ok := unwrap(ref(next).Value()).(Mark)
 		if !ok {
 			return nil
 		}
-		if v == objStart && nextv == objEnd {
+		if objStart.Equals(v) && objEnd.Equals(nextv) {
 			defaultv = map[string]any{}
 			prev = func() bool { app.list.Remove(next); return true }
-		} else if v == arrayStart && nextv == arrayEnd {
+		} else if arrayStart.Equals(v) && arrayEnd.Equals(nextv) {
 			defaultv = []any{}
 			prev = func() bool { app.list.Remove(next); return true }
 		} else {
@@ -266,14 +266,14 @@ func reflectIndex(p *list.Element, nest int, plusminus int) {
 func (app *Application) keyFuncInsert(session *pager.Session) error {
 	space := ref(app.cursor).LeadingSpace()
 	currentNest := ref(app.cursor).Nest()
-	if e := ref(app.cursor); e.Value() == arrayStart {
+	if e := ref(app.cursor); arrayStart.Equals(e.Value()) {
 		next := app.cursor.Next()
 		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == arrayEnd {
+		if arrayEnd.Equals(nextElement.Value()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -316,7 +316,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		}
 		return nil
 	}
-	if e := ref(app.cursor); e.Value() == objStart {
+	if e := ref(app.cursor); objStart.Equals(e.Value()) {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return err
@@ -328,7 +328,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == objEnd {
+		if objEnd.Equals(nextElement.Value()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
@@ -532,7 +532,7 @@ func (app *Application) removeCursorAndNext() error {
 	app.cursor = newCurrent
 	ref(newCurrent).SetCursor(true)
 	if prev != nil {
-		m, ok := ref(prev).Value().(Mark)
+		m, ok := unwrap(ref(prev).Value()).(Mark)
 		if !ok || (m != objStart && m != arrayStart) {
 			ref(prev).SetComma(comma)
 		}
@@ -543,7 +543,7 @@ func (app *Application) removeCursorAndNext() error {
 
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
-	mark, ok := element.Value().(Mark)
+	mark, ok := unwrap(element.Value()).(Mark)
 	if !ok {
 		app.removeCursor(session)
 		return nil
@@ -571,7 +571,7 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 	r.Path().Dump(&buffer)
 
 	v := r.Value()
-	if _, ok := v.(Mark); !ok {
+	if _, ok := unwrap(v).(Mark); !ok {
 		buffer.WriteString(" = ")
 		if f, ok := v.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())

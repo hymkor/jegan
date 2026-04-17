@@ -138,6 +138,11 @@ func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }
 
+func (m Mark) Equals(v any) bool {
+	v = unwrap(v)
+	return v == m
+}
+
 const (
 	objStart   = Mark('{')
 	objEnd     = Mark('}')
@@ -167,7 +172,7 @@ func (e *Element) highlight(b *strings.Builder) {
 
 func (e *Element) highlightWithoutComma(b *strings.Builder) {
 	v := e.value
-	if m, ok := v.(Mark); ok {
+	if m, ok := unwrap(v).(Mark); ok {
 		b.WriteString(ansi.Red)
 		b.WriteRune(rune(m))
 		b.WriteString(ansi.Default)
