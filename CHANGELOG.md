@@ -15,6 +15,7 @@ Changelog
     - `123`, `1.23` → number
     - `true`, `false`, `nil` → literals
     - others → treated as a string
+- Add Key bindings to reset horizontal scroll and return to column 0: `0`, `^`
 
 v0.3.1
 ------
