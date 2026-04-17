@@ -85,6 +85,15 @@ func (app *Application) keyFuncReplace(
 	return nil
 }
 
+type tombstone struct {
+	first  any
+	second Line
+}
+
+func (r *tombstone) Json() []byte {
+	return []byte{}
+}
+
 type modifiedLiteral struct {
 	*unjson.Literal
 	backup any
@@ -560,9 +569,13 @@ func (app *Application) removeCursorAndNext() error {
 
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
+	if _, ok := element.Value().(*tombstone); ok {
+		return nil
+	}
 	mark, ok := unwrap(element.Value()).(Mark)
 	if !ok {
-		app.removeCursor(session)
+		element.SetValue(&tombstone{first: element.Value()})
+		// app.removeCursor(session)
 		return nil
 	}
 	if mark != objStart && mark != arrayStart {
@@ -579,7 +592,13 @@ func (app *Application) keyFuncRemove(session *pager.Session) error {
 	if n.Value() != arrayEnd && n.Value() != objEnd {
 		return errors.New("Cannot delete non-empty object or array")
 	}
-	return app.removeCursorAndNext()
+	element.SetValue(&tombstone{
+		first:  element.Value(),
+		second: n,
+	})
+	element.SetComma(n.Comma())
+	app.list.Remove(next)
+	return nil // app.removeCursorAndNext()
 }
 
 func (app *Application) keyFuncCopy(session *pager.Session) error {
@@ -609,6 +628,14 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 
 func (app *Application) keyFuncUndo(session *pager.Session) error {
 	r := ref(app.cursor)
+	if d, ok := r.Value().(*tombstone); ok {
+		r.SetValue(d.first)
+		if d.second != nil {
+			app.list.InsertAfter(d.second, app.cursor)
+			r.SetComma(false)
+		}
+		return nil
+	}
 	m, ok := r.Value().(*modifiedLiteral)
 	if !ok || m.backup == nil {
 		return nil
