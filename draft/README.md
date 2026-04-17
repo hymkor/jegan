@@ -102,6 +102,7 @@ Key bindings
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
 - `h`, `←`, `Ctrl-B` : Scroll the view to the left
+- `0`, `^` : reset horizontal scroll (jump to column 0)
 - `Space`, `PageDown` : Move to the next page of items
 - `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
@@ -121,8 +122,8 @@ Key bindings
     - `true` / `false` → boolean
     - `{}` → empty object
     - `[]` → empty array
-    - Otherwise → string (used as-is)
-  - Ctrl+G cancels the current input
+    - *Otherwise* → string (used as-is)
+  - `Ctrl+G` cancels the current input
   - Empty input is treated as an empty string (`""`).
   - Duplicate keys in objects are not allowed.
 - `r` : Modify the item at the cursor (same input method as `o`)
