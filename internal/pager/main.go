@@ -250,6 +250,8 @@ func (session *Session) EventLoop() error {
 			if session.offset > 0 {
 				session.offset--
 			}
+		case "0", "^":
+			session.offset = 0
 		}
 		rewind()
 	}
