@@ -23,12 +23,15 @@ func unwrap(v any) any {
 func newCompare(v any) (func(key string, value any) bool, bool) {
 	v = unwrap(v)
 	if s, ok := v.(string); ok {
+		s = strings.ToLower(s)
 		return func(key string, value any) bool {
+			key = strings.ToLower(key)
 			if strings.Contains(key, s) {
 				return true
 			}
 			other := unwrap(value)
 			if o, ok := other.(string); ok {
+				o = strings.ToLower(o)
 				return strings.Contains(o, s)
 			}
 			return false
