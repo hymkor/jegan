@@ -49,9 +49,9 @@ Only the parts you edit are changed.
 * Write to file or stdout
 * Works as a filter:
 
-  ```
-  jegan < input.json > output.json
-  ```
+```
+jegan < input.json > output.json
+```
 
 ### ⌨️ Efficient editing
 
@@ -132,8 +132,8 @@ Key bindings
 - `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
 - `>` : Move to the last item
-- `/` : Search forward (values only)
-- `?` : Search backward (values only)
+- `/` : Search forward
+- `?` : Search backward
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
 - `o` : Insert a new item below the cursor.
