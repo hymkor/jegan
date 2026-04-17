@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Improve search: now matches both keys and values, case-insensitive (#68)
+
 v0.4.0
 ------
 Apr 17, 2026
