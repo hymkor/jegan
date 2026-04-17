@@ -102,10 +102,15 @@ Key bindings
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
 - `h`, `←`, `Ctrl-B` : Scroll the view to the left
+- `0`, `^` : reset horizontal scroll (jump to column 0)
 - `Space`, `PageDown` : Move to the next page of items
 - `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
 - `>` : Move to the last item
+- `/` : Search forward (values only)
+- `?` : Search backward (values only)
+- `n` : Repeat search in the same direction
+- `N` : Repeat search in the opposite direction
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
   - For array items, enter only the value.
@@ -117,14 +122,15 @@ Key bindings
     - `true` / `false` → boolean
     - `{}` → empty object
     - `[]` → empty array
-    - Otherwise → string (used as-is)
-  - Ctrl+G cancels the current input
+    - *Otherwise* → string (used as-is)
+  - `Ctrl+G` cancels the current input
   - Empty input is treated as an empty string (`""`).
   - Duplicate keys in objects are not allowed.
 - `r` : Modify the item at the cursor (same input method as `o`)
 - `R` : Modify the item at the cursor (explicitly specify the value type)
 - `d` : Delete the item at the cursor  
   Non-empty objects and arrays cannot be deleted
+- `Ctrl-C`: Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
 

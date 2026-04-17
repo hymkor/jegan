@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.4.0
+------
+Apr 17, 2026
+
 - Display current JSON path and value in status line (#62, #63)
 - Add shortcut (Ctrl-C) to copy current path and value (#64)
 - Value search feature (#65)
@@ -15,18 +19,18 @@ Changelog
     - `123`, `1.23` → number
     - `true`, `false`, `nil` → literals
     - others → treated as a string
-- Add Key bindings to reset horizontal scroll and return to column 0: `0`, `^`
+- Add Key bindings to reset horizontal scroll and return to column 0: `0`, `^` (#66)
 
 v0.3.1
 ------
-Apr 14,2026
+Apr 14, 2026
 
 - Preserve colon spacing when adding object pairs with "o" (#57)
 - Improve rendering of non-JSON text by normalizing whitespace and preserving visible characters instead of escaped string representation (Thanks to @rinodrops, #51, #58)
 
 v0.3.0
 ------
-Apr 14,2026
+Apr 14, 2026
 
 - Support JSON wrapped in JavaScript assignments
   (as used in X/Twitter archives) (#44)

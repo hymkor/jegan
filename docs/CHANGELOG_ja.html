@@ -1142,14 +1142,38 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( <a href="CHANGELOG.html">English</a> / Japanese )</p>
+<h2 id="v040">v0.4.0</h2>
+<p>Apr 17, 2026</p>
+<ul>
+<li>ステータスラインで、カーソル行の JSON パスと設定値を表示するようにした (#62, #63)</li>
+<li>現在の JSON パスと値をコピーするショートカット(Ctrl-C) を追加 (#64)</li>
+<li>検索機能を追加 (#65)
+<ul>
+<li><code>/</code> : 前方検索</li>
+<li><code>?</code> : 後方検索</li>
+<li><code>n</code> : 同じ方向へ再検索</li>
+<li><code>N</code> : 反対方向へ再検索</li>
+<li>検索対象は値のみです (キーは対象外です)</li>
+<li>検索文字列の入力書式は <code>o</code> コマンド準拠です。
+<ul>
+<li><code>&quot;text&quot;</code> → 文字列</li>
+<li><code>123</code>, <code>1.23</code> → 数値</li>
+<li><code>true</code>, <code>false</code>, <code>nil</code> → 各リテラル</li>
+<li>others → 文字列扱い</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>横スクロールをリセットするキーバインド <code>0</code>, <code>^</code> を追加 (#66)</li>
+</ul>
 <h2 id="v031">v0.3.1</h2>
-<p>Apr 14,2026</p>
+<p>Apr 14, 2026</p>
 <ul>
 <li>&quot;o&quot; でオブジェクトのペアを追加した際、コロン前後の空白が既存の書式に合わせて補完されるように改善 (#57)</li>
 <li>JSONとして解釈されないテキストの表示を改善。二重引用符で囲まないようにし、改行復帰などの空白文字は単純空白(U+0020)化。エスケープシーケンスは除去しつつ、可視文字はそのまま表示するように変更 (Thanks to @rinodrops, #51, #58)</li>
 </ul>
 <h2 id="v030">v0.3.0</h2>
-<p>Apr 14,2026</p>
+<p>Apr 14, 2026</p>
 <ul>
 <li>JSON を変数に代入しただけのJavaScript 形式をサポートした
 （X/Twitter のアーカイブなどで使用されている） (#44)</li>
@@ -1248,6 +1272,7 @@ a.permalink:hover{
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v040">v0.4.0</a></li>
 <li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>
 <li><a href="#v021">v0.2.1</a>

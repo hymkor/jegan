@@ -1216,10 +1216,15 @@ scoop install jegan
 <li><code>k</code>, <code>↑</code>, <code>Ctrl-P</code> : 前の項目へ移動</li>
 <li><code>l</code>, <code>→</code>, <code>Ctrl-F</code> : 表示範囲を右にスクロール</li>
 <li><code>h</code>, <code>←</code>, <code>Ctrl-B</code> : 表示範囲を左にスクロール</li>
+<li><code>0</code>, <code>^</code> : 表示範囲をリセット(0 カラム目へ移動)</li>
 <li><code>Space</code>, <code>PageDown</code> : 次のページへ移動</li>
 <li><code>b</code>, <code>PageUp</code>       : 前のページへ移動</li>
 <li><code>&lt;</code> : 最初の項目へ移動</li>
 <li><code>&gt;</code> : 最後の項目へ移動</li>
+<li><code>/</code> : 前方検索 (値のみ)</li>
+<li><code>?</code> : 後方検索 (値のみ)</li>
+<li><code>n</code> : 同方向へ再検索</li>
+<li><code>N</code> : 反対方向へ再検索</li>
 <li><code>o</code> : カーソル行の下へ項目を追加。
 <ul>
 <li>オブジェクトの項目の場合はキーと値を入力する</li>
@@ -1233,7 +1238,7 @@ scoop install jegan
 <li><code>true</code> / <code>false</code> → 真偽値</li>
 <li><code>{}</code> → 空のオブジェクト</li>
 <li><code>[]</code> → 空の配列</li>
-<li>上記以外 → 文字列（そのまま解釈）</li>
+<li><em>上記以外</em> → 文字列（そのまま解釈）</li>
 </ul>
 </li>
 <li>Ctrl+G 押下で項目追加をキャンセルできます。</li>
@@ -1245,6 +1250,7 @@ scoop install jegan
 <li><code>R</code> : カーソル行の項目を変更する（値の型を明示的に指定する）</li>
 <li><code>d</code> : カーソル行の項目を削除する。
 ただし、空ではないオブジェクト・配列は削除できない</li>
+<li><code>Ctrl-C</code> : JSONパスと値をクリップボードへコピーする</li>
 <li><code>w</code> : ファイルへ保存</li>
 <li><code>q</code> : 終了</li>
 </ul>

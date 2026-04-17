@@ -1217,10 +1217,15 @@ scoop install jegan
 <li><code>k</code>, <code>↑</code>, <code>Ctrl-P</code> : Move to the previous item</li>
 <li><code>l</code>, <code>→</code>, <code>Ctrl-F</code> : Scroll the view to the right</li>
 <li><code>h</code>, <code>←</code>, <code>Ctrl-B</code> : Scroll the view to the left</li>
+<li><code>0</code>, <code>^</code> : reset horizontal scroll (jump to column 0)</li>
 <li><code>Space</code>, <code>PageDown</code> : Move to the next page of items</li>
 <li><code>b</code>, <code>PageUp</code>       : Move to the previous page of items</li>
 <li><code>&lt;</code> : Move to the first item</li>
 <li><code>&gt;</code> : Move to the last item</li>
+<li><code>/</code> : Search forward (values only)</li>
+<li><code>?</code> : Search backward (values only)</li>
+<li><code>n</code> : Repeat search in the same direction</li>
+<li><code>N</code> : Repeat search in the opposite direction</li>
 <li><code>o</code> : Insert a new item below the cursor.
 <ul>
 <li>For object items, enter both key and value.</li>
@@ -1234,10 +1239,10 @@ scoop install jegan
 <li><code>true</code> / <code>false</code> → boolean</li>
 <li><code>{}</code> → empty object</li>
 <li><code>[]</code> → empty array</li>
-<li>Otherwise → string (used as-is)</li>
+<li><em>Otherwise</em> → string (used as-is)</li>
 </ul>
 </li>
-<li>Ctrl+G cancels the current input</li>
+<li><code>Ctrl+G</code> cancels the current input</li>
 <li>Empty input is treated as an empty string (<code>&quot;&quot;</code>).</li>
 <li>Duplicate keys in objects are not allowed.</li>
 </ul>
@@ -1246,6 +1251,7 @@ scoop install jegan
 <li><code>R</code> : Modify the item at the cursor (explicitly specify the value type)</li>
 <li><code>d</code> : Delete the item at the cursor<br />
 Non-empty objects and arrays cannot be deleted</li>
+<li><code>Ctrl-C</code>: Copy the current path and value to the clipboard</li>
 <li><code>w</code> : Save to file</li>
 <li><code>q</code> : Quit</li>
 </ul>
