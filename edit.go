@@ -16,6 +16,21 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
+func backup(v any, backup any) any {
+	if m, ok := v.(*modifiedLiteral); ok {
+		m.backup = backup
+		return m
+	}
+	json, err := json.Marshal(v)
+	if err != nil {
+		json = []byte(fmt.Sprint(v))
+	}
+	return &modifiedLiteral{
+		Literal: unjson.NewLiteral(v, json),
+		backup:  backup,
+	}
+}
+
 func (app *Application) keyFuncReplace(
 	session *pager.Session,
 	input func(*pager.Session, any) ([]any, error)) error {
@@ -54,6 +69,7 @@ func (app *Application) keyFuncReplace(
 	case 1:
 		if prev() || element.Value() != values[0] {
 			app.dirty = true
+			values[0] = backup(values[0], element.Value())
 		}
 		element.SetValue(values[0])
 	case 2:
@@ -62,7 +78,7 @@ func (app *Application) keyFuncReplace(
 		app.list.InsertAfter(
 			newElement(values[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.SetValue(values[0])
+		element.SetValue(backup(values[0], element.Value()))
 		element.SetComma(false)
 		app.dirty = true
 	}
@@ -71,6 +87,7 @@ func (app *Application) keyFuncReplace(
 
 type modifiedLiteral struct {
 	*unjson.Literal
+	backup any
 }
 
 func newModifiedLiteral(v any, j string) *modifiedLiteral {
@@ -587,5 +604,28 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 	s := buffer.String()
 	app.message = s
 	clipboard.WriteAll(s)
+	return nil
+}
+
+func (app *Application) keyFuncUndo(session *pager.Session) error {
+	r := ref(app.cursor)
+	m, ok := r.Value().(*modifiedLiteral)
+	if !ok || m.backup == nil {
+		return nil
+	}
+	if objStart.Equals(m.Literal) {
+		next := app.cursor.Next()
+		if next == nil || !objEnd.Equals(ref(next).Value()) {
+			return errors.New("not empty object")
+		}
+		app.list.Remove(next)
+	} else if arrayStart.Equals(m.Literal) {
+		next := app.cursor.Next()
+		if next == nil || !arrayEnd.Equals(ref(next).Value()) {
+			return errors.New("not empty array")
+		}
+		app.list.Remove(next)
+	}
+	r.SetValue(m.backup)
 	return nil
 }

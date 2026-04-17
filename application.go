@@ -146,6 +146,8 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		err = app.keyFuncRemove(session)
 	case keys.CtrlC:
 		err = app.keyFuncCopy(session)
+	case "u":
+		err = app.keyFuncUndo(session)
 	case "w":
 		err = app.keyFuncSave(session)
 	case "q":
