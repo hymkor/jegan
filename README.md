@@ -49,9 +49,9 @@ Only the parts you edit are changed.
 * Write to file or stdout
 * Works as a filter:
 
-  ```
-  jegan < input.json > output.json
-  ```
+```
+jegan < input.json > output.json
+```
 
 ### ⌨️ Efficient editing
 
