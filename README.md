@@ -13,25 +13,50 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-- **Edit JSON in a terminal-based interactive UI**  
-  Supports not only JSON, but also JSONL and JSON wrapped in JavaScript assignments  
-  (as used in X/Twitter archives)
+### 🛡 Preserve original JSON formatting
 
-- **Minimal diffs on save**  
-  Unmodified parts of the document retain their original representation,
-  including whitespace, indentation, key order, literal formatting
-  (e.g. escape sequences), and even trailing non-JSON data.  
-  Only the actual changes you make appear in diffs, making it safe to edit real-world data.
+Jegan keeps your JSON exactly as it was loaded.
+Only the parts you edit are changed.
 
-- **vi-like navigation with Emacs-style editing**  
-  Navigate with `j/k` and scroll horizontally with `h/l`.  
-  Use `o` to add items, and `r/R` to enter edit mode, where Emacs-style key bindings are available.
+* Key order is preserved
+* Whitespace, indentation, and line endings are preserved
+* String representations (e.g. `\uXXXX` vs raw UTF-8) are preserved
+* Even non-JSON parts (e.g. JavaScript wrappers) are kept intact
 
-- **Works with files and standard input**  
-  Open JSON/JSONL files directly or process piped input seamlessly.
+### ✏️ Minimal and safe edits
 
-- **Visual feedback for changes**  
-  Modified values are highlighted in bold for easy identification.
+* Only modified fields are updated
+* Changes are highlighted in bold
+* Original style is reused when inserting new values
+* Backup file is created on save
+
+### 📦 Supports real-world JSON formats
+
+* JSON
+* JSON Lines (JSONL)
+* JavaScript-style assignments (e.g. X/Twitter archives)
+
+### 🧭 Structured navigation in terminal
+
+* Navigate items with `j` / `k`
+* Horizontal scrolling for long lines
+* JSON path and current value shown in status line
+* Search with `/`, `?`, `n`, `N`
+
+### 🔌 CLI-friendly
+
+* Read from file or stdin
+* Write to file or stdout
+* Works as a filter:
+
+  ```
+  jegan < input.json > output.json
+  ```
+
+### ⌨️ Efficient editing
+
+* vi-like navigation
+* Emacs-style input for editing values
 
 Install
 -------
