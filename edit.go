@@ -94,9 +94,21 @@ func (r *tombstone) Json() []byte {
 	return []byte{}
 }
 
+func (t *tombstone) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+	b.WriteString(ansi.Red)
+	b.WriteString("<DEL>")
+	b.WriteString(ansi.Default)
+}
+
 type modifiedLiteral struct {
 	*unjson.Literal
 	backup any
+}
+
+func (m *modifiedLiteral) Render(b *strings.Builder, render func(any, *strings.Builder)) {
+	io.WriteString(b, ansi.Bold)
+	render(m.Literal, b)
+	io.WriteString(b, ansi.Thin)
 }
 
 func newModifiedLiteral(v any, j string) *modifiedLiteral {

@@ -151,6 +151,12 @@ func (m Mark) Equals(v any) bool {
 	return v == m
 }
 
+func (m Mark) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+	b.WriteString(ansi.Red)
+	b.WriteRune(rune(m))
+	b.WriteString(ansi.Default)
+}
+
 const (
 	objStart   = Mark('{')
 	objEnd     = Mark('}')
@@ -179,11 +185,15 @@ func (e *Element) highlight(b *strings.Builder) {
 }
 
 func (e *Element) highlightWithoutComma(b *strings.Builder) {
-	v := e.value
-	if m, ok := unwrap(v).(Mark); ok {
-		b.WriteString(ansi.Red)
-		b.WriteRune(rune(m))
-		b.WriteString(ansi.Default)
+	render(e.value, b)
+}
+
+func render(v any, b *strings.Builder) {
+	type renderType interface {
+		Render(*strings.Builder, func(any, *strings.Builder))
+	}
+	if r, ok := v.(renderType); ok {
+		r.Render(b, render)
 		return
 	}
 	if x, ok := v.(*unjson.RawBytes); ok {
@@ -208,17 +218,6 @@ func (e *Element) highlightWithoutComma(b *strings.Builder) {
 		}
 		b.WriteString(ansi.Default)
 		return
-	}
-	if _, ok := v.(*tombstone); ok {
-		io.WriteString(b, ansi.Red)
-		io.WriteString(b, "<DEL>")
-		io.WriteString(b, ansi.Default)
-		return
-	}
-	if x, ok := v.(*modifiedLiteral); ok {
-		io.WriteString(b, ansi.Bold)
-		defer io.WriteString(b, ansi.Thin)
-		v = x.Literal
 	}
 	if x, ok := v.(*unjson.Literal); ok {
 		value := x.Value()
