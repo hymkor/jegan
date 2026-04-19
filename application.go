@@ -148,6 +148,8 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		err = app.keyFuncCopy(session)
 	case "u":
 		err = app.keyFuncUndo(session)
+	case "z":
+		err = app.keyFuncCollapseExpand(session)
 	case "w":
 		err = app.keyFuncSave(session)
 	case "q":

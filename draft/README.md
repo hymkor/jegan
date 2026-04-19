@@ -41,6 +41,11 @@ Deleted entries are not removed immediately but marked as `<DEL>`:
 * `<DEL>` entries can be restored with `u`
 * `<DEL>` entries are omitted when saving, so deletions are finalized on disk
 
+### 🧩 Collapsible view for containers
+
+* Press `z` to toggle collapse/expand for objects and arrays
+* Collapsed elements are displayed as a single line
+
 ### 📦 Supports real-world JSON formats
 
 * JSON
@@ -147,6 +152,7 @@ Key bindings
 - `?` : Search backward
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
+- `z` : Toggle collapse/expand
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
   - For array items, enter only the value.
