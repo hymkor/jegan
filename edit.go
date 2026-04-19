@@ -506,67 +506,6 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) removeCursor(session *pager.Session) {
-	r := ref(app.cursor)
-	comma := r.Comma()
-	if next := app.cursor.Next(); next != nil {
-		r.SetCursor(false)
-		nest := r.Nest()
-		app.list.Remove(app.cursor)
-		app.cursor = next
-		ref(app.cursor).SetCursor(true)
-		if !comma {
-			if p := app.cursor.Prev(); p != nil {
-				ref(p).SetComma(false)
-			}
-		}
-		app.dirty = true
-		reflectIndex(app.cursor, nest, -1)
-	} else if prev := app.cursor.Prev(); prev != nil {
-		ref(app.cursor).SetCursor(false)
-		app.list.Remove(app.cursor)
-		app.cursor = prev
-		ref(app.cursor).SetCursor(true)
-		app.csrline--
-		if app.csrline < session.WinPos {
-			session.Window = app.cursor
-			session.WinPos = app.csrline
-		}
-		if !comma {
-			ref(prev).SetComma(false)
-		}
-		app.dirty = true
-	}
-}
-
-func (app *Application) removeCursorAndNext() error {
-	nest := ref(app.cursor).Nest()
-	prev := app.cursor.Prev()
-	next := app.cursor.Next()
-	if next == nil {
-		return nil
-	}
-	newCurrent := next.Next()
-	if newCurrent == nil {
-		return errors.New("Internal error: no valid cursor position after deletion")
-	}
-	comma := ref(next).Comma()
-
-	app.list.Remove(app.cursor)
-	app.list.Remove(next)
-
-	app.cursor = newCurrent
-	ref(newCurrent).SetCursor(true)
-	if prev != nil {
-		m, ok := unwrap(ref(prev).Value()).(Mark)
-		if !ok || (m != objStart && m != arrayStart) {
-			ref(prev).SetComma(comma)
-		}
-	}
-	reflectIndex(app.cursor, nest, -1)
-	return nil
-}
-
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
 	if _, ok := element.Value().(*tombstone); ok {
