@@ -506,6 +506,29 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 	return nil
 }
 
+func (app *Application) collapse(p *list.Element, nest int, end Mark) ([]Line, bool, error) {
+	kill := []Line{}
+	for {
+		if p == nil {
+			return nil, false, errors.New("Unexpected state: missing element after '{' or '['")
+		}
+		n := ref(p)
+		kill = append(kill, n)
+		q := p.Next()
+		app.list.Remove(p)
+		if n.Nest() == nest && end.Equals(n.Value()) {
+			return kill, n.Comma(), nil
+		}
+		p = q
+	}
+}
+
+func (app *Application) expand(p *list.Element, lines []Line) {
+	for i := len(lines) - 1; i >= 0; i-- {
+		app.list.InsertAfter(lines[i], app.cursor)
+	}
+}
+
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
 	value := element.Value()
@@ -527,26 +550,16 @@ func (app *Application) keyFuncRemove(session *pager.Session) error {
 	if nest == 0 {
 		return errors.New("Cannot delete top-level object or array")
 	}
-	kill := []Line{}
-	p := app.cursor.Next()
-	for {
-		if p == nil {
-			return errors.New("Unexpected state: missing element after '{' or '['")
-		}
-		n := ref(p)
-		kill = append(kill, n)
-		q := p.Next()
-		app.list.Remove(p)
-		if n.Nest() == nest && end.Equals(n.Value()) {
-			element.SetValue(&tombstone{
-				first: element.Value(),
-				rest:  kill,
-			})
-			element.SetComma(n.Comma())
-			return nil // app.removeCursorAndNext()
-		}
-		p = q
+	kill, comma, err := app.collapse(app.cursor.Next(), nest, end)
+	if err != nil {
+		return err
 	}
+	element.SetValue(&tombstone{
+		first: element.Value(),
+		rest:  kill,
+	})
+	element.SetComma(comma)
+	return nil
 }
 
 func (app *Application) keyFuncCopy(session *pager.Session) error {
@@ -580,9 +593,7 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 		r.SetValue(d.first)
 		if len(d.rest) > 0 {
 			r.SetComma(false)
-			for i := len(d.rest) - 1; i >= 0; i-- {
-				app.list.InsertAfter(d.rest[i], app.cursor)
-			}
+			app.expand(app.cursor, d.rest)
 		}
 		return nil
 	}
