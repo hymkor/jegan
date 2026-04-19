@@ -1,6 +1,7 @@
 package jegan
 
 import (
+	"bytes"
 	"container/list"
 	"encoding/json"
 	"errors"
@@ -627,5 +628,64 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 		app.list.Remove(next)
 	}
 	r.SetValue(m.backup)
+	return nil
+}
+
+type collapsed struct {
+	name  string
+	first any
+	rest  []Line
+}
+
+func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+	b.WriteString(ansi.Red)
+	b.WriteString(c.name)
+	b.WriteString(ansi.Default)
+}
+
+func (c *collapsed) Json() []byte {
+	var b bytes.Buffer
+	fmt.Fprint(&b, c.first)
+	for i := 0; i < len(c.rest)-1; i++ {
+		c.rest[i].Dump(&b)
+	}
+	c.rest[len(c.rest)-1].DumpWithoutComma(&b)
+	return b.Bytes()
+}
+
+func (app *Application) keyFuncCollapseExpand(session *pager.Session) error {
+	element := ref(app.cursor)
+	value := element.Value()
+	var end Mark
+	var name string
+	if v := unwrap(value); v == objStart {
+		end = objEnd
+		name = "{..}"
+	} else if v == arrayStart {
+		end = arrayEnd
+		name = "[..]"
+	} else if c, ok := v.(*collapsed); ok {
+		app.expand(app.cursor.Next(), c.rest)
+		r := ref(app.cursor)
+		r.SetValue(c.first)
+		r.SetComma(false)
+		return nil
+	} else {
+		return nil
+	}
+	nest := element.Nest()
+	if nest == 0 {
+		return nil
+	}
+	kill, comma, err := app.collapse(app.cursor.Next(), nest, end)
+	if err != nil {
+		return err
+	}
+	element.SetValue(&collapsed{
+		name:  name,
+		first: value,
+		rest:  kill,
+	})
+	element.SetComma(comma)
 	return nil
 }
