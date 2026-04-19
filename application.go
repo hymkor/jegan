@@ -146,6 +146,8 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 		err = app.keyFuncRemove(session)
 	case keys.CtrlC:
 		err = app.keyFuncCopy(session)
+	case "u":
+		err = app.keyFuncUndo(session)
 	case "w":
 		err = app.keyFuncSave(session)
 	case "q":
@@ -176,12 +178,12 @@ func (app *Application) status(session *pager.Session) (text string) {
 		r := ref(app.cursor)
 		r.Path().Dump(&b)
 		if p, ok := r.(*Pair); ok {
-			if _, ok := p.Element.value.(Mark); !ok {
+			if _, ok := unwrap(p.Element.value).(Mark); !ok {
 				b.WriteString(" = ")
 				p.Element.highlightWithoutComma(&b)
 			}
 		} else if e, ok := r.(*Element); ok {
-			if _, ok := e.value.(Mark); !ok {
+			if _, ok := unwrap(e.value).(Mark); !ok {
 				b.WriteString(" = ")
 				e.highlightWithoutComma(&b)
 			}

@@ -76,6 +76,7 @@ type Line interface {
 
 	Display(int) string
 	Dump(w io.Writer)
+	DumpWithoutComma(w io.Writer)
 }
 
 func ref(p *list.Element) Line {
@@ -107,6 +108,16 @@ func (e *Element) Path() *JsonPath               { return e.path }
 func (e *Element) SetPath(v *JsonPath)           { e.path = v }
 
 func (e *Element) Dump(w io.Writer) {
+	e.DumpWithoutComma(w)
+	if e.comma {
+		w.Write([]byte{','})
+	}
+}
+
+func (e *Element) DumpWithoutComma(w io.Writer) {
+	if _, ok := e.value.(*tombstone); ok {
+		return
+	}
 	w.Write(e.spaceValue)
 	if v, ok := e.value.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
@@ -119,9 +130,6 @@ func (e *Element) Dump(w io.Writer) {
 		}
 	}
 	w.Write(e.spaceCommaOrClose)
-	if e.comma {
-		w.Write([]byte{','})
-	}
 }
 
 type Mark rune
@@ -136,6 +144,11 @@ func (m Mark) GoString() string {
 
 func (m Mark) Json() []byte {
 	return []byte{byte(m)}
+}
+
+func (m Mark) Equals(v any) bool {
+	v = unwrap(v)
+	return v == m
 }
 
 const (
@@ -167,7 +180,7 @@ func (e *Element) highlight(b *strings.Builder) {
 
 func (e *Element) highlightWithoutComma(b *strings.Builder) {
 	v := e.value
-	if m, ok := v.(Mark); ok {
+	if m, ok := unwrap(v).(Mark); ok {
 		b.WriteString(ansi.Red)
 		b.WriteRune(rune(m))
 		b.WriteString(ansi.Default)
@@ -194,6 +207,12 @@ func (e *Element) highlightWithoutComma(b *strings.Builder) {
 			}
 		}
 		b.WriteString(ansi.Default)
+		return
+	}
+	if _, ok := v.(*tombstone); ok {
+		io.WriteString(b, ansi.Red)
+		io.WriteString(b, "<DEL>")
+		io.WriteString(b, ansi.Default)
 		return
 	}
 	if x, ok := v.(*modifiedLiteral); ok {
@@ -298,6 +317,22 @@ func newElement(v any, i int, comma bool, prefix []byte) *Element {
 }
 
 func (p *Pair) Dump(w io.Writer) {
+	p.dumpKey(w)
+	p.Element.Dump(w)
+}
+
+func (p *Pair) DumpWithoutComma(w io.Writer) {
+	if _, ok := p.Value().(*tombstone); ok {
+		return
+	}
+	p.dumpKey(w)
+	p.Element.DumpWithoutComma(w)
+}
+
+func (p *Pair) dumpKey(w io.Writer) {
+	if _, ok := p.Element.value.(*tombstone); ok {
+		return
+	}
 	w.Write(p.spaceKey)
 	b, err := json.Marshal(p.key)
 	if err != nil {
@@ -307,11 +342,36 @@ func (p *Pair) Dump(w io.Writer) {
 	w.Write(b)
 	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
-	p.Element.Dump(w)
+}
+
+func isToBeContinued(p *list.Element) bool {
+	if _, ok := ref(p).Value().(*tombstone); ok {
+		return false
+	}
+	for {
+		p = p.Next()
+		if p == nil {
+			return false
+		}
+		v := ref(p).Value()
+		if objEnd.Equals(v) {
+			return false
+		}
+		if arrayEnd.Equals(v) {
+			return false
+		}
+		if _, ok := v.(*tombstone); !ok {
+			return true
+		}
+	}
 }
 
 func Dump(L *list.List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
-		ref(p).Dump(w)
+		if isToBeContinued(p) {
+			ref(p).Dump(w)
+		} else {
+			ref(p).DumpWithoutComma(w)
+		}
 	}
 }

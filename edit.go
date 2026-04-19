@@ -16,6 +16,21 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
+func backup(v any, backup any) any {
+	if m, ok := v.(*modifiedLiteral); ok {
+		m.backup = backup
+		return m
+	}
+	json, err := json.Marshal(v)
+	if err != nil {
+		json = []byte(fmt.Sprint(v))
+	}
+	return &modifiedLiteral{
+		Literal: unjson.NewLiteral(v, json),
+		backup:  backup,
+	}
+}
+
 func (app *Application) keyFuncReplace(
 	session *pager.Session,
 	input func(*pager.Session, any) ([]any, error)) error {
@@ -27,19 +42,19 @@ func (app *Application) keyFuncReplace(
 	}
 	prev := func() bool { return false }
 
-	if v, ok := element.Value().(Mark); ok {
+	if v, ok := unwrap(element.Value()).(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := ref(next).Value().(Mark)
+		nextv, ok := unwrap(ref(next).Value()).(Mark)
 		if !ok {
 			return nil
 		}
-		if v == objStart && nextv == objEnd {
+		if objStart.Equals(v) && objEnd.Equals(nextv) {
 			defaultv = map[string]any{}
 			prev = func() bool { app.list.Remove(next); return true }
-		} else if v == arrayStart && nextv == arrayEnd {
+		} else if arrayStart.Equals(v) && arrayEnd.Equals(nextv) {
 			defaultv = []any{}
 			prev = func() bool { app.list.Remove(next); return true }
 		} else {
@@ -54,6 +69,7 @@ func (app *Application) keyFuncReplace(
 	case 1:
 		if prev() || element.Value() != values[0] {
 			app.dirty = true
+			values[0] = backup(values[0], element.Value())
 		}
 		element.SetValue(values[0])
 	case 2:
@@ -62,15 +78,25 @@ func (app *Application) keyFuncReplace(
 		app.list.InsertAfter(
 			newElement(values[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.SetValue(values[0])
+		element.SetValue(backup(values[0], element.Value()))
 		element.SetComma(false)
 		app.dirty = true
 	}
 	return nil
 }
 
+type tombstone struct {
+	first  any
+	second Line
+}
+
+func (r *tombstone) Json() []byte {
+	return []byte{}
+}
+
 type modifiedLiteral struct {
 	*unjson.Literal
+	backup any
 }
 
 func newModifiedLiteral(v any, j string) *modifiedLiteral {
@@ -266,14 +292,14 @@ func reflectIndex(p *list.Element, nest int, plusminus int) {
 func (app *Application) keyFuncInsert(session *pager.Session) error {
 	space := ref(app.cursor).LeadingSpace()
 	currentNest := ref(app.cursor).Nest()
-	if e := ref(app.cursor); e.Value() == arrayStart {
+	if e := ref(app.cursor); arrayStart.Equals(e.Value()) {
 		next := app.cursor.Next()
 		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == arrayEnd {
+		if arrayEnd.Equals(nextElement.Value()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -316,7 +342,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		}
 		return nil
 	}
-	if e := ref(app.cursor); e.Value() == objStart {
+	if e := ref(app.cursor); objStart.Equals(e.Value()) {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return err
@@ -328,7 +354,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if nextElement.Value() == objEnd {
+		if objEnd.Equals(nextElement.Value()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
@@ -532,7 +558,7 @@ func (app *Application) removeCursorAndNext() error {
 	app.cursor = newCurrent
 	ref(newCurrent).SetCursor(true)
 	if prev != nil {
-		m, ok := ref(prev).Value().(Mark)
+		m, ok := unwrap(ref(prev).Value()).(Mark)
 		if !ok || (m != objStart && m != arrayStart) {
 			ref(prev).SetComma(comma)
 		}
@@ -543,9 +569,13 @@ func (app *Application) removeCursorAndNext() error {
 
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
-	mark, ok := element.Value().(Mark)
+	if _, ok := element.Value().(*tombstone); ok {
+		return nil
+	}
+	mark, ok := unwrap(element.Value()).(Mark)
 	if !ok {
-		app.removeCursor(session)
+		element.SetValue(&tombstone{first: element.Value()})
+		// app.removeCursor(session)
 		return nil
 	}
 	if mark != objStart && mark != arrayStart {
@@ -562,7 +592,13 @@ func (app *Application) keyFuncRemove(session *pager.Session) error {
 	if n.Value() != arrayEnd && n.Value() != objEnd {
 		return errors.New("Cannot delete non-empty object or array")
 	}
-	return app.removeCursorAndNext()
+	element.SetValue(&tombstone{
+		first:  element.Value(),
+		second: n,
+	})
+	element.SetComma(n.Comma())
+	app.list.Remove(next)
+	return nil // app.removeCursorAndNext()
 }
 
 func (app *Application) keyFuncCopy(session *pager.Session) error {
@@ -571,7 +607,7 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 	r.Path().Dump(&buffer)
 
 	v := r.Value()
-	if _, ok := v.(Mark); !ok {
+	if _, ok := unwrap(v).(Mark); !ok {
 		buffer.WriteString(" = ")
 		if f, ok := v.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())
@@ -587,5 +623,36 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 	s := buffer.String()
 	app.message = s
 	clipboard.WriteAll(s)
+	return nil
+}
+
+func (app *Application) keyFuncUndo(session *pager.Session) error {
+	r := ref(app.cursor)
+	if d, ok := r.Value().(*tombstone); ok {
+		r.SetValue(d.first)
+		if d.second != nil {
+			app.list.InsertAfter(d.second, app.cursor)
+			r.SetComma(false)
+		}
+		return nil
+	}
+	m, ok := r.Value().(*modifiedLiteral)
+	if !ok || m.backup == nil {
+		return nil
+	}
+	if objStart.Equals(m.Literal) {
+		next := app.cursor.Next()
+		if next == nil || !objEnd.Equals(ref(next).Value()) {
+			return errors.New("not empty object")
+		}
+		app.list.Remove(next)
+	} else if arrayStart.Equals(m.Literal) {
+		next := app.cursor.Next()
+		if next == nil || !arrayEnd.Equals(ref(next).Value()) {
+			return errors.New("not empty array")
+		}
+		app.list.Remove(next)
+	}
+	r.SetValue(m.backup)
 	return nil
 }

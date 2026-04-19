@@ -30,6 +30,17 @@ Only the parts you edit are changed.
 * Original style is reused when inserting new values
 * Backup file is created on save
 
+### 🔄 Undo support for safe editing
+
+* Press `u` to undo recent changes
+* Replace operations (`r`, `R`, etc.) can be undone
+* Deletions can also be undone
+
+Deleted entries are not removed immediately but marked as `<DEL>`:
+
+* `<DEL>` entries can be restored with `u`
+* `<DEL>` entries are omitted when saving, so deletions are finalized on disk
+
 ### 📦 Supports real-world JSON formats
 
 * JSON
@@ -155,6 +166,7 @@ Key bindings
 - `R` : Modify the item at the cursor (explicitly specify the value type)
 - `d` : Delete the item at the cursor  
   Non-empty objects and arrays cannot be deleted
+- `u` : UNDO
 - `Ctrl-C`: Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
