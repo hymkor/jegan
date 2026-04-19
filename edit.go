@@ -86,8 +86,8 @@ func (app *Application) keyFuncReplace(
 }
 
 type tombstone struct {
-	first  any
-	second Line
+	first any
+	rest  []Line
 }
 
 func (r *tombstone) Json() []byte {
@@ -508,36 +508,45 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 
 func (app *Application) keyFuncRemove(session *pager.Session) error {
 	element := ref(app.cursor)
-	if _, ok := element.Value().(*tombstone); ok {
+	value := element.Value()
+	if _, ok := value.(*tombstone); ok {
 		return nil
 	}
-	mark, ok := unwrap(element.Value()).(Mark)
-	if !ok {
-		element.SetValue(&tombstone{first: element.Value()})
-		// app.removeCursor(session)
+	var end Mark
+	if v := unwrap(value); v == objStart {
+		end = objEnd
+	} else if v == arrayStart {
+		end = arrayEnd
+	} else {
+		if _, ok := v.(Mark); !ok {
+			element.SetValue(&tombstone{first: value})
+		}
 		return nil
 	}
-	if mark != objStart && mark != arrayStart {
-		return nil
-	}
-	if element.Nest() == 0 {
+	nest := element.Nest()
+	if nest == 0 {
 		return errors.New("Cannot delete top-level object or array")
 	}
-	next := app.cursor.Next()
-	if next == nil {
-		return errors.New("Unexpected state: missing element after '{' or '['")
+	kill := []Line{}
+	p := app.cursor.Next()
+	for {
+		if p == nil {
+			return errors.New("Unexpected state: missing element after '{' or '['")
+		}
+		n := ref(p)
+		kill = append(kill, n)
+		q := p.Next()
+		app.list.Remove(p)
+		if n.Nest() == nest && end.Equals(n.Value()) {
+			element.SetValue(&tombstone{
+				first: element.Value(),
+				rest:  kill,
+			})
+			element.SetComma(n.Comma())
+			return nil // app.removeCursorAndNext()
+		}
+		p = q
 	}
-	n := ref(next)
-	if n.Value() != arrayEnd && n.Value() != objEnd {
-		return errors.New("Cannot delete non-empty object or array")
-	}
-	element.SetValue(&tombstone{
-		first:  element.Value(),
-		second: n,
-	})
-	element.SetComma(n.Comma())
-	app.list.Remove(next)
-	return nil // app.removeCursorAndNext()
 }
 
 func (app *Application) keyFuncCopy(session *pager.Session) error {
@@ -569,9 +578,11 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 	r := ref(app.cursor)
 	if d, ok := r.Value().(*tombstone); ok {
 		r.SetValue(d.first)
-		if d.second != nil {
-			app.list.InsertAfter(d.second, app.cursor)
+		if len(d.rest) > 0 {
 			r.SetComma(false)
+			for i := len(d.rest) - 1; i >= 0; i-- {
+				app.list.InsertAfter(d.rest[i], app.cursor)
+			}
 		}
 		return nil
 	}
