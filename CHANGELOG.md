@@ -3,6 +3,11 @@ Changelog
 ( English / [Japanese](CHANGELOG_ja.md) )
 
 - Improve search: now matches both keys and values, case-insensitive (#68)
+- Undo support for replace operations (`r`, `R`) (#69)
+- Undo support for deletions (#69)
+  - Deleted elements are now marked as `<DEL>` instead of being removed immediately
+  - Press `u` to restore deleted elements
+  - `<DEL>` entries are omitted when saving, so deletions are finalized on disk
 
 v0.4.0
 ------
