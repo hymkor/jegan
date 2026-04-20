@@ -63,24 +63,24 @@ func (app *Application) keyFuncReplace(
 			return nil
 		}
 	}
-	values, err := input(session, defaultv)
+	newData, err := input(session, defaultv)
 	if err != nil {
 		return err
 	}
-	switch len(values) {
+	switch len(newData) {
 	case 1:
-		if prev() || element.Data() != values[0] {
+		if prev() || element.Data() != newData[0] {
 			app.dirty = true
-			values[0] = backup(values[0], element.Data())
+			newData[0] = backup(newData[0], element.Data())
 		}
-		element.SetData(values[0])
+		element.SetData(newData[0])
 	case 2:
 		prefix := ref(app.cursor).LeadingSpace()
 		prev()
 		app.list.InsertAfter(
-			newElement(values[1], element.Nest(), element.Comma(), prefix),
+			newElement(newData[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.SetData(backup(values[0], element.Data()))
+		element.SetData(backup(newData[0], element.Data()))
 		element.SetComma(false)
 		app.dirty = true
 	}
@@ -329,16 +329,16 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // [\n[\n],\n
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(values[0], nest, false, newPrefix)
+			e1 := newElement(newData[0], nest, false, newPrefix)
 			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
-			e2 := newElement(values[1], nest, comma, nil)
+			e2 := newElement(newData[1], nest, comma, nil)
 			e2.SetPath(e1.Path())
 			app.list.InsertBefore(e1, next)
 			app.list.InsertBefore(e2, next)
@@ -347,7 +347,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			app.dirty = true
 		case 1: // [\n value
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(values[0], nest, comma, newPrefix)
+			e1 := newElement(newData[0], nest, comma, newPrefix)
 			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
 			app.list.InsertBefore(e1, next)
 			todo()
@@ -385,17 +385,17 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // { key:[]
 			p1 := &Pair{
 				spaceKey: newPrefix,
 				key:      key,
 				Item: Item{
-					data:  values[0],
+					data:  newData[0],
 					nest:  nest,
 					comma: false,
 				},
@@ -404,7 +404,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(values[1], nest, comma, nil)
+			e2 := newElement(newData[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
 			todo()
@@ -415,7 +415,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: newPrefix,
 				key:      key,
 				Item: Item{
-					data:  values[0],
+					data:  newData[0],
 					nest:  nest,
 					comma: comma,
 				},
@@ -440,17 +440,17 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		if isDuplicated(app.cursor, element.Nest(), key) {
 			return fmt.Errorf("duplicate key: %q", key)
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // key:[],
 			p1 := &Pair{
 				spaceKey: space,
 				key:      key,
 				Item: Item{
-					data:  values[0],
+					data:  newData[0],
 					nest:  element.Nest(),
 					comma: false,
 				},
@@ -459,7 +459,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
+			e2 := newElement(newData[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
@@ -469,7 +469,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: space,
 				key:      key,
 				Item: Item{
-					data:  values[0],
+					data:  newData[0],
 					nest:  element.Nest(),
 					comma: element.Comma(),
 				},
@@ -490,15 +490,15 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		if nest < 0 {
 			return nil
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return nil
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // [ \n ],
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e1 := newElement(values[0], element.Nest(), false, space)
-			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
+			e1 := newElement(newData[0], element.Nest(), false, space)
+			e2 := newElement(newData[1], element.Nest(), element.Comma(), nil)
 			j := ref(app.cursor).Path()
 			e1.SetPath(j.parent.ChildIndex(j.index + 1))
 			e2.SetPath(e1.Path())
@@ -508,7 +508,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			app.dirty = true
 		case 1: // value,
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e := newElement(values[0], element.Nest(), element.Comma(), space)
+			e := newElement(newData[0], element.Nest(), element.Comma(), space)
 			j := ref(app.cursor).Path()
 			e.SetPath(j.parent.ChildIndex(j.index + 1))
 			app.list.InsertAfter(e, app.cursor)
