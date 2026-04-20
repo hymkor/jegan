@@ -79,10 +79,6 @@ type Line interface {
 	DumpWithoutComma(w io.Writer)
 }
 
-func ref(p *list.Element[Line]) Line {
-	return p.Value
-}
-
 type Item struct {
 	spaceValue        []byte
 	data              any
@@ -343,7 +339,7 @@ func (p *Pair) dumpKey(w io.Writer) {
 }
 
 func isToBeContinued(p *list.Element[Line]) bool {
-	if _, ok := ref(p).Data().(*tombstone); ok {
+	if _, ok := p.Value.Data().(*tombstone); ok {
 		return false
 	}
 	for {
@@ -351,7 +347,7 @@ func isToBeContinued(p *list.Element[Line]) bool {
 		if p == nil {
 			return false
 		}
-		v := ref(p).Data()
+		v := p.Value.Data()
 		if objEnd.Equals(v) {
 			return false
 		}
@@ -367,9 +363,9 @@ func isToBeContinued(p *list.Element[Line]) bool {
 func Dump(L *list.List[Line], w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		if isToBeContinued(p) {
-			ref(p).Dump(w)
+			p.Value.Dump(w)
 		} else {
-			ref(p).DumpWithoutComma(w)
+			p.Value.DumpWithoutComma(w)
 		}
 	}
 }

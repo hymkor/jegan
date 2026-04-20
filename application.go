@@ -44,9 +44,9 @@ func (app *Application) Store(v *list.List[Line]) {
 }
 
 func (app *Application) setCursor(c *list.Element[Line]) {
-	ref(app.cursor).SetCursor(false)
+	app.cursor.Value.SetCursor(false)
 	app.cursor = c
-	ref(app.cursor).SetCursor(true)
+	app.cursor.Value.SetCursor(true)
 }
 
 func (app *Application) nextLine(session *pager.Session[Line]) {
@@ -62,9 +62,9 @@ func (app *Application) nextLine(session *pager.Session[Line]) {
 }
 
 func (app *Application) keyFuncNextPage(session *pager.Session[Line]) {
-	ref(app.cursor).SetCursor(false)
+	app.cursor.Value.SetCursor(false)
 	defer func() {
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -79,9 +79,9 @@ func (app *Application) keyFuncNextPage(session *pager.Session[Line]) {
 }
 
 func (app *Application) keyFuncPrevPage(session *pager.Session[Line]) {
-	ref(app.cursor).SetCursor(false)
+	app.cursor.Value.SetCursor(false)
 	defer func() {
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}()
 
 	session.MovePrevPage()
@@ -177,7 +177,7 @@ func (app *Application) status(session *pager.Session[Line]) (text string) {
 		} else {
 			b.WriteString("  ")
 		}
-		r := ref(app.cursor)
+		r := app.cursor.Value
 		r.Path().Dump(&b)
 		if p, ok := r.(*Pair); ok {
 			if _, ok := unwrap(p.Item.data).(Mark); !ok {
@@ -211,10 +211,10 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := ref(sample).LeadingSpace()
+		prefix := sample.Value.LeadingSpace()
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}

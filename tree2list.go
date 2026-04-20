@@ -21,7 +21,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 		sub := read(jp, pair.Value, nest+1)
 
 		front := sub.Front()
-		orgF := ref(front)
+		orgF := front.Value
 		newF := &Pair{
 			spaceKey:   pair.SpaceKey,
 			key:        pair.Key,
@@ -36,10 +36,10 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 		}
 		front.Value = newF
 
-		ref(sub.Back()).SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
+		sub.Back().Value.SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
 		L.PushBackList(sub)
 	}
-	back := ref(L.Back())
+	back := L.Back().Value
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
@@ -81,10 +81,10 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 			index:  i,
 		}
 		sub := read(jp, element.Item, nest+1)
-		ref(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
+		sub.Back().Value.SetSpaceCommaOrClose(element.PreComma)
 		L.PushBackList(sub)
 	}
-	back := ref(L.Back())
+	back := L.Back().Value
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
@@ -136,7 +136,7 @@ func Read(v *unjson.Item) *list.List[Line] {
 	}
 	L := read(nil, v, 0)
 	if L != nil && L.Len() > 0 {
-		ref(L.Back()).SetComma(false)
+		L.Back().Value.SetComma(false)
 	}
 	return L
 }
