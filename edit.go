@@ -88,7 +88,7 @@ func (app *Application) keyFuncReplace(
 
 type tombstone struct {
 	first any
-	rest  *list.List[Line]
+	rest  *List
 }
 
 func (r *tombstone) Json() []byte {
@@ -519,7 +519,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 	return nil
 }
 
-func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*list.List[Line], bool, error) {
+func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*List, bool, error) {
 	kill := list.New[Line]()
 	for {
 		if p == nil {
@@ -536,7 +536,7 @@ func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*li
 	}
 }
 
-func (app *Application) expand(at *list.Element[Line], lines *list.List[Line]) {
+func (app *Application) expand(at *list.Element[Line], lines *List) {
 	for p := lines.Back(); p != nil; p = p.Prev() {
 		app.list.InsertAfter(p.Value, at)
 	}
@@ -635,7 +635,7 @@ func (app *Application) keyFuncUndo(session *Session) error {
 type collapsed struct {
 	name  string
 	first any
-	rest  *list.List[Line]
+	rest  *List
 }
 
 func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {

@@ -22,7 +22,7 @@ type Session = pager.Session[Line]
 type Application struct {
 	Name string
 
-	list    *list.List[Line]
+	list    *List
 	cursor  *list.Element[Line]
 	csrline int
 	message string
@@ -34,7 +34,7 @@ type Application struct {
 	revert func() error
 }
 
-func (app *Application) Store(v *list.List[Line]) {
+func (app *Application) Store(v *List) {
 	if v == nil {
 		return
 	}

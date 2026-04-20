@@ -360,7 +360,7 @@ func isToBeContinued(p *list.Element[Line]) bool {
 	}
 }
 
-func Dump(L *list.List[Line], w io.Writer) {
+func Dump(L *List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		if isToBeContinued(p) {
 			p.Value.Dump(w)

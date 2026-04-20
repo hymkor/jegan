@@ -6,7 +6,9 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List[Line] {
+type List = list.List[Line]
+
+func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *List {
 	L := list.New[Line]()
 
 	begin := newItem(objStart, nest, false, prefix)
@@ -51,7 +53,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 	return L
 }
 
-func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *list.List[Line] {
+func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *List {
 	if len(object.Pairs) <= 0 {
 		L := list.New[Line]()
 
@@ -68,7 +70,7 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	return readPairs(basePath, prefix, object.Pairs, nest)
 }
 
-func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List[Line] {
+func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *List {
 	L := list.New[Line]()
 
 	begin := newItem(arrayStart, nest, false, prefix)
@@ -96,7 +98,7 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 	return L
 }
 
-func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *list.List[Line] {
+func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *List {
 	if len(array.Element) <= 0 {
 		L := list.New[Line]()
 
@@ -113,7 +115,7 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	return readElements(basePath, prefix, array.Element, nest)
 }
 
-func read(basePath *JsonPath, t *unjson.Item, nest int) *list.List[Line] {
+func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
 	v := t.Value
 	prefix := t.SpaceValue
 	if x, ok := v.(*unjson.Object); ok {
@@ -130,7 +132,7 @@ func read(basePath *JsonPath, t *unjson.Item, nest int) *list.List[Line] {
 	return L
 }
 
-func Read(v *unjson.Item) *list.List[Line] {
+func Read(v *unjson.Item) *List {
 	if v == nil {
 		return nil
 	}
