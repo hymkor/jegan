@@ -56,7 +56,7 @@ func (app *Application) nextLine(session *Session) {
 	}
 	app.setCursor(c)
 	app.csrline++
-	for app.csrline-session.WinPos >= session.Height {
+	for app.csrline-session.WinPos >= session.ContentHeight {
 		session.MoveNextLine()
 	}
 }
@@ -67,7 +67,7 @@ func (app *Application) keyFuncNextPage(session *Session) {
 		app.cursor.Value.SetCursor(true)
 	}()
 
-	for i := 0; i < session.Height; i++ {
+	for i := 0; i < session.ContentHeight; i++ {
 		c := app.cursor.Next()
 		if c == nil {
 			break
@@ -85,7 +85,7 @@ func (app *Application) keyFuncPrevPage(session *Session) {
 	}()
 
 	session.MovePrevPage()
-	for i := 0; i < session.Height; i++ {
+	for i := 0; i < session.ContentHeight; i++ {
 		c := app.cursor.Prev()
 		if c == nil {
 			break

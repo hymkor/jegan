@@ -27,12 +27,12 @@ type Displayer interface {
 }
 
 type Pager[T Displayer] struct {
-	cache   []string
-	Width   int
-	Height  int
-	Handler func(*Session[T], string) (EventResult, error)
-	Status  func(*Session[T]) string
-	offset  int
+	cache         []string
+	Width         int
+	ContentHeight int
+	Handler       func(*Session[T], string) (EventResult, error)
+	Status        func(*Session[T]) string
+	offset        int
 }
 
 func Truncate(s string, width int) string {
@@ -90,10 +90,10 @@ func trimLeft(line string, offset int) string {
 
 func (pager *Pager[T]) show(fetch func(int) (string, bool), out io.Writer) func() {
 	i := 0
-	for i < pager.Height {
+	for i < pager.ContentHeight {
 		line, ok := fetch(pager.Width)
 		if !ok {
-			for ; i < len(pager.cache) && i < pager.Height; i++ {
+			for ; i < len(pager.cache) && i < pager.ContentHeight; i++ {
 				io.WriteString(out, ansi.EraseLine+"\n")
 				pager.cache[i] = ""
 			}
@@ -143,7 +143,7 @@ func (session *Session[T]) MoveFront() {
 }
 
 func (session *Session[T]) rollup() (i int) {
-	for i < session.Height-1 {
+	for i < session.ContentHeight-1 {
 		w := session.Window.Prev()
 		if w == nil {
 			return
@@ -162,7 +162,7 @@ func (session *Session[T]) MoveBack() int {
 }
 
 func (session *Session[T]) MoveNextPage() {
-	for i := 0; i < session.Height && session.tail != nil; i++ {
+	for i := 0; i < session.ContentHeight && session.tail != nil; i++ {
 		session.Window = session.Window.Next()
 		session.WinPos++
 		session.tail = session.tail.Next()
@@ -265,7 +265,7 @@ func (pager *Pager[T]) EventLoop(tty ttyadapter.Tty, L *list.List[T], ttyout io.
 		return err
 	}
 	pager.Width = width
-	pager.Height = height - 1
+	pager.ContentHeight = height - 1
 
 	session := &Session[T]{
 		Pager:  pager,
