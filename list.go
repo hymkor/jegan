@@ -85,7 +85,7 @@ func ref(p *list.Element[Line]) Line {
 
 type Element struct {
 	spaceValue        []byte
-	value             any
+	data              any
 	spaceCommaOrClose []byte
 	comma             bool
 
@@ -96,8 +96,8 @@ type Element struct {
 
 func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
 func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
-func (e *Element) Data() any                     { return e.value }
-func (e *Element) SetData(v any)                 { e.value = v }
+func (e *Element) Data() any                     { return e.data }
+func (e *Element) SetData(v any)                 { e.data = v }
 func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
 func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
 func (e *Element) Comma() bool                   { return e.comma }
@@ -115,16 +115,16 @@ func (e *Element) Dump(w io.Writer) {
 }
 
 func (e *Element) DumpWithoutComma(w io.Writer) {
-	if _, ok := e.value.(*tombstone); ok {
+	if _, ok := e.data.(*tombstone); ok {
 		return
 	}
 	w.Write(e.spaceValue)
-	if v, ok := e.value.(interface{ Json() []byte }); ok {
+	if v, ok := e.data.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
-		b, err := json.Marshal(e.value)
+		b, err := json.Marshal(e.data)
 		if err != nil {
-			fmt.Fprint(w, e.value)
+			fmt.Fprint(w, e.data)
 		} else {
 			w.Write(b)
 		}
@@ -185,7 +185,7 @@ func (e *Element) highlight(b *strings.Builder) {
 }
 
 func (e *Element) highlightWithoutComma(b *strings.Builder) {
-	render(e.value, b)
+	render(e.data, b)
 }
 
 func render(v any, b *strings.Builder) {
@@ -308,7 +308,7 @@ func (pair *Pair) Display(w int) string {
 func newElement(v any, i int, comma bool, prefix []byte) *Element {
 	return &Element{
 		spaceValue: prefix,
-		value:      v,
+		data:       v,
 		comma:      comma,
 		nest:       i,
 	}
@@ -328,7 +328,7 @@ func (p *Pair) DumpWithoutComma(w io.Writer) {
 }
 
 func (p *Pair) dumpKey(w io.Writer) {
-	if _, ok := p.Element.value.(*tombstone); ok {
+	if _, ok := p.Element.data.(*tombstone); ok {
 		return
 	}
 	w.Write(p.spaceKey)

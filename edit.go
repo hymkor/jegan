@@ -395,7 +395,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: newPrefix,
 				key:      key,
 				Element: Element{
-					value: values[0],
+					data:  values[0],
 					nest:  nest,
 					comma: false,
 				},
@@ -415,7 +415,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: newPrefix,
 				key:      key,
 				Element: Element{
-					value: values[0],
+					data:  values[0],
 					nest:  nest,
 					comma: comma,
 				},
@@ -450,7 +450,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: space,
 				key:      key,
 				Element: Element{
-					value: values[0],
+					data:  values[0],
 					nest:  element.Nest(),
 					comma: false,
 				},
@@ -469,7 +469,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				spaceKey: space,
 				key:      key,
 				Element: Element{
-					value: values[0],
+					data:  values[0],
 					nest:  element.Nest(),
 					comma: element.Comma(),
 				},
@@ -545,18 +545,18 @@ func (app *Application) expand(at *list.Element[Line], lines *list.List[Line]) {
 
 func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
-	value := element.Data()
-	if _, ok := value.(*tombstone); ok {
+	data := element.Data()
+	if _, ok := data.(*tombstone); ok {
 		return nil
 	}
 	var end Mark
-	if v := unwrap(value); v == objStart {
+	if v := unwrap(data); v == objStart {
 		end = objEnd
 	} else if v == arrayStart {
 		end = arrayEnd
 	} else {
 		if _, ok := v.(Mark); !ok {
-			element.SetData(&tombstone{first: value})
+			element.SetData(&tombstone{first: data})
 		}
 		return nil
 	}
@@ -663,10 +663,10 @@ func (c *collapsed) Json() []byte {
 
 func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
-	value := element.Data()
+	data := element.Data()
 	var end Mark
 	var name string
-	if v := unwrap(value); v == objStart {
+	if v := unwrap(data); v == objStart {
 		end = objEnd
 		name = "{..}"
 	} else if v == arrayStart {
@@ -691,7 +691,7 @@ func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) erro
 	}
 	element.SetData(&collapsed{
 		name:  name,
-		first: value,
+		first: data,
 		rest:  kill,
 	})
 

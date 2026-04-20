@@ -21,16 +21,16 @@ func unwrap(v any) any {
 	return v
 }
 
-func newCompare(v any) (func(key string, value any) bool, bool) {
+func newCompare(v any) (func(key string, data any) bool, bool) {
 	v = unwrap(v)
 	if s, ok := v.(string); ok {
 		s = strings.ToLower(s)
-		return func(key string, value any) bool {
+		return func(key string, data any) bool {
 			key = strings.ToLower(key)
 			if strings.Contains(key, s) {
 				return true
 			}
-			other := unwrap(value)
+			other := unwrap(data)
 			if o, ok := other.(string); ok {
 				o = strings.ToLower(o)
 				return strings.Contains(o, s)
@@ -119,14 +119,14 @@ func (app *Application) keyFuncSearch(session *pager.Session[Line], revert bool)
 
 func compareKeyAndValue(p *list.Element[Line], compare func(string, any) bool) bool {
 	if pair, ok := p.Value.(*Pair); ok {
-		return compare(pair.key, pair.value)
+		return compare(pair.key, pair.data)
 	}
 	return compare("", ref(p).Data())
 }
 
 func (app *Application) searchForward(
 	session *pager.Session[Line],
-	compare func(key string, value any) bool) error {
+	compare func(key string, data any) bool) error {
 
 	_cursor := app.cursor
 	_csrPos := app.csrline
