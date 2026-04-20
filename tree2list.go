@@ -9,7 +9,7 @@ import (
 func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List[Line] {
 	L := list.New[Line]()
 
-	begin := newElement(objStart, nest, false, prefix)
+	begin := newItem(objStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
@@ -44,7 +44,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newElement(objEnd, nest, true, finalSpace)
+	end := newItem(objEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
@@ -55,11 +55,11 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	if len(object.Pairs) <= 0 {
 		L := list.New[Line]()
 
-		begin := newElement(objStart, nest, false, prefix)
+		begin := newItem(objStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newElement(objEnd, nest, true, object.Blank)
+		end := newItem(objEnd, nest, true, object.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -71,7 +71,7 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List[Line] {
 	L := list.New[Line]()
 
-	begin := newElement(arrayStart, nest, false, prefix)
+	begin := newItem(arrayStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
@@ -89,7 +89,7 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newElement(arrayEnd, nest, true, finalSpace)
+	end := newItem(arrayEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
@@ -100,11 +100,11 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	if len(array.Element) <= 0 {
 		L := list.New[Line]()
 
-		begin := newElement(arrayStart, nest, false, prefix)
+		begin := newItem(arrayStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newElement(arrayEnd, nest, true, array.Blank)
+		end := newItem(arrayEnd, nest, true, array.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -124,7 +124,7 @@ func read(basePath *JsonPath, t *unjson.Item, nest int) *list.List[Line] {
 	}
 	L := list.New[Line]()
 
-	e := newElement(v, nest, true, prefix)
+	e := newItem(v, nest, true, prefix)
 	e.path = basePath
 	L.PushBack(e)
 	return L

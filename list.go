@@ -305,7 +305,7 @@ func (pair *Pair) Display(w int) string {
 	return b.String()
 }
 
-func newElement(v any, i int, comma bool, prefix []byte) *Item {
+func newItem(v any, i int, comma bool, prefix []byte) *Item {
 	return &Item{
 		spaceValue: prefix,
 		data:       v,

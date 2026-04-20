@@ -78,7 +78,7 @@ func (app *Application) keyFuncReplace(
 		prefix := ref(app.cursor).LeadingSpace()
 		prev()
 		app.list.InsertAfter(
-			newElement(newData[1], element.Nest(), element.Comma(), prefix),
+			newItem(newData[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
 		element.SetData(backup(newData[0], element.Data()))
 		element.SetComma(false)
@@ -336,9 +336,9 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		switch len(newData) {
 		case 2: // [\n[\n],\n
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(newData[0], nest, false, newPrefix)
+			e1 := newItem(newData[0], nest, false, newPrefix)
 			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
-			e2 := newElement(newData[1], nest, comma, nil)
+			e2 := newItem(newData[1], nest, comma, nil)
 			e2.SetPath(e1.Path())
 			app.list.InsertBefore(e1, next)
 			app.list.InsertBefore(e2, next)
@@ -347,7 +347,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			app.dirty = true
 		case 1: // [\n value
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(newData[0], nest, comma, newPrefix)
+			e1 := newItem(newData[0], nest, comma, newPrefix)
 			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
 			app.list.InsertBefore(e1, next)
 			todo()
@@ -404,7 +404,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(newData[1], nest, comma, nil)
+			e2 := newItem(newData[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
 			todo()
@@ -459,7 +459,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(newData[1], element.Nest(), element.Comma(), nil)
+			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
@@ -497,8 +497,8 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		switch len(newData) {
 		case 2: // [ \n ],
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e1 := newElement(newData[0], element.Nest(), false, space)
-			e2 := newElement(newData[1], element.Nest(), element.Comma(), nil)
+			e1 := newItem(newData[0], element.Nest(), false, space)
+			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
 			j := ref(app.cursor).Path()
 			e1.SetPath(j.parent.ChildIndex(j.index + 1))
 			e2.SetPath(e1.Path())
@@ -508,7 +508,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			app.dirty = true
 		case 1: // value,
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e := newElement(newData[0], element.Nest(), element.Comma(), space)
+			e := newItem(newData[0], element.Nest(), element.Comma(), space)
 			j := ref(app.cursor).Path()
 			e.SetPath(j.parent.ChildIndex(j.index + 1))
 			app.list.InsertAfter(e, app.cursor)
