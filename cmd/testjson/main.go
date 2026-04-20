@@ -1,16 +1,40 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
+var (
+	flagJavaScript = flag.Bool("js", false, "JavaScript-style assignments")
+	flagDebug      = flag.Bool("debug", false, "for debug")
+)
+
+func readBody(r io.Reader) (data []byte, err error) {
+	if *flagJavaScript {
+		br := bufio.NewReader(r)
+		data, err = br.ReadSlice('=')
+		if err != nil {
+			return
+		}
+		if *flagDebug {
+			fmt.Fprintf(os.Stderr, "skip: %q\n", data)
+		}
+		r = br
+	}
+	data, err = io.ReadAll(r)
+	return
+}
+
 func check(r io.Reader, name string) error {
-	data, err := io.ReadAll(r)
-	if err != nil {
+	data, err := readBody(r)
+	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("%s: %w", name, err)
 	}
 	var v any
@@ -55,7 +79,8 @@ func mains(args []string) error {
 }
 
 func main() {
-	if err := mains(os.Args[1:]); err != nil {
+	flag.Parse()
+	if err := mains(flag.Args()); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
