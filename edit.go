@@ -14,7 +14,6 @@ import (
 	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -34,8 +33,8 @@ func backup(v any, backup any) any {
 }
 
 func (app *Application) keyFuncReplace(
-	session *pager.Session[Line],
-	input func(*pager.Session[Line], any) ([]any, error)) error {
+	session *Session,
+	input func(*Session, any) ([]any, error)) error {
 
 	element := app.cursor.Value
 	defaultv := element.Data()
@@ -162,7 +161,7 @@ func inputToAny(rawText string) ([]any, error) {
 	return []any{rawText}, nil
 }
 
-func (app *Application) inputFormat(session *pager.Session[Line], defaultv any) ([]any, error) {
+func (app *Application) inputFormat(session *Session, defaultv any) ([]any, error) {
 	defaults := makeDefaultFormat(defaultv)
 	text, err := app.readLineElement(session, "New value:", defaults)
 	if err != nil {
@@ -171,7 +170,7 @@ func (app *Application) inputFormat(session *pager.Session[Line], defaultv any) 
 	return inputToAny(text)
 }
 
-func (app *Application) inputTypeAndValue(session *pager.Session[Line], defaultv any) ([]any, error) {
+func (app *Application) inputTypeAndValue(session *Session, defaultv any) ([]any, error) {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
@@ -303,7 +302,7 @@ func reflectIndex(p *list.Element[Line], nest int, plusminus int) {
 	}
 }
 
-func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
+func (app *Application) keyFuncInsert(session *Session) error {
 	space := app.cursor.Value.LeadingSpace()
 	currentNest := app.cursor.Value.Nest()
 	if e := app.cursor.Value; arrayStart.Equals(e.Data()) {
@@ -543,7 +542,7 @@ func (app *Application) expand(at *list.Element[Line], lines *list.List[Line]) {
 	}
 }
 
-func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
+func (app *Application) keyFuncRemove(session *Session) error {
 	element := app.cursor.Value
 	data := element.Data()
 	if _, ok := data.(*tombstone); ok {
@@ -577,7 +576,7 @@ func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 	return nil
 }
 
-func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
+func (app *Application) keyFuncCopy(session *Session) error {
 	r := app.cursor.Value
 	var buffer strings.Builder
 	r.Path().Dump(&buffer)
@@ -602,7 +601,7 @@ func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
 	return nil
 }
 
-func (app *Application) keyFuncUndo(session *pager.Session[Line]) error {
+func (app *Application) keyFuncUndo(session *Session) error {
 	r := app.cursor.Value
 	if d, ok := r.Data().(*tombstone); ok {
 		r.SetData(d.first)
@@ -661,7 +660,7 @@ func (c *collapsed) Json() []byte {
 	return b.Bytes()
 }
 
-func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) error {
+func (app *Application) keyFuncCollapseExpand(session *Session) error {
 	element := app.cursor.Value
 	data := element.Data()
 	var end Mark

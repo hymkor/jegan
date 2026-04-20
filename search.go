@@ -7,7 +7,6 @@ import (
 
 	"github.com/hymkor/go-generics-list"
 
-	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -74,7 +73,7 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 	return func(string, any) bool { return false }, false
 }
 
-func (app *Application) keyFuncSearch(session *pager.Session[Line], revert bool) error {
+func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 
 	prompt := "Search:"
 	if revert {
@@ -125,7 +124,7 @@ func compareKeyAndValue(p *list.Element[Line], compare func(string, any) bool) b
 }
 
 func (app *Application) searchForward(
-	session *pager.Session[Line],
+	session *Session,
 	compare func(key string, data any) bool) error {
 
 	_cursor := app.cursor
@@ -152,7 +151,7 @@ func (app *Application) searchForward(
 }
 
 func (app *Application) searchBackward(
-	session *pager.Session[Line],
+	session *Session,
 	compare func(string, any) bool) error {
 
 	_cursor := app.cursor

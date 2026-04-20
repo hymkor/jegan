@@ -17,6 +17,8 @@ import (
 	"github.com/hymkor/jegan/internal/pager"
 )
 
+type Session = pager.Session[Line]
+
 type Application struct {
 	Name string
 
@@ -49,7 +51,7 @@ func (app *Application) setCursor(c *list.Element[Line]) {
 	app.cursor.Value.SetCursor(true)
 }
 
-func (app *Application) nextLine(session *pager.Session[Line]) {
+func (app *Application) nextLine(session *Session) {
 	c := app.cursor.Next()
 	if c == nil {
 		return
@@ -61,7 +63,7 @@ func (app *Application) nextLine(session *pager.Session[Line]) {
 	}
 }
 
-func (app *Application) keyFuncNextPage(session *pager.Session[Line]) {
+func (app *Application) keyFuncNextPage(session *Session) {
 	app.cursor.Value.SetCursor(false)
 	defer func() {
 		app.cursor.Value.SetCursor(true)
@@ -78,7 +80,7 @@ func (app *Application) keyFuncNextPage(session *pager.Session[Line]) {
 	}
 }
 
-func (app *Application) keyFuncPrevPage(session *pager.Session[Line]) {
+func (app *Application) keyFuncPrevPage(session *Session) {
 	app.cursor.Value.SetCursor(false)
 	defer func() {
 		app.cursor.Value.SetCursor(true)
@@ -95,7 +97,7 @@ func (app *Application) keyFuncPrevPage(session *pager.Session[Line]) {
 	}
 }
 
-func (app *Application) handle(session *pager.Session[Line], key string) (pager.EventResult, error) {
+func (app *Application) handle(session *Session, key string) (pager.EventResult, error) {
 	result := pager.Handled
 	var err error
 	switch key {
@@ -162,7 +164,7 @@ func (app *Application) handle(session *pager.Session[Line], key string) (pager.
 	return result, nil
 }
 
-func (app *Application) status(session *pager.Session[Line]) (text string) {
+func (app *Application) status(session *Session) (text string) {
 	if app.message != "" {
 		text = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
