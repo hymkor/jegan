@@ -157,18 +157,18 @@ func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
 	}, nil
 }
 
-type Entry struct {
+type Item struct {
 	SpaceValue []byte
 	Value      any
 }
 
-func (t Entry) GoString() string {
+func (t Item) GoString() string {
 	return fmt.Sprintf("%s%#v", string(t.SpaceValue), t.Value)
 }
 
 type KeyValuePair struct {
 	Key               string
-	Value             *Entry
+	Value             *Item
 	SpaceKey          []byte
 	SpaceColon        []byte
 	SpaceCommaOrClose []byte
@@ -269,12 +269,12 @@ func readObject(br io.RuneScanner) (*Object, error) {
 }
 
 type ArrayElement struct {
-	*Entry
+	*Item
 	PreComma []byte
 }
 
 func (a ArrayElement) GoString() string {
-	return fmt.Sprintf("%#v%s", a.Entry, string(a.PreComma))
+	return fmt.Sprintf("%#v%s", a.Item, string(a.PreComma))
 }
 
 type Array struct {
@@ -327,7 +327,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 			return nil, err
 		}
 		array1 = append(array1, ArrayElement{
-			Entry:    token,
+			Item:     token,
 			PreComma: prefix,
 		})
 		debug("array:", len(array1))
@@ -344,36 +344,36 @@ func readArray(br io.RuneScanner) (*Array, error) {
 	}
 }
 
-func readEntry(br io.RuneScanner) (*Entry, error) {
+func readEntry(br io.RuneScanner) (*Item, error) {
 	prefix, ch, err := read1st(br)
 	if err != nil {
 		if len(prefix) <= 0 {
 			return nil, err
 		}
-		return &Entry{Value: &RawBytes{json: prefix}}, err
+		return &Item{Value: &RawBytes{json: prefix}}, err
 	}
 	if ch == '"' {
 		s, err := readString(br)
 		debug("readString:", s)
-		return &Entry{SpaceValue: prefix, Value: s}, err
+		return &Item{SpaceValue: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := readNumber(br, ch)
-		return &Entry{SpaceValue: prefix, Value: n}, err
+		return &Item{SpaceValue: prefix, Value: n}, err
 	} else if ch == 'n' {
 		v := &Literal{data: nil, json: []byte("null")}
-		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
+		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
 		v := &Literal{data: false, json: []byte("false")}
-		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
+		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
 	} else if ch == 't' {
 		v := &Literal{data: true, json: []byte("true")}
-		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
+		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
-		return &Entry{SpaceValue: prefix, Value: o}, err
+		return &Item{SpaceValue: prefix, Value: o}, err
 	} else if ch == '[' {
 		a, err := readArray(br)
-		return &Entry{SpaceValue: prefix, Value: a}, err
+		return &Item{SpaceValue: prefix, Value: a}, err
 	}
 	var b bytes.Buffer
 	b.Write(prefix)
@@ -384,7 +384,7 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 			bin := b.Bytes()
 			rb := &RawBytes{json: bin}
 			debug("RawBytes(1):", bin)
-			return &Entry{Value: rb}, err
+			return &Item{Value: rb}, err
 		}
 		if siz > 0 {
 			b.WriteRune(ch)
@@ -393,18 +393,18 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 			bin := b.Bytes()
 			debug("RawBytes(2):", bin)
 			rb := &RawBytes{json: bin}
-			return &Entry{Value: rb}, err
+			return &Item{Value: rb}, err
 		}
 		if ch == '=' {
 			bin := b.Bytes()
 			debug("JavaScript equation ?:", bin)
 			rb := &RawBytes{json: bin}
-			return &Entry{Value: rb}, nil
+			return &Item{Value: rb}, nil
 		}
 	}
 }
 
-func Unmarshal(r io.RuneScanner) (*Entry, error) {
+func Unmarshal(r io.RuneScanner) (*Item, error) {
 	sc := newScanner(r)
 	v, err := readEntry(sc)
 	if err != nil {

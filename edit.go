@@ -394,7 +394,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			p1 := &Pair{
 				spaceKey: newPrefix,
 				key:      key,
-				Element: Element{
+				Item: Item{
 					data:  values[0],
 					nest:  nest,
 					comma: false,
@@ -414,7 +414,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			p1 := &Pair{
 				spaceKey: newPrefix,
 				key:      key,
-				Element: Element{
+				Item: Item{
 					data:  values[0],
 					nest:  nest,
 					comma: comma,
@@ -449,7 +449,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			p1 := &Pair{
 				spaceKey: space,
 				key:      key,
-				Element: Element{
+				Item: Item{
 					data:  values[0],
 					nest:  element.Nest(),
 					comma: false,
@@ -468,7 +468,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 			p := &Pair{
 				spaceKey: space,
 				key:      key,
-				Element: Element{
+				Item: Item{
 					data:  values[0],
 					nest:  element.Nest(),
 					comma: element.Comma(),
@@ -485,7 +485,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		element.SetComma(true)
 		return nil
 	}
-	if element, ok := app.cursor.Value.(*Element); ok {
+	if element, ok := app.cursor.Value.(*Item); ok {
 		nest := ref(app.cursor).Nest()
 		if nest < 0 {
 			return nil

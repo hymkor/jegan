@@ -26,7 +26,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 			spaceKey:   pair.SpaceKey,
 			key:        pair.Key,
 			spaceColon: pair.SpaceColon,
-			Element: Element{
+			Item: Item{
 				spaceValue: pair.Value.SpaceValue,
 				data:       orgF.Data(),
 				comma:      orgF.Comma(),
@@ -80,7 +80,7 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 			parent: basePath,
 			index:  i,
 		}
-		sub := read(jp, element.Entry, nest+1)
+		sub := read(jp, element.Item, nest+1)
 		ref(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
 		L.PushBackList(sub)
 	}
@@ -113,7 +113,7 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	return readElements(basePath, prefix, array.Element, nest)
 }
 
-func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List[Line] {
+func read(basePath *JsonPath, t *unjson.Item, nest int) *list.List[Line] {
 	v := t.Value
 	prefix := t.SpaceValue
 	if x, ok := v.(*unjson.Object); ok {
@@ -130,7 +130,7 @@ func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List[Line] {
 	return L
 }
 
-func Read(v *unjson.Entry) *list.List[Line] {
+func Read(v *unjson.Item) *list.List[Line] {
 	if v == nil {
 		return nil
 	}

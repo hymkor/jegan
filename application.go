@@ -180,11 +180,11 @@ func (app *Application) status(session *pager.Session[Line]) (text string) {
 		r := ref(app.cursor)
 		r.Path().Dump(&b)
 		if p, ok := r.(*Pair); ok {
-			if _, ok := unwrap(p.Element.data).(Mark); !ok {
+			if _, ok := unwrap(p.Item.data).(Mark); !ok {
 				b.WriteString(" = ")
-				p.Element.highlightWithoutComma(&b)
+				p.Item.highlightWithoutComma(&b)
 			}
-		} else if e, ok := r.(*Element); ok {
+		} else if e, ok := r.(*Item); ok {
 			if _, ok := unwrap(e.data).(Mark); !ok {
 				b.WriteString(" = ")
 				e.highlightWithoutComma(&b)

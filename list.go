@@ -83,7 +83,7 @@ func ref(p *list.Element[Line]) Line {
 	return p.Value
 }
 
-type Element struct {
+type Item struct {
 	spaceValue        []byte
 	data              any
 	spaceCommaOrClose []byte
@@ -94,27 +94,27 @@ type Element struct {
 	path   *JsonPath
 }
 
-func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
-func (e *Element) Data() any                     { return e.data }
-func (e *Element) SetData(v any)                 { e.data = v }
-func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
-func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
-func (e *Element) Comma() bool                   { return e.comma }
-func (e *Element) SetComma(v bool)               { e.comma = v }
-func (e *Element) Nest() int                     { return e.nest }
-func (e *Element) SetCursor(v bool)              { e.cursor = v }
-func (e *Element) Path() *JsonPath               { return e.path }
-func (e *Element) SetPath(v *JsonPath)           { e.path = v }
+func (e *Item) LeadingSpace() []byte          { return e.spaceValue }
+func (e *Item) SetLeadingSpace(v []byte)      { e.spaceValue = v }
+func (e *Item) Data() any                     { return e.data }
+func (e *Item) SetData(v any)                 { e.data = v }
+func (e *Item) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
+func (e *Item) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
+func (e *Item) Comma() bool                   { return e.comma }
+func (e *Item) SetComma(v bool)               { e.comma = v }
+func (e *Item) Nest() int                     { return e.nest }
+func (e *Item) SetCursor(v bool)              { e.cursor = v }
+func (e *Item) Path() *JsonPath               { return e.path }
+func (e *Item) SetPath(v *JsonPath)           { e.path = v }
 
-func (e *Element) Dump(w io.Writer) {
+func (e *Item) Dump(w io.Writer) {
 	e.DumpWithoutComma(w)
 	if e.comma {
 		w.Write([]byte{','})
 	}
 }
 
-func (e *Element) DumpWithoutComma(w io.Writer) {
+func (e *Item) DumpWithoutComma(w io.Writer) {
 	if _, ok := e.data.(*tombstone); ok {
 		return
 	}
@@ -177,14 +177,14 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 	}
 }
 
-func (e *Element) highlight(b *strings.Builder) {
+func (e *Item) highlight(b *strings.Builder) {
 	e.highlightWithoutComma(b)
 	if e.comma {
 		b.WriteByte(',')
 	}
 }
 
-func (e *Element) highlightWithoutComma(b *strings.Builder) {
+func (e *Item) highlightWithoutComma(b *strings.Builder) {
 	render(e.data, b)
 }
 
@@ -236,7 +236,7 @@ func render(v any, b *strings.Builder) {
 	if s, ok := v.(string); ok {
 		jsonBin, err := json.Marshal(s)
 		if err != nil {
-			debug("(*Element) highlight", s, err.Error())
+			debug("(*Entry) highlight", s, err.Error())
 			jsonBin = []byte(strconv.Quote(s))
 		}
 		highlightString(jsonBin, ansi.Magenta, b)
@@ -256,7 +256,7 @@ func render(v any, b *strings.Builder) {
 	}
 }
 
-func (e *Element) Display(w int) string {
+func (e *Item) Display(w int) string {
 	var b strings.Builder
 	if e.cursor {
 		b.WriteString(ansi.UnderLine)
@@ -276,7 +276,7 @@ type Pair struct {
 	spaceKey   []byte
 	key        string
 	spaceColon []byte
-	Element
+	Item
 }
 
 func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
@@ -297,7 +297,7 @@ func (pair *Pair) Display(w int) string {
 	}
 	highlightString(jsonBin, ansi.Yellow, &b)
 	b.WriteString(": ")
-	pair.Element.highlight(&b)
+	pair.Item.highlight(&b)
 	if pair.cursor {
 		b.WriteString(strings.Repeat(" ", w))
 		b.WriteString(ansi.NoUnderLine)
@@ -305,8 +305,8 @@ func (pair *Pair) Display(w int) string {
 	return b.String()
 }
 
-func newElement(v any, i int, comma bool, prefix []byte) *Element {
-	return &Element{
+func newElement(v any, i int, comma bool, prefix []byte) *Item {
+	return &Item{
 		spaceValue: prefix,
 		data:       v,
 		comma:      comma,
@@ -316,7 +316,7 @@ func newElement(v any, i int, comma bool, prefix []byte) *Element {
 
 func (p *Pair) Dump(w io.Writer) {
 	p.dumpKey(w)
-	p.Element.Dump(w)
+	p.Item.Dump(w)
 }
 
 func (p *Pair) DumpWithoutComma(w io.Writer) {
@@ -324,11 +324,11 @@ func (p *Pair) DumpWithoutComma(w io.Writer) {
 		return
 	}
 	p.dumpKey(w)
-	p.Element.DumpWithoutComma(w)
+	p.Item.DumpWithoutComma(w)
 }
 
 func (p *Pair) dumpKey(w io.Writer) {
-	if _, ok := p.Element.data.(*tombstone); ok {
+	if _, ok := p.Item.data.(*tombstone); ok {
 		return
 	}
 	w.Write(p.spaceKey)
