@@ -1,7 +1,6 @@
 package jegan
 
 import (
-	"container/list"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
 )
@@ -79,8 +79,8 @@ type Line interface {
 	DumpWithoutComma(w io.Writer)
 }
 
-func ref(p *list.Element) Line {
-	return p.Value.(Line)
+func ref(p *list.Element[Line]) Line {
+	return p.Value
 }
 
 type Element struct {
@@ -343,7 +343,7 @@ func (p *Pair) dumpKey(w io.Writer) {
 	w.Write([]byte{':'})
 }
 
-func isToBeContinued(p *list.Element) bool {
+func isToBeContinued(p *list.Element[Line]) bool {
 	if _, ok := ref(p).Value().(*tombstone); ok {
 		return false
 	}
@@ -365,7 +365,7 @@ func isToBeContinued(p *list.Element) bool {
 	}
 }
 
-func Dump(L *list.List, w io.Writer) {
+func Dump(L *list.List[Line], w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		if isToBeContinued(p) {
 			ref(p).Dump(w)

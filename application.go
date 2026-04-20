@@ -2,7 +2,6 @@ package jegan
 
 import (
 	"bytes"
-	"container/list"
 	"fmt"
 	"io"
 	"runtime"
@@ -11,6 +10,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
 
+	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/go-safewrite/perm"
 
 	"github.com/hymkor/jegan/internal/ansi"
@@ -20,8 +20,8 @@ import (
 type Application struct {
 	Name string
 
-	list    *list.List
-	cursor  *list.Element
+	list    *list.List[Line]
+	cursor  *list.Element[Line]
 	csrline int
 	message string
 	dirty   bool
@@ -32,7 +32,7 @@ type Application struct {
 	revert func() error
 }
 
-func (app *Application) Store(v *list.List) {
+func (app *Application) Store(v *list.List[Line]) {
 	if v == nil {
 		return
 	}
@@ -43,13 +43,13 @@ func (app *Application) Store(v *list.List) {
 	}
 }
 
-func (app *Application) setCursor(c *list.Element) {
+func (app *Application) setCursor(c *list.Element[Line]) {
 	ref(app.cursor).SetCursor(false)
 	app.cursor = c
 	ref(app.cursor).SetCursor(true)
 }
 
-func (app *Application) nextLine(session *pager.Session) {
+func (app *Application) nextLine(session *pager.Session[Line]) {
 	c := app.cursor.Next()
 	if c == nil {
 		return
@@ -61,7 +61,7 @@ func (app *Application) nextLine(session *pager.Session) {
 	}
 }
 
-func (app *Application) keyFuncNextPage(session *pager.Session) {
+func (app *Application) keyFuncNextPage(session *pager.Session[Line]) {
 	ref(app.cursor).SetCursor(false)
 	defer func() {
 		ref(app.cursor).SetCursor(true)
@@ -78,7 +78,7 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 	}
 }
 
-func (app *Application) keyFuncPrevPage(session *pager.Session) {
+func (app *Application) keyFuncPrevPage(session *pager.Session[Line]) {
 	ref(app.cursor).SetCursor(false)
 	defer func() {
 		ref(app.cursor).SetCursor(true)
@@ -95,7 +95,7 @@ func (app *Application) keyFuncPrevPage(session *pager.Session) {
 	}
 }
 
-func (app *Application) handle(session *pager.Session, key string) (pager.EventResult, error) {
+func (app *Application) handle(session *pager.Session[Line], key string) (pager.EventResult, error) {
 	result := pager.Handled
 	var err error
 	switch key {
@@ -162,7 +162,7 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 	return result, nil
 }
 
-func (app *Application) status(session *pager.Session) (text string) {
+func (app *Application) status(session *pager.Session[Line]) (text string) {
 	if app.message != "" {
 		text = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
@@ -203,7 +203,7 @@ func (app *Application) status(session *pager.Session) (text string) {
 func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error {
 	app.ttyIn = ttyIn
 	if app.list == nil {
-		app.list = list.New()
+		app.list = list.New[Line]()
 	}
 	if app.list.Len() <= 0 {
 		app.list.PushBack(newElement(objStart, 0, false, nil))
@@ -219,7 +219,7 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 			app.indent = prefix[pos+1:]
 		}
 	}
-	pager1 := &pager.Pager{
+	pager1 := &pager.Pager[Line]{
 		Status:  app.status,
 		Handler: app.handle,
 	}

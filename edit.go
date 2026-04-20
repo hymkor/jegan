@@ -2,7 +2,6 @@ package jegan
 
 import (
 	"bytes"
-	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+
+	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
@@ -33,8 +34,8 @@ func backup(v any, backup any) any {
 }
 
 func (app *Application) keyFuncReplace(
-	session *pager.Session,
-	input func(*pager.Session, any) ([]any, error)) error {
+	session *pager.Session[Line],
+	input func(*pager.Session[Line], any) ([]any, error)) error {
 
 	element := ref(app.cursor)
 	defaultv := element.Value()
@@ -88,7 +89,7 @@ func (app *Application) keyFuncReplace(
 
 type tombstone struct {
 	first any
-	rest  *list.List
+	rest  *list.List[Line]
 }
 
 func (r *tombstone) Json() []byte {
@@ -161,7 +162,7 @@ func inputToAny(rawText string) ([]any, error) {
 	return []any{rawText}, nil
 }
 
-func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any, error) {
+func (app *Application) inputFormat(session *pager.Session[Line], defaultv any) ([]any, error) {
 	defaults := makeDefaultFormat(defaultv)
 	text, err := app.readLineElement(session, "New value:", defaults)
 	if err != nil {
@@ -170,7 +171,7 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any
 	return inputToAny(text)
 }
 
-func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) ([]any, error) {
+func (app *Application) inputTypeAndValue(session *pager.Session[Line], defaultv any) ([]any, error) {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
@@ -216,7 +217,7 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 	}
 }
 
-func isDuplicated(cursor *list.Element, nest int, key string) bool {
+func isDuplicated(cursor *list.Element[Line], nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
 		i := ref(p).Nest()
 		if i < nest {
@@ -244,7 +245,7 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	return false
 }
 
-func findPairBefore(p *list.Element) *Pair {
+func findPairBefore(p *list.Element[Line]) *Pair {
 	for ; p != nil; p = p.Prev() {
 		if pair, ok := p.Value.(*Pair); ok {
 			return pair
@@ -253,7 +254,7 @@ func findPairBefore(p *list.Element) *Pair {
 	return nil
 }
 
-func findSameLevelPairBefore(p *list.Element) (*Pair, bool) {
+func findSameLevelPairBefore(p *list.Element[Line]) (*Pair, bool) {
 	if pair, ok := p.Value.(*Pair); ok {
 		return pair, true
 	}
@@ -286,7 +287,7 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
-func reflectIndex(p *list.Element, nest int, plusminus int) {
+func reflectIndex(p *list.Element[Line], nest int, plusminus int) {
 	for ; p != nil; p = p.Next() {
 		r := ref(p)
 		if n := r.Nest(); n < nest {
@@ -302,7 +303,7 @@ func reflectIndex(p *list.Element, nest int, plusminus int) {
 	}
 }
 
-func (app *Application) keyFuncInsert(session *pager.Session) error {
+func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 	space := ref(app.cursor).LeadingSpace()
 	currentNest := ref(app.cursor).Nest()
 	if e := ref(app.cursor); arrayStart.Equals(e.Value()) {
@@ -519,8 +520,8 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) collapse(p *list.Element, nest int, end Mark) (*list.List, bool, error) {
-	kill := list.New()
+func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*list.List[Line], bool, error) {
+	kill := list.New[Line]()
 	for {
 		if p == nil {
 			return nil, false, errors.New("Unexpected state: missing element after '{' or '['")
@@ -536,13 +537,13 @@ func (app *Application) collapse(p *list.Element, nest int, end Mark) (*list.Lis
 	}
 }
 
-func (app *Application) expand(at *list.Element, lines *list.List) {
+func (app *Application) expand(at *list.Element[Line], lines *list.List[Line]) {
 	for p := lines.Back(); p != nil; p = p.Prev() {
 		app.list.InsertAfter(p.Value, at)
 	}
 }
 
-func (app *Application) keyFuncRemove(session *pager.Session) error {
+func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
 	value := element.Value()
 	if _, ok := value.(*tombstone); ok {
@@ -575,7 +576,7 @@ func (app *Application) keyFuncRemove(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) keyFuncCopy(session *pager.Session) error {
+func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
 	r := ref(app.cursor)
 	var buffer strings.Builder
 	r.Path().Dump(&buffer)
@@ -600,7 +601,7 @@ func (app *Application) keyFuncCopy(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) keyFuncUndo(session *pager.Session) error {
+func (app *Application) keyFuncUndo(session *pager.Session[Line]) error {
 	r := ref(app.cursor)
 	if d, ok := r.Value().(*tombstone); ok {
 		r.SetValue(d.first)
@@ -634,7 +635,7 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 type collapsed struct {
 	name  string
 	first any
-	rest  *list.List
+	rest  *list.List[Line]
 }
 
 func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
@@ -659,7 +660,7 @@ func (c *collapsed) Json() []byte {
 	return b.Bytes()
 }
 
-func (app *Application) keyFuncCollapseExpand(session *pager.Session) error {
+func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
 	value := element.Value()
 	var end Mark

@@ -1,13 +1,13 @@
 package jegan
 
 import (
-	"container/list"
+	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List {
-	L := list.New()
+func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List[Line] {
+	L := list.New[Line]()
 
 	begin := newElement(objStart, nest, false, prefix)
 	begin.SetPath(basePath)
@@ -51,9 +51,9 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 	return L
 }
 
-func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *list.List {
+func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *list.List[Line] {
 	if len(object.Pairs) <= 0 {
-		L := list.New()
+		L := list.New[Line]()
 
 		begin := newElement(objStart, nest, false, prefix)
 		begin.SetPath(basePath)
@@ -68,8 +68,8 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	return readPairs(basePath, prefix, object.Pairs, nest)
 }
 
-func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List {
-	L := list.New()
+func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List[Line] {
+	L := list.New[Line]()
 
 	begin := newElement(arrayStart, nest, false, prefix)
 	begin.SetPath(basePath)
@@ -96,9 +96,9 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 	return L
 }
 
-func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *list.List {
+func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *list.List[Line] {
 	if len(array.Element) <= 0 {
-		L := list.New()
+		L := list.New[Line]()
 
 		begin := newElement(arrayStart, nest, false, prefix)
 		begin.SetPath(basePath)
@@ -113,7 +113,7 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	return readElements(basePath, prefix, array.Element, nest)
 }
 
-func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List {
+func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List[Line] {
 	v := t.Value
 	prefix := t.SpaceValue
 	if x, ok := v.(*unjson.Object); ok {
@@ -122,7 +122,7 @@ func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List {
 	if x, ok := v.(*unjson.Array); ok {
 		return readArray(basePath, prefix, x, nest)
 	}
-	L := list.New()
+	L := list.New[Line]()
 
 	e := newElement(v, nest, true, prefix)
 	e.path = basePath
@@ -130,7 +130,7 @@ func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List {
 	return L
 }
 
-func Read(v *unjson.Entry) *list.List {
+func Read(v *unjson.Entry) *list.List[Line] {
 	if v == nil {
 		return nil
 	}
