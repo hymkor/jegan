@@ -131,4 +131,26 @@ func TestDelete(t *testing.T) {
 		"{ \"a\":1 , \"b\":2\n, \"c\":{}, \"d\":3 }",
 		`j|j|j|j|j|d`,
 		"{ \"a\":1 , \"b\":2\n, \"c\":{} }")
+
+}
+
+func testCollapse(t *testing.T, source, operation string) {
+	t.Helper()
+	test(t, source, operation, source)
+}
+
+func TestCollapse(t *testing.T) {
+	testCollapse(t, "[ 1 , [ 2 , 3 ,4 ], 5 ]", `j|j|z`)
+	testCollapse(t, "{\r\n\t\"one\":1 ,\r\n\t\"two\":[ 2 , 3 , 4 ],\r\n\t\"three\":5\n}\r\n", `j|j|z`)
+
+	test(t, `window.YTD.tweet.part0 = [ {
+  "coordinates" : null,
+  "retweeted" : false,
+  "source" : "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Lite</a>"
+}]`,
+		`j|j|j|j|d|k|k|z`,
+		`window.YTD.tweet.part0 = [ {
+  "coordinates" : null,
+  "source" : "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Lite</a>"
+}]`)
 }

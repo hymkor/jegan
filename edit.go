@@ -88,7 +88,7 @@ func (app *Application) keyFuncReplace(
 
 type tombstone struct {
 	first any
-	rest  []Line
+	rest  *list.List
 }
 
 func (r *tombstone) Json() []byte {
@@ -519,14 +519,14 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) collapse(p *list.Element, nest int, end Mark) ([]Line, bool, error) {
-	kill := []Line{}
+func (app *Application) collapse(p *list.Element, nest int, end Mark) (*list.List, bool, error) {
+	kill := list.New()
 	for {
 		if p == nil {
 			return nil, false, errors.New("Unexpected state: missing element after '{' or '['")
 		}
 		n := ref(p)
-		kill = append(kill, n)
+		kill.PushBack(n)
 		q := p.Next()
 		app.list.Remove(p)
 		if n.Nest() == nest && end.Equals(n.Value()) {
@@ -536,9 +536,9 @@ func (app *Application) collapse(p *list.Element, nest int, end Mark) ([]Line, b
 	}
 }
 
-func (app *Application) expand(p *list.Element, lines []Line) {
-	for i := len(lines) - 1; i >= 0; i-- {
-		app.list.InsertAfter(lines[i], app.cursor)
+func (app *Application) expand(at *list.Element, lines *list.List) {
+	for p := lines.Back(); p != nil; p = p.Prev() {
+		app.list.InsertAfter(p.Value, at)
 	}
 }
 
@@ -604,7 +604,7 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 	r := ref(app.cursor)
 	if d, ok := r.Value().(*tombstone); ok {
 		r.SetValue(d.first)
-		if len(d.rest) > 0 {
+		if d.rest.Len() > 0 {
 			r.SetComma(false)
 			app.expand(app.cursor, d.rest)
 		}
@@ -634,7 +634,7 @@ func (app *Application) keyFuncUndo(session *pager.Session) error {
 type collapsed struct {
 	name  string
 	first any
-	rest  []Line
+	rest  *list.List
 }
 
 func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
@@ -646,10 +646,16 @@ func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
 func (c *collapsed) Json() []byte {
 	var b bytes.Buffer
 	fmt.Fprint(&b, c.first)
-	for i := 0; i < len(c.rest)-1; i++ {
-		c.rest[i].Dump(&b)
+	p := c.rest.Front()
+	for p != nil {
+		next := p.Next()
+		if isToBeContinued(p) && next != nil {
+			ref(p).Dump(&b)
+		} else {
+			ref(p).DumpWithoutComma(&b)
+		}
+		p = next
 	}
-	c.rest[len(c.rest)-1].DumpWithoutComma(&b)
 	return b.Bytes()
 }
 
@@ -665,7 +671,7 @@ func (app *Application) keyFuncCollapseExpand(session *pager.Session) error {
 		end = arrayEnd
 		name = "[..]"
 	} else if c, ok := v.(*collapsed); ok {
-		app.expand(app.cursor.Next(), c.rest)
+		app.expand(app.cursor, c.rest)
 		r := ref(app.cursor)
 		r.SetValue(c.first)
 		r.SetComma(false)
