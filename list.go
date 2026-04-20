@@ -9,7 +9,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
 )
@@ -338,7 +337,7 @@ func (p *Pair) dumpKey(w io.Writer) {
 	w.Write([]byte{':'})
 }
 
-func isToBeContinued(p *list.Element[Line]) bool {
+func isToBeContinued(p *Element) bool {
 	if _, ok := p.Value.Data().(*tombstone); ok {
 		return false
 	}

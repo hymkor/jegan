@@ -8,6 +8,8 @@ import (
 
 type List = list.List[Line]
 
+type Element = list.Element[Line]
+
 func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *List {
 	L := list.New[Line]()
 

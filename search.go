@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hymkor/go-generics-list"
-
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -116,7 +114,7 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 	return app.searchForward(session, compare)
 }
 
-func compareKeyAndValue(p *list.Element[Line], compare func(string, any) bool) bool {
+func compareKeyAndValue(p *Element, compare func(string, any) bool) bool {
 	if pair, ok := p.Value.(*Pair); ok {
 		return compare(pair.key, pair.data)
 	}

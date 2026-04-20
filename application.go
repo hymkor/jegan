@@ -23,7 +23,7 @@ type Application struct {
 	Name string
 
 	list    *List
-	cursor  *list.Element[Line]
+	cursor  *Element
 	csrline int
 	message string
 	dirty   bool
@@ -45,7 +45,7 @@ func (app *Application) Store(v *List) {
 	}
 }
 
-func (app *Application) setCursor(c *list.Element[Line]) {
+func (app *Application) setCursor(c *Element) {
 	app.cursor.Value.SetCursor(false)
 	app.cursor = c
 	app.cursor.Value.SetCursor(true)

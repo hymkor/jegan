@@ -216,7 +216,7 @@ func (app *Application) inputTypeAndValue(session *Session, defaultv any) ([]any
 	}
 }
 
-func isDuplicated(cursor *list.Element[Line], nest int, key string) bool {
+func isDuplicated(cursor *Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
 		i := p.Value.Nest()
 		if i < nest {
@@ -244,7 +244,7 @@ func isDuplicated(cursor *list.Element[Line], nest int, key string) bool {
 	return false
 }
 
-func findPairBefore(p *list.Element[Line]) *Pair {
+func findPairBefore(p *Element) *Pair {
 	for ; p != nil; p = p.Prev() {
 		if pair, ok := p.Value.(*Pair); ok {
 			return pair
@@ -253,7 +253,7 @@ func findPairBefore(p *list.Element[Line]) *Pair {
 	return nil
 }
 
-func findSameLevelPairBefore(p *list.Element[Line]) (*Pair, bool) {
+func findSameLevelPairBefore(p *Element) (*Pair, bool) {
 	if pair, ok := p.Value.(*Pair); ok {
 		return pair, true
 	}
@@ -286,7 +286,7 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
-func reflectIndex(p *list.Element[Line], nest int, plusminus int) {
+func reflectIndex(p *Element, nest int, plusminus int) {
 	for ; p != nil; p = p.Next() {
 		r := p.Value
 		if n := r.Nest(); n < nest {
@@ -519,7 +519,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 	return nil
 }
 
-func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*List, bool, error) {
+func (app *Application) collapse(p *Element, nest int, end Mark) (*List, bool, error) {
 	kill := list.New[Line]()
 	for {
 		if p == nil {
@@ -536,7 +536,7 @@ func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*Li
 	}
 }
 
-func (app *Application) expand(at *list.Element[Line], lines *List) {
+func (app *Application) expand(at *Element, lines *List) {
 	for p := lines.Back(); p != nil; p = p.Prev() {
 		app.list.InsertAfter(p.Value, at)
 	}
