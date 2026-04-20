@@ -2,7 +2,6 @@ package jegan
 
 import (
 	"bytes"
-	"container/list"
 	"fmt"
 	"io"
 	"runtime"
@@ -11,6 +10,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
 
+	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/go-safewrite/perm"
 
 	"github.com/hymkor/jegan/internal/ansi"
@@ -20,8 +20,8 @@ import (
 type Application struct {
 	Name string
 
-	list    *list.List
-	cursor  *list.Element
+	list    *List
+	cursor  *Element
 	csrline int
 	message string
 	dirty   bool
@@ -32,7 +32,7 @@ type Application struct {
 	revert func() error
 }
 
-func (app *Application) Store(v *list.List) {
+func (app *Application) Store(v *List) {
 	if v == nil {
 		return
 	}
@@ -43,13 +43,13 @@ func (app *Application) Store(v *list.List) {
 	}
 }
 
-func (app *Application) setCursor(c *list.Element) {
-	ref(app.cursor).SetCursor(false)
+func (app *Application) setCursor(c *Element) {
+	app.cursor.Value.SetCursor(false)
 	app.cursor = c
-	ref(app.cursor).SetCursor(true)
+	app.cursor.Value.SetCursor(true)
 }
 
-func (app *Application) nextLine(session *pager.Session) {
+func (app *Application) nextLine(session *Session) {
 	c := app.cursor.Next()
 	if c == nil {
 		return
@@ -61,10 +61,10 @@ func (app *Application) nextLine(session *pager.Session) {
 	}
 }
 
-func (app *Application) keyFuncNextPage(session *pager.Session) {
-	ref(app.cursor).SetCursor(false)
+func (app *Application) keyFuncNextPage(session *Session) {
+	app.cursor.Value.SetCursor(false)
 	defer func() {
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}()
 
 	for i := 0; i < session.Height; i++ {
@@ -78,10 +78,10 @@ func (app *Application) keyFuncNextPage(session *pager.Session) {
 	}
 }
 
-func (app *Application) keyFuncPrevPage(session *pager.Session) {
-	ref(app.cursor).SetCursor(false)
+func (app *Application) keyFuncPrevPage(session *Session) {
+	app.cursor.Value.SetCursor(false)
 	defer func() {
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}()
 
 	session.MovePrevPage()
@@ -95,7 +95,7 @@ func (app *Application) keyFuncPrevPage(session *pager.Session) {
 	}
 }
 
-func (app *Application) handle(session *pager.Session, key string) (pager.EventResult, error) {
+func (app *Application) handle(session *Session, key string) (pager.EventResult, error) {
 	result := pager.Handled
 	var err error
 	switch key {
@@ -162,7 +162,7 @@ func (app *Application) handle(session *pager.Session, key string) (pager.EventR
 	return result, nil
 }
 
-func (app *Application) status(session *pager.Session) (text string) {
+func (app *Application) status(session *Session) (text string) {
 	if app.message != "" {
 		text = fmt.Sprintf(ansi.Bold+"%s"+ansi.Thin+ansi.EraseLine, app.message)
 		app.message = ""
@@ -177,15 +177,15 @@ func (app *Application) status(session *pager.Session) (text string) {
 		} else {
 			b.WriteString("  ")
 		}
-		r := ref(app.cursor)
+		r := app.cursor.Value
 		r.Path().Dump(&b)
 		if p, ok := r.(*Pair); ok {
-			if _, ok := unwrap(p.Element.value).(Mark); !ok {
+			if _, ok := unwrap(p.Item.data).(Mark); !ok {
 				b.WriteString(" = ")
-				p.Element.highlightWithoutComma(&b)
+				p.Item.highlightWithoutComma(&b)
 			}
-		} else if e, ok := r.(*Element); ok {
-			if _, ok := unwrap(e.value).(Mark); !ok {
+		} else if e, ok := r.(*Item); ok {
+			if _, ok := unwrap(e.data).(Mark); !ok {
 				b.WriteString(" = ")
 				e.highlightWithoutComma(&b)
 			}
@@ -203,23 +203,23 @@ func (app *Application) status(session *pager.Session) (text string) {
 func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error {
 	app.ttyIn = ttyIn
 	if app.list == nil {
-		app.list = list.New()
+		app.list = list.New[Line]()
 	}
 	if app.list.Len() <= 0 {
-		app.list.PushBack(newElement(objStart, 0, false, nil))
-		app.list.PushBack(newElement(objEnd, 0, false, nil))
+		app.list.PushBack(newItem(objStart, 0, false, nil))
+		app.list.PushBack(newItem(objEnd, 0, false, nil))
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()
-		ref(app.cursor).SetCursor(true)
+		app.cursor.Value.SetCursor(true)
 	}
 	if sample := app.list.Front().Next(); sample != nil {
-		prefix := ref(sample).LeadingSpace()
+		prefix := sample.Value.LeadingSpace()
 		if pos := bytes.IndexByte(prefix, '\n'); pos >= 0 {
 			app.indent = prefix[pos+1:]
 		}
 	}
-	pager1 := &pager.Pager{
+	pager1 := &pager.Pager[Line]{
 		Status:  app.status,
 		Handler: app.handle,
 	}

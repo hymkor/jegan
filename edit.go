@@ -1,10 +1,7 @@
 package jegan
 
 import (
-	"bytes"
-	"container/list"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -13,7 +10,6 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -22,33 +18,29 @@ func backup(v any, backup any) any {
 		m.backup = backup
 		return m
 	}
-	json, err := json.Marshal(v)
-	if err != nil {
-		json = []byte(fmt.Sprint(v))
-	}
 	return &modifiedLiteral{
-		Literal: unjson.NewLiteral(v, json),
+		Literal: unjson.NewLiteral(v, marshal(v)),
 		backup:  backup,
 	}
 }
 
 func (app *Application) keyFuncReplace(
-	session *pager.Session,
-	input func(*pager.Session, any) ([]any, error)) error {
+	session *Session,
+	input func(*Session, any) ([]any, error)) error {
 
-	element := ref(app.cursor)
-	defaultv := element.Value()
+	element := app.cursor.Value
+	defaultv := element.Data()
 	if _, ok := defaultv.(*unjson.RawBytes); ok {
 		return nil
 	}
 	prev := func() bool { return false }
 
-	if v, ok := unwrap(element.Value()).(Mark); ok {
+	if v, ok := unwrap(element.Data()).(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := unwrap(ref(next).Value()).(Mark)
+		nextv, ok := unwrap(next.Value.Data()).(Mark)
 		if !ok {
 			return nil
 		}
@@ -62,43 +54,28 @@ func (app *Application) keyFuncReplace(
 			return nil
 		}
 	}
-	values, err := input(session, defaultv)
+	newData, err := input(session, defaultv)
 	if err != nil {
 		return err
 	}
-	switch len(values) {
+	switch len(newData) {
 	case 1:
-		if prev() || element.Value() != values[0] {
+		if prev() || element.Data() != newData[0] {
 			app.dirty = true
-			values[0] = backup(values[0], element.Value())
+			newData[0] = backup(newData[0], element.Data())
 		}
-		element.SetValue(values[0])
+		element.SetData(newData[0])
 	case 2:
-		prefix := ref(app.cursor).LeadingSpace()
+		prefix := app.cursor.Value.LeadingSpace()
 		prev()
 		app.list.InsertAfter(
-			newElement(values[1], element.Nest(), element.Comma(), prefix),
+			newItem(newData[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.SetValue(backup(values[0], element.Value()))
+		element.SetData(backup(newData[0], element.Data()))
 		element.SetComma(false)
 		app.dirty = true
 	}
 	return nil
-}
-
-type tombstone struct {
-	first any
-	rest  *list.List
-}
-
-func (r *tombstone) Json() []byte {
-	return []byte{}
-}
-
-func (t *tombstone) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
-	b.WriteString(ansi.Red)
-	b.WriteString("<DEL>")
-	b.WriteString(ansi.Default)
 }
 
 type modifiedLiteral struct {
@@ -123,11 +100,7 @@ func makeDefaultFormat(v any) string {
 	if v, ok := v.(interface{ Json() []byte }); ok {
 		return string(v.Json())
 	}
-	bin, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Sprintf("%q", v)
-	}
-	return string(bin)
+	return string(marshal(v))
 }
 
 func inputToAny(rawText string) ([]any, error) {
@@ -161,7 +134,7 @@ func inputToAny(rawText string) ([]any, error) {
 	return []any{rawText}, nil
 }
 
-func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any, error) {
+func (app *Application) inputFormat(session *Session, defaultv any) ([]any, error) {
 	defaults := makeDefaultFormat(defaultv)
 	text, err := app.readLineElement(session, "New value:", defaults)
 	if err != nil {
@@ -170,7 +143,7 @@ func (app *Application) inputFormat(session *pager.Session, defaultv any) ([]any
 	return inputToAny(text)
 }
 
-func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) ([]any, error) {
+func (app *Application) inputTypeAndValue(session *Session, defaultv any) ([]any, error) {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 	for {
@@ -216,9 +189,9 @@ func (app *Application) inputTypeAndValue(session *pager.Session, defaultv any) 
 	}
 }
 
-func isDuplicated(cursor *list.Element, nest int, key string) bool {
+func isDuplicated(cursor *Element, nest int, key string) bool {
 	for p := cursor; p != nil; p = p.Prev() {
-		i := ref(p).Nest()
+		i := p.Value.Nest()
 		if i < nest {
 			break
 		}
@@ -230,7 +203,7 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 		}
 	}
 	for p := cursor.Next(); p != nil; p = p.Next() {
-		i := ref(p).Nest()
+		i := p.Value.Nest()
 		if i < nest {
 			break
 		}
@@ -244,7 +217,7 @@ func isDuplicated(cursor *list.Element, nest int, key string) bool {
 	return false
 }
 
-func findPairBefore(p *list.Element) *Pair {
+func findPairBefore(p *Element) *Pair {
 	for ; p != nil; p = p.Prev() {
 		if pair, ok := p.Value.(*Pair); ok {
 			return pair
@@ -253,24 +226,24 @@ func findPairBefore(p *list.Element) *Pair {
 	return nil
 }
 
-func findSameLevelPairBefore(p *list.Element) (*Pair, bool) {
+func findSameLevelPairBefore(p *Element) (*Pair, bool) {
 	if pair, ok := p.Value.(*Pair); ok {
 		return pair, true
 	}
-	nest := ref(p).Nest()
+	nest := p.Value.Nest()
 	for {
 		p = p.Prev()
 		if p == nil {
 			return nil, false
 		}
-		element := ref(p)
+		element := p.Value
 		i := element.Nest()
 		if i == nest {
 			if pair, ok := p.Value.(*Pair); ok {
 				return pair, true
 			}
 		} else if i < nest {
-			if element.Value() != objStart {
+			if element.Data() != objStart {
 				return nil, false
 			}
 			return findPairBefore(p), true
@@ -286,33 +259,33 @@ func joinBytes(args ...[]byte) []byte {
 	return b
 }
 
-func reflectIndex(p *list.Element, nest int, plusminus int) {
+func reflectIndex(p *Element, nest int, plusminus int) {
 	for ; p != nil; p = p.Next() {
-		r := ref(p)
+		r := p.Value
 		if n := r.Nest(); n < nest {
 			return
 		} else if n > nest {
 			continue
 		}
 		if path := r.Path(); path != nil {
-			if v := r.Value(); v != objEnd && v != arrayEnd {
+			if v := r.Data(); v != objEnd && v != arrayEnd {
 				path.index += plusminus
 			}
 		}
 	}
 }
 
-func (app *Application) keyFuncInsert(session *pager.Session) error {
-	space := ref(app.cursor).LeadingSpace()
-	currentNest := ref(app.cursor).Nest()
-	if e := ref(app.cursor); arrayStart.Equals(e.Value()) {
+func (app *Application) keyFuncInsert(session *Session) error {
+	space := app.cursor.Value.LeadingSpace()
+	currentNest := app.cursor.Value.Nest()
+	if e := app.cursor.Value; arrayStart.Equals(e.Data()) {
 		next := app.cursor.Next()
-		nextElement := ref(next)
+		nextElement := next.Value
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if arrayEnd.Equals(nextElement.Value()) {
+		if arrayEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -328,16 +301,16 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // [\n[\n],\n
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(values[0], nest, false, newPrefix)
-			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
-			e2 := newElement(values[1], nest, comma, nil)
+			e1 := newItem(newData[0], nest, false, newPrefix)
+			e1.SetPath(app.cursor.Value.Path().ChildIndex(0))
+			e2 := newItem(newData[1], nest, comma, nil)
 			e2.SetPath(e1.Path())
 			app.list.InsertBefore(e1, next)
 			app.list.InsertBefore(e2, next)
@@ -346,8 +319,8 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			app.dirty = true
 		case 1: // [\n value
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newElement(values[0], nest, comma, newPrefix)
-			e1.SetPath(ref(app.cursor).Path().ChildIndex(0))
+			e1 := newItem(newData[0], nest, comma, newPrefix)
+			e1.SetPath(app.cursor.Value.Path().ChildIndex(0))
 			app.list.InsertBefore(e1, next)
 			todo()
 			app.nextLine(session)
@@ -355,24 +328,24 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		}
 		return nil
 	}
-	if e := ref(app.cursor); objStart.Equals(e.Value()) {
+	if e := app.cursor.Value; objStart.Equals(e.Data()) {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return err
 		}
 		sample := findPairBefore(app.cursor)
 		next := app.cursor.Next()
-		nextElement := ref(next)
+		nextElement := next.Value
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if objEnd.Equals(nextElement.Value()) {
+		if objEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
 				outerPrefix = space
-				todo = func() { ref(next).SetLeadingSpace(space) }
+				todo = func() { next.Value.SetLeadingSpace(space) }
 			}
 			nest = nextElement.Nest() + 1
 			newPrefix = joinBytes(outerPrefix, app.indent)
@@ -384,17 +357,17 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			nest = nextElement.Nest()
 			newPrefix = nextElement.LeadingSpace()
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // { key:[]
 			p1 := &Pair{
 				spaceKey: newPrefix,
 				key:      key,
-				Element: Element{
-					value: values[0],
+				Item: Item{
+					data:  newData[0],
 					nest:  nest,
 					comma: false,
 				},
@@ -403,7 +376,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(values[1], nest, comma, nil)
+			e2 := newItem(newData[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
 			todo()
@@ -413,8 +386,8 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			p1 := &Pair{
 				spaceKey: newPrefix,
 				key:      key,
-				Element: Element{
-					value: values[0],
+				Item: Item{
+					data:  newData[0],
 					nest:  nest,
 					comma: comma,
 				},
@@ -435,21 +408,21 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		if err != nil {
 			return err
 		}
-		element := ref(app.cursor)
+		element := app.cursor.Value
 		if isDuplicated(app.cursor, element.Nest(), key) {
 			return fmt.Errorf("duplicate key: %q", key)
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return err
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // key:[],
 			p1 := &Pair{
 				spaceKey: space,
 				key:      key,
-				Element: Element{
-					value: values[0],
+				Item: Item{
+					data:  newData[0],
 					nest:  element.Nest(),
 					comma: false,
 				},
@@ -458,7 +431,7 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 				p1.spaceColon = sample.spaceColon
 				p1.spaceValue = sample.spaceValue
 			}
-			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
+			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
@@ -467,8 +440,8 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			p := &Pair{
 				spaceKey: space,
 				key:      key,
-				Element: Element{
-					value: values[0],
+				Item: Item{
+					data:  newData[0],
 					nest:  element.Nest(),
 					comma: element.Comma(),
 				},
@@ -484,21 +457,21 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 		element.SetComma(true)
 		return nil
 	}
-	if element, ok := app.cursor.Value.(*Element); ok {
-		nest := ref(app.cursor).Nest()
+	if element, ok := app.cursor.Value.(*Item); ok {
+		nest := app.cursor.Value.Nest()
 		if nest < 0 {
 			return nil
 		}
-		values, err := app.inputFormat(session, struct{}{})
+		newData, err := app.inputFormat(session, struct{}{})
 		if err != nil {
 			return nil
 		}
-		switch len(values) {
+		switch len(newData) {
 		case 2: // [ \n ],
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e1 := newElement(values[0], element.Nest(), false, space)
-			e2 := newElement(values[1], element.Nest(), element.Comma(), nil)
-			j := ref(app.cursor).Path()
+			e1 := newItem(newData[0], element.Nest(), false, space)
+			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
+			j := app.cursor.Value.Path()
 			e1.SetPath(j.parent.ChildIndex(j.index + 1))
 			e2.SetPath(e1.Path())
 			app.list.InsertAfter(e2, app.cursor)
@@ -507,8 +480,8 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 			app.dirty = true
 		case 1: // value,
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e := newElement(values[0], element.Nest(), element.Comma(), space)
-			j := ref(app.cursor).Path()
+			e := newItem(newData[0], element.Nest(), element.Comma(), space)
+			j := app.cursor.Value.Path()
 			e.SetPath(j.parent.ChildIndex(j.index + 1))
 			app.list.InsertAfter(e, app.cursor)
 			app.nextLine(session)
@@ -519,179 +492,22 @@ func (app *Application) keyFuncInsert(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) collapse(p *list.Element, nest int, end Mark) (*list.List, bool, error) {
-	kill := list.New()
-	for {
-		if p == nil {
-			return nil, false, errors.New("Unexpected state: missing element after '{' or '['")
-		}
-		n := ref(p)
-		kill.PushBack(n)
-		q := p.Next()
-		app.list.Remove(p)
-		if n.Nest() == nest && end.Equals(n.Value()) {
-			return kill, n.Comma(), nil
-		}
-		p = q
-	}
-}
-
-func (app *Application) expand(at *list.Element, lines *list.List) {
-	for p := lines.Back(); p != nil; p = p.Prev() {
-		app.list.InsertAfter(p.Value, at)
-	}
-}
-
-func (app *Application) keyFuncRemove(session *pager.Session) error {
-	element := ref(app.cursor)
-	value := element.Value()
-	if _, ok := value.(*tombstone); ok {
-		return nil
-	}
-	var end Mark
-	if v := unwrap(value); v == objStart {
-		end = objEnd
-	} else if v == arrayStart {
-		end = arrayEnd
-	} else {
-		if _, ok := v.(Mark); !ok {
-			element.SetValue(&tombstone{first: value})
-		}
-		return nil
-	}
-	nest := element.Nest()
-	if nest == 0 {
-		return errors.New("Cannot delete top-level object or array")
-	}
-	kill, comma, err := app.collapse(app.cursor.Next(), nest, end)
-	if err != nil {
-		return err
-	}
-	element.SetValue(&tombstone{
-		first: element.Value(),
-		rest:  kill,
-	})
-	element.SetComma(comma)
-	return nil
-}
-
-func (app *Application) keyFuncCopy(session *pager.Session) error {
-	r := ref(app.cursor)
+func (app *Application) keyFuncCopy(session *Session) error {
+	r := app.cursor.Value
 	var buffer strings.Builder
 	r.Path().Dump(&buffer)
 
-	v := r.Value()
-	if _, ok := unwrap(v).(Mark); !ok {
+	data := r.Data()
+	if _, ok := unwrap(data).(Mark); !ok {
 		buffer.WriteString(" = ")
-		if f, ok := v.(interface{ Json() []byte }); ok {
+		if f, ok := data.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())
 		} else {
-			bin, err := json.Marshal(v)
-			if err != nil {
-				fmt.Fprint(&buffer, v)
-			} else {
-				buffer.Write(bin)
-			}
+			buffer.Write(marshal(data))
 		}
 	}
 	s := buffer.String()
 	app.message = s
 	clipboard.WriteAll(s)
-	return nil
-}
-
-func (app *Application) keyFuncUndo(session *pager.Session) error {
-	r := ref(app.cursor)
-	if d, ok := r.Value().(*tombstone); ok {
-		r.SetValue(d.first)
-		if d.rest.Len() > 0 {
-			r.SetComma(false)
-			app.expand(app.cursor, d.rest)
-		}
-		return nil
-	}
-	m, ok := r.Value().(*modifiedLiteral)
-	if !ok || m.backup == nil {
-		return nil
-	}
-	if objStart.Equals(m.Literal) {
-		next := app.cursor.Next()
-		if next == nil || !objEnd.Equals(ref(next).Value()) {
-			return errors.New("not empty object")
-		}
-		app.list.Remove(next)
-	} else if arrayStart.Equals(m.Literal) {
-		next := app.cursor.Next()
-		if next == nil || !arrayEnd.Equals(ref(next).Value()) {
-			return errors.New("not empty array")
-		}
-		app.list.Remove(next)
-	}
-	r.SetValue(m.backup)
-	return nil
-}
-
-type collapsed struct {
-	name  string
-	first any
-	rest  *list.List
-}
-
-func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
-	b.WriteString(ansi.Red)
-	b.WriteString(c.name)
-	b.WriteString(ansi.Default)
-}
-
-func (c *collapsed) Json() []byte {
-	var b bytes.Buffer
-	fmt.Fprint(&b, c.first)
-	p := c.rest.Front()
-	for p != nil {
-		next := p.Next()
-		if isToBeContinued(p) && next != nil {
-			ref(p).Dump(&b)
-		} else {
-			ref(p).DumpWithoutComma(&b)
-		}
-		p = next
-	}
-	return b.Bytes()
-}
-
-func (app *Application) keyFuncCollapseExpand(session *pager.Session) error {
-	element := ref(app.cursor)
-	value := element.Value()
-	var end Mark
-	var name string
-	if v := unwrap(value); v == objStart {
-		end = objEnd
-		name = "{..}"
-	} else if v == arrayStart {
-		end = arrayEnd
-		name = "[..]"
-	} else if c, ok := v.(*collapsed); ok {
-		app.expand(app.cursor, c.rest)
-		r := ref(app.cursor)
-		r.SetValue(c.first)
-		r.SetComma(false)
-		return nil
-	} else {
-		return nil
-	}
-	nest := element.Nest()
-	if nest == 0 {
-		return nil
-	}
-	kill, comma, err := app.collapse(app.cursor.Next(), nest, end)
-	if err != nil {
-		return err
-	}
-	element.SetValue(&collapsed{
-		name:  name,
-		first: value,
-		rest:  kill,
-	})
-	element.SetComma(comma)
 	return nil
 }

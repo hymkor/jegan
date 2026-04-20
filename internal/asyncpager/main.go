@@ -1,11 +1,12 @@
 package asyncpager
 
 import (
-	"container/list"
 	"io"
 	"time"
 
 	"github.com/nyaosorg/go-ttyadapter"
+
+	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/nonblock"
 	"github.com/hymkor/jegan/internal/pager"
@@ -13,48 +14,46 @@ import (
 
 type Displayer = pager.Displayer
 
-type Session = pager.Session
-
-type ttyX struct {
+type ttyX[T Displayer] struct {
 	ttyadapter.Tty
-	nonBlock *nonblock.NonBlock[Displayer]
-	work     func(Displayer, error) bool
+	nonBlock *nonblock.NonBlock[T]
+	work     func(T, error) bool
 }
 
-func newTtyX(
+func newTtyX[T Displayer](
 	tty ttyadapter.Tty,
-	dataGetter func() (Displayer, error),
-	work func(Displayer, error) bool) *ttyX {
+	dataGetter func() (T, error),
+	work func(T, error) bool) *ttyX[T] {
 
-	return &ttyX{
+	return &ttyX[T]{
 		Tty:      tty,
-		nonBlock: nonblock.New(tty.GetKey, dataGetter),
+		nonBlock: nonblock.New[T](tty.GetKey, dataGetter),
 		work:     work,
 	}
 }
 
-func (t *ttyX) GetKey() (string, error) {
+func (t *ttyX[T]) GetKey() (string, error) {
 	return t.nonBlock.GetOr(t.work)
 }
 
-func (t *ttyX) Close() error {
+func (t *ttyX[T]) Close() error {
 	t.nonBlock.Close()
 	return nil
 }
 
-type Pager pager.Pager
+type Pager[T pager.Displayer] pager.Pager[T]
 
-func (pg *Pager) EventLoop(
+func (pg *Pager[T]) EventLoop(
 	tty ttyadapter.Tty,
-	getter func() (Displayer, error),
-	store func(Displayer, error) bool,
-	L *list.List,
+	getter func() (T, error),
+	store func(T, error) bool,
+	L *list.List[T],
 	ttyout io.Writer) error {
 
-	session := &Session{
+	session := &pager.Session[T]{
 		List:   L,
 		TtyOut: ttyout,
-		Pager:  (*pager.Pager)(pg),
+		Pager:  (*pager.Pager[T])(pg),
 	}
 
 	if err := tty.Open(nil); err != nil {
@@ -71,7 +70,7 @@ func (pg *Pager) EventLoop(
 
 	const interval = 4
 	displayUpdateTime := time.Now().Add(time.Second / interval)
-	newStore := func(obj Displayer, err error) (cont bool) {
+	newStore := func(obj T, err error) (cont bool) {
 		cont = store(obj, err)
 		if !cont || time.Now().After(displayUpdateTime) {
 			session.UpdateStatus()

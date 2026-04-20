@@ -17,11 +17,11 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func (app *Application) keyFuncSave(session *pager.Session) error {
+func (app *Application) keyFuncSave(session *Session) error {
 	return app.writeFile(session)
 }
 
-func (app *Application) writeFile(session *pager.Session) error {
+func (app *Application) writeFile(session *Session) error {
 	fname, err := app.readLinePath(session, "Write to:", app.Name)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (app *Application) writeFile(session *pager.Session) error {
 	return nil
 }
 
-func (app *Application) keyFuncQuit(session *pager.Session) (pager.EventResult, error) {
+func (app *Application) keyFuncQuit(session *Session) (pager.EventResult, error) {
 	if !app.dirty {
 		return pager.QuitApp, nil
 	}

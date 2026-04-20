@@ -1,35 +1,21 @@
 package jegan
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/hymkor/jegan/internal/pager"
-	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func unwrap(v any) any {
-	if vv, ok := v.(*modifiedLiteral); ok {
-		v = vv.Literal
-	}
-	if vv, ok := v.(*unjson.Literal); ok {
-		v = vv.Value()
-	}
-	return v
-}
-
-func newCompare(v any) (func(key string, value any) bool, bool) {
+func newCompare(v any) (func(key string, data any) bool, bool) {
 	v = unwrap(v)
 	if s, ok := v.(string); ok {
 		s = strings.ToLower(s)
-		return func(key string, value any) bool {
+		return func(key string, data any) bool {
 			key = strings.ToLower(key)
 			if strings.Contains(key, s) {
 				return true
 			}
-			other := unwrap(value)
+			other := unwrap(data)
 			if o, ok := other.(string); ok {
 				o = strings.ToLower(o)
 				return strings.Contains(o, s)
@@ -73,7 +59,7 @@ func newCompare(v any) (func(key string, value any) bool, bool) {
 	return func(string, any) bool { return false }, false
 }
 
-func (app *Application) keyFuncSearch(session *pager.Session, revert bool) error {
+func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 
 	prompt := "Search:"
 	if revert {
@@ -116,16 +102,16 @@ func (app *Application) keyFuncSearch(session *pager.Session, revert bool) error
 	return app.searchForward(session, compare)
 }
 
-func compareKeyAndValue(p *list.Element, compare func(string, any) bool) bool {
+func compareKeyAndValue(p *Element, compare func(string, any) bool) bool {
 	if pair, ok := p.Value.(*Pair); ok {
-		return compare(pair.key, pair.value)
+		return compare(pair.key, pair.data)
 	}
-	return compare("", ref(p).Value())
+	return compare("", p.Value.Data())
 }
 
 func (app *Application) searchForward(
-	session *pager.Session,
-	compare func(key string, value any) bool) error {
+	session *Session,
+	compare func(key string, data any) bool) error {
 
 	_cursor := app.cursor
 	_csrPos := app.csrline
@@ -151,7 +137,7 @@ func (app *Application) searchForward(
 }
 
 func (app *Application) searchBackward(
-	session *pager.Session,
+	session *Session,
 	compare func(string, any) bool) error {
 
 	_cursor := app.cursor

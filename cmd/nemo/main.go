@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"container/list"
 	"fmt"
 	"io"
 	"os"
@@ -13,8 +12,11 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 
+	"github.com/hymkor/go-generics-list"
+
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/asyncpager"
+	"github.com/hymkor/jegan/internal/pager"
 )
 
 type textElement string
@@ -31,10 +33,10 @@ func (t textElement) Display(w int) string {
 }
 
 func main1(source io.Reader, title string) error {
-	lines := list.New()
+	lines := list.New[textElement]()
 
-	pg := &asyncpager.Pager{
-		Status: func(session *asyncpager.Session) string {
+	pg := &asyncpager.Pager[textElement]{
+		Status: func(session *pager.Session[textElement]) string {
 			var b strings.Builder
 			if title != "" {
 				b.WriteString(ansi.Reverse)
@@ -54,23 +56,23 @@ func main1(source io.Reader, title string) error {
 
 	sc := bufio.NewScanner(source)
 
-	getter := func() (asyncpager.Displayer, error) {
+	getter := func() (textElement, error) {
 		if sc.Scan() {
 			return textElement(sc.Text()), nil
 		}
 		if err := sc.Err(); err != nil {
-			return nil, err
+			return "", err
 		}
-		return nil, io.EOF
+		return "", io.EOF
 	}
 
-	store := func(obj asyncpager.Displayer, err error) bool {
+	store := func(obj textElement, err error) bool {
 		if err != nil {
 			return false
 		}
-		if obj != nil {
-			lines.PushBack(obj)
-		}
+		//if obj != nil {
+		lines.PushBack(obj)
+		//}
 		return true
 	}
 

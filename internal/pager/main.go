@@ -1,7 +1,6 @@
 package pager
 
 import (
-	"container/list"
 	"fmt"
 	"io"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-ttyadapter"
 
+	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/jegan/internal/ansi"
 )
 
@@ -22,12 +22,16 @@ const (
 	QuitApp
 )
 
-type Pager struct {
+type Displayer interface {
+	Display(width int) string
+}
+
+type Pager[T Displayer] struct {
 	cache   []string
 	Width   int
 	Height  int
-	Handler func(*Session, string) (EventResult, error)
-	Status  func(*Session) string
+	Handler func(*Session[T], string) (EventResult, error)
+	Status  func(*Session[T]) string
 	offset  int
 }
 
@@ -84,7 +88,7 @@ func trimLeft(line string, offset int) string {
 	return buffer.String()
 }
 
-func (pager *Pager) show(fetch func(int) (string, bool), out io.Writer) func() {
+func (pager *Pager[T]) show(fetch func(int) (string, bool), out io.Writer) func() {
 	i := 0
 	for i < pager.Height {
 		line, ok := fetch(pager.Width)
@@ -113,17 +117,17 @@ func (pager *Pager) show(fetch func(int) (string, bool), out io.Writer) func() {
 	}
 }
 
-type Session struct {
-	*Pager
-	List   *list.List
-	Window *list.Element
+type Session[T Displayer] struct {
+	*Pager[T]
+	List   *list.List[T]
+	Window *list.Element[T]
 	WinPos int
-	tail   *list.Element
+	tail   *list.Element[T]
 	TtyOut io.Writer
 	GetKey func() (string, error)
 }
 
-func (session *Session) UpdateStatus() {
+func (session *Session[T]) UpdateStatus() {
 	if session.Status != nil {
 		line := session.Status(session)
 		session.TtyOut.Write([]byte{'\r'})
@@ -133,12 +137,12 @@ func (session *Session) UpdateStatus() {
 	}
 }
 
-func (session *Session) MoveFront() {
+func (session *Session[T]) MoveFront() {
 	session.Window = session.List.Front()
 	session.WinPos = 0
 }
 
-func (session *Session) rollup() (i int) {
+func (session *Session[T]) rollup() (i int) {
 	for i < session.Height-1 {
 		w := session.Window.Prev()
 		if w == nil {
@@ -151,13 +155,13 @@ func (session *Session) rollup() (i int) {
 	return
 }
 
-func (session *Session) MoveBack() int {
+func (session *Session[T]) MoveBack() int {
 	session.Window = session.List.Back()
 	session.WinPos = session.List.Len() - 1
 	return session.rollup()
 }
 
-func (session *Session) MoveNextPage() {
+func (session *Session[T]) MoveNextPage() {
 	for i := 0; i < session.Height && session.tail != nil; i++ {
 		session.Window = session.Window.Next()
 		session.WinPos++
@@ -165,7 +169,7 @@ func (session *Session) MoveNextPage() {
 	}
 }
 
-func (session *Session) MovePrevPage() {
+func (session *Session[T]) MovePrevPage() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
 		session.WinPos--
@@ -173,7 +177,7 @@ func (session *Session) MovePrevPage() {
 	}
 }
 
-func (session *Session) MoveNextLine() {
+func (session *Session[T]) MoveNextLine() {
 	if session.tail != nil {
 		if w := session.Window.Next(); w != nil {
 			session.Window = w
@@ -182,18 +186,14 @@ func (session *Session) MoveNextLine() {
 	}
 }
 
-func (session *Session) MovePrevLine() {
+func (session *Session[T]) MovePrevLine() {
 	if w := session.Window.Prev(); w != nil {
 		session.Window = w
 		session.WinPos--
 	}
 }
 
-type Displayer interface {
-	Display(width int) string
-}
-
-func (session *Session) EventLoop() error {
+func (session *Session[T]) EventLoop() error {
 	session.Window = session.List.Front()
 
 	io.WriteString(session.TtyOut, ansi.CursorOff)
@@ -203,11 +203,7 @@ func (session *Session) EventLoop() error {
 		session.tail = session.Window
 		rewind := session.show(func(width int) (line string, ok bool) {
 			if session.tail != nil {
-				if obj, okk := session.tail.Value.(Displayer); okk {
-					line, ok = obj.Display(session.offset+session.Width), true
-				} else {
-					line, ok = session.tail.Value.(string)
-				}
+				line, ok = session.tail.Value.Display(session.offset+session.Width), true
 				session.tail = session.tail.Next()
 			}
 			return
@@ -258,7 +254,7 @@ func (session *Session) EventLoop() error {
 	return nil
 }
 
-func (pager *Pager) EventLoop(tty ttyadapter.Tty, L *list.List, ttyout io.Writer) error {
+func (pager *Pager[T]) EventLoop(tty ttyadapter.Tty, L *list.List[T], ttyout io.Writer) error {
 	if err := tty.Open(nil); err != nil {
 		return err
 	}
@@ -271,7 +267,7 @@ func (pager *Pager) EventLoop(tty ttyadapter.Tty, L *list.List, ttyout io.Writer
 	pager.Width = width
 	pager.Height = height - 1
 
-	session := &Session{
+	session := &Session[T]{
 		Pager:  pager,
 		List:   L,
 		GetKey: tty.GetKey,

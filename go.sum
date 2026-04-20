@@ -2,6 +2,8 @@ github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/clipperhouse/uax29/v2 v2.2.0 h1:ChwIKnQN3kcZteTXMgb1wztSgaU+ZemkgWdohwgs8tY=
 github.com/clipperhouse/uax29/v2 v2.2.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
+github.com/hymkor/go-generics-list v0.2.3 h1:Xtiq4d8kP02W1UPjPbUYpxz2cr6lwabII7Z4b5oUQQ8=
+github.com/hymkor/go-generics-list v0.2.3/go.mod h1:n+lOMwdcZO6pf7O49/YZGoqIhZI6MJve3cL5nQ8rD7U=
 github.com/hymkor/go-safewrite v0.4.0 h1:ppq0/DPwYo+ETRvIeaNMfRBKeFL0U3g3pJAbJNiwm1E=
 github.com/hymkor/go-safewrite v0.4.0/go.mod h1:UiLRe1/Al1kAkJJK65+xAFMhiacBwK6oEVHsu9+n4fo=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=

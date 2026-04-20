@@ -11,7 +11,7 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-var _ Line = &Element{}
+var _ Line = &Item{}
 
 var _ Line = &Pair{}
 

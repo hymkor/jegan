@@ -1,12 +1,9 @@
 package jegan
 
 import (
-	"container/list"
-	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -61,8 +58,8 @@ func (j *JsonPath) Dump(w io.Writer) {
 type Line interface {
 	LeadingSpace() []byte
 	SetLeadingSpace(v []byte)
-	Value() any
-	SetValue(any)
+	Data() any
+	SetData(any)
 	SpaceCommaOrClose() []byte
 	SetSpaceCommaOrClose([]byte)
 	Comma() bool
@@ -79,13 +76,9 @@ type Line interface {
 	DumpWithoutComma(w io.Writer)
 }
 
-func ref(p *list.Element) Line {
-	return p.Value.(Line)
-}
-
-type Element struct {
+type Item struct {
 	spaceValue        []byte
-	value             any
+	data              any
 	spaceCommaOrClose []byte
 	comma             bool
 
@@ -94,40 +87,35 @@ type Element struct {
 	path   *JsonPath
 }
 
-func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
-func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
-func (e *Element) Value() any                    { return e.value }
-func (e *Element) SetValue(v any)                { e.value = v }
-func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
-func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
-func (e *Element) Comma() bool                   { return e.comma }
-func (e *Element) SetComma(v bool)               { e.comma = v }
-func (e *Element) Nest() int                     { return e.nest }
-func (e *Element) SetCursor(v bool)              { e.cursor = v }
-func (e *Element) Path() *JsonPath               { return e.path }
-func (e *Element) SetPath(v *JsonPath)           { e.path = v }
+func (e *Item) LeadingSpace() []byte          { return e.spaceValue }
+func (e *Item) SetLeadingSpace(v []byte)      { e.spaceValue = v }
+func (e *Item) Data() any                     { return e.data }
+func (e *Item) SetData(v any)                 { e.data = v }
+func (e *Item) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
+func (e *Item) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
+func (e *Item) Comma() bool                   { return e.comma }
+func (e *Item) SetComma(v bool)               { e.comma = v }
+func (e *Item) Nest() int                     { return e.nest }
+func (e *Item) SetCursor(v bool)              { e.cursor = v }
+func (e *Item) Path() *JsonPath               { return e.path }
+func (e *Item) SetPath(v *JsonPath)           { e.path = v }
 
-func (e *Element) Dump(w io.Writer) {
+func (e *Item) Dump(w io.Writer) {
 	e.DumpWithoutComma(w)
 	if e.comma {
 		w.Write([]byte{','})
 	}
 }
 
-func (e *Element) DumpWithoutComma(w io.Writer) {
-	if _, ok := e.value.(*tombstone); ok {
+func (e *Item) DumpWithoutComma(w io.Writer) {
+	if _, ok := e.data.(*tombstone); ok {
 		return
 	}
 	w.Write(e.spaceValue)
-	if v, ok := e.value.(interface{ Json() []byte }); ok {
+	if v, ok := e.data.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
-		b, err := json.Marshal(e.value)
-		if err != nil {
-			fmt.Fprint(w, e.value)
-		} else {
-			w.Write(b)
-		}
+		w.Write(marshal(e.data))
 	}
 	w.Write(e.spaceCommaOrClose)
 }
@@ -177,26 +165,26 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 	}
 }
 
-func (e *Element) highlight(b *strings.Builder) {
+func (e *Item) highlight(b *strings.Builder) {
 	e.highlightWithoutComma(b)
 	if e.comma {
 		b.WriteByte(',')
 	}
 }
 
-func (e *Element) highlightWithoutComma(b *strings.Builder) {
-	render(e.value, b)
+func (e *Item) highlightWithoutComma(b *strings.Builder) {
+	render(e.data, b)
 }
 
-func render(v any, b *strings.Builder) {
+func render(data any, b *strings.Builder) {
 	type renderType interface {
 		Render(*strings.Builder, func(any, *strings.Builder))
 	}
-	if r, ok := v.(renderType); ok {
+	if r, ok := data.(renderType); ok {
 		r.Render(b, render)
 		return
 	}
-	if x, ok := v.(*unjson.RawBytes); ok {
+	if x, ok := data.(*unjson.RawBytes); ok {
 		b.WriteString(ansi.Red)
 		escape := false
 		for _, v := range x.String() {
@@ -219,45 +207,34 @@ func render(v any, b *strings.Builder) {
 		b.WriteString(ansi.Default)
 		return
 	}
-	if x, ok := v.(*unjson.Literal); ok {
-		value := x.Value()
-		if _, ok := value.(string); ok {
+	if x, ok := data.(*unjson.Literal); ok {
+		data = x.Data()
+		if _, ok := data.(string); ok {
 			highlightString(x.Json(), ansi.Magenta, b)
 			return
 		}
-		if _, ok := value.(float64); ok {
+		if _, ok := data.(float64); ok {
 			b.Write(x.Json())
 			return
 		}
-		v = x.Value()
 	} else {
 		io.WriteString(b, ansi.Bold)
 		defer io.WriteString(b, ansi.Thin)
 	}
-	if s, ok := v.(string); ok {
-		jsonBin, err := json.Marshal(s)
-		if err != nil {
-			debug("(*Element) highlight", s, err.Error())
-			jsonBin = []byte(strconv.Quote(s))
-		}
-		highlightString(jsonBin, ansi.Magenta, b)
-	} else if v == true {
+	if s, ok := data.(string); ok {
+		highlightString(marshal(s), ansi.Magenta, b)
+	} else if data == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
-	} else if v == false {
+	} else if data == false {
 		io.WriteString(b, ansi.Cyan+"false"+ansi.Default)
-	} else if v == nil {
+	} else if data == nil {
 		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
-		bin, err := json.Marshal(v)
-		if err != nil {
-			fmt.Fprint(b, v)
-		} else {
-			b.Write(bin)
-		}
+		b.Write(marshal(data))
 	}
 }
 
-func (e *Element) Display(w int) string {
+func (e *Item) Display(w int) string {
 	var b strings.Builder
 	if e.cursor {
 		b.WriteString(ansi.UnderLine)
@@ -277,7 +254,7 @@ type Pair struct {
 	spaceKey   []byte
 	key        string
 	spaceColon []byte
-	Element
+	Item
 }
 
 func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
@@ -291,14 +268,9 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	jsonBin, err := json.Marshal(pair.key)
-	if err != nil {
-		debug("(*Pair) Display", pair.key, err.Error())
-		jsonBin = []byte(strconv.Quote(pair.key))
-	}
-	highlightString(jsonBin, ansi.Yellow, &b)
+	highlightString(marshal(pair.key), ansi.Yellow, &b)
 	b.WriteString(": ")
-	pair.Element.highlight(&b)
+	pair.Item.highlight(&b)
 	if pair.cursor {
 		b.WriteString(strings.Repeat(" ", w))
 		b.WriteString(ansi.NoUnderLine)
@@ -306,10 +278,10 @@ func (pair *Pair) Display(w int) string {
 	return b.String()
 }
 
-func newElement(v any, i int, comma bool, prefix []byte) *Element {
-	return &Element{
+func newItem(v any, i int, comma bool, prefix []byte) *Item {
+	return &Item{
 		spaceValue: prefix,
-		value:      v,
+		data:       v,
 		comma:      comma,
 		nest:       i,
 	}
@@ -317,34 +289,29 @@ func newElement(v any, i int, comma bool, prefix []byte) *Element {
 
 func (p *Pair) Dump(w io.Writer) {
 	p.dumpKey(w)
-	p.Element.Dump(w)
+	p.Item.Dump(w)
 }
 
 func (p *Pair) DumpWithoutComma(w io.Writer) {
-	if _, ok := p.Value().(*tombstone); ok {
+	if _, ok := p.Data().(*tombstone); ok {
 		return
 	}
 	p.dumpKey(w)
-	p.Element.DumpWithoutComma(w)
+	p.Item.DumpWithoutComma(w)
 }
 
 func (p *Pair) dumpKey(w io.Writer) {
-	if _, ok := p.Element.value.(*tombstone); ok {
+	if _, ok := p.Item.data.(*tombstone); ok {
 		return
 	}
 	w.Write(p.spaceKey)
-	b, err := json.Marshal(p.key)
-	if err != nil {
-		debug("(*Pair) Dump", p.key, err.Error())
-		b = []byte(strconv.Quote(p.key))
-	}
-	w.Write(b)
+	w.Write(marshal(p.key))
 	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
 }
 
-func isToBeContinued(p *list.Element) bool {
-	if _, ok := ref(p).Value().(*tombstone); ok {
+func isToBeContinued(p *Element) bool {
+	if _, ok := p.Value.Data().(*tombstone); ok {
 		return false
 	}
 	for {
@@ -352,25 +319,25 @@ func isToBeContinued(p *list.Element) bool {
 		if p == nil {
 			return false
 		}
-		v := ref(p).Value()
-		if objEnd.Equals(v) {
+		data := p.Value.Data()
+		if objEnd.Equals(data) {
 			return false
 		}
-		if arrayEnd.Equals(v) {
+		if arrayEnd.Equals(data) {
 			return false
 		}
-		if _, ok := v.(*tombstone); !ok {
+		if _, ok := data.(*tombstone); !ok {
 			return true
 		}
 	}
 }
 
-func Dump(L *list.List, w io.Writer) {
+func Dump(L *List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
 		if isToBeContinued(p) {
-			ref(p).Dump(w)
+			p.Value.Dump(w)
 		} else {
-			ref(p).DumpWithoutComma(w)
+			p.Value.DumpWithoutComma(w)
 		}
 	}
 }

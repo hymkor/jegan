@@ -1,15 +1,15 @@
 package jegan
 
 import (
-	"container/list"
+	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List {
-	L := list.New()
+func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *List {
+	L := list.New[Line]()
 
-	begin := newElement(objStart, nest, false, prefix)
+	begin := newItem(objStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
@@ -21,14 +21,14 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 		sub := read(jp, pair.Value, nest+1)
 
 		front := sub.Front()
-		orgF := ref(front)
+		orgF := front.Value
 		newF := &Pair{
 			spaceKey:   pair.SpaceKey,
 			key:        pair.Key,
 			spaceColon: pair.SpaceColon,
-			Element: Element{
+			Item: Item{
 				spaceValue: pair.Value.SpaceValue,
-				value:      orgF.Value(),
+				data:       orgF.Data(),
 				comma:      orgF.Comma(),
 				nest:       nest + 1,
 				path:       orgF.Path(),
@@ -36,30 +36,30 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 		}
 		front.Value = newF
 
-		ref(sub.Back()).SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
+		sub.Back().Value.SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
 		L.PushBackList(sub)
 	}
-	back := ref(L.Back())
+	back := L.Back().Value
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newElement(objEnd, nest, true, finalSpace)
+	end := newItem(objEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
 	return L
 }
 
-func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *list.List {
+func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *List {
 	if len(object.Pairs) <= 0 {
-		L := list.New()
+		L := list.New[Line]()
 
-		begin := newElement(objStart, nest, false, prefix)
+		begin := newItem(objStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newElement(objEnd, nest, true, object.Blank)
+		end := newItem(objEnd, nest, true, object.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -68,10 +68,10 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	return readPairs(basePath, prefix, object.Pairs, nest)
 }
 
-func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List {
-	L := list.New()
+func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *List {
+	L := list.New[Line]()
 
-	begin := newElement(arrayStart, nest, false, prefix)
+	begin := newItem(arrayStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
@@ -80,31 +80,31 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 			parent: basePath,
 			index:  i,
 		}
-		sub := read(jp, element.Entry, nest+1)
-		ref(sub.Back()).SetSpaceCommaOrClose(element.PreComma)
+		sub := read(jp, element.Item, nest+1)
+		sub.Back().Value.SetSpaceCommaOrClose(element.PreComma)
 		L.PushBackList(sub)
 	}
-	back := ref(L.Back())
+	back := L.Back().Value
 	finalSpace := back.SpaceCommaOrClose()
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newElement(arrayEnd, nest, true, finalSpace)
+	end := newItem(arrayEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
 	return L
 }
 
-func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *list.List {
+func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *List {
 	if len(array.Element) <= 0 {
-		L := list.New()
+		L := list.New[Line]()
 
-		begin := newElement(arrayStart, nest, false, prefix)
+		begin := newItem(arrayStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newElement(arrayEnd, nest, true, array.Blank)
+		end := newItem(arrayEnd, nest, true, array.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -113,7 +113,7 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	return readElements(basePath, prefix, array.Element, nest)
 }
 
-func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List {
+func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
 	v := t.Value
 	prefix := t.SpaceValue
 	if x, ok := v.(*unjson.Object); ok {
@@ -122,21 +122,21 @@ func read(basePath *JsonPath, t *unjson.Entry, nest int) *list.List {
 	if x, ok := v.(*unjson.Array); ok {
 		return readArray(basePath, prefix, x, nest)
 	}
-	L := list.New()
+	L := list.New[Line]()
 
-	e := newElement(v, nest, true, prefix)
+	e := newItem(v, nest, true, prefix)
 	e.path = basePath
 	L.PushBack(e)
 	return L
 }
 
-func Read(v *unjson.Entry) *list.List {
+func Read(v *unjson.Item) *List {
 	if v == nil {
 		return nil
 	}
 	L := read(nil, v, 0)
 	if L != nil && L.Len() > 0 {
-		ref(L.Back()).SetComma(false)
+		L.Back().Value.SetComma(false)
 	}
 	return L
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/nyaosorg/go-readline-skk"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/pager"
 )
 
 var errCanceled = errors.New("Canceled")
@@ -35,12 +34,12 @@ func skkInit() {
 	})
 }
 
-func (app *Application) readLine(session *pager.Session, prompt, defaults string) (string, error) {
+func (app *Application) readLine(session *Session, prompt, defaults string) (string, error) {
 	nop := func(*readline.Editor) {}
 	return app.readLineOpt(session, prompt, defaults, nop)
 }
 
-func (app *Application) readLinePath(session *pager.Session, prompt, defaults string) (string, error) {
+func (app *Application) readLinePath(session *Session, prompt, defaults string) (string, error) {
 	opt := func(editor *readline.Editor) {
 		if len(defaults) > 5 && strings.HasSuffix(defaults, ".json") {
 			editor.Cursor = readline.MojiCountInString(defaults) - 5
@@ -49,7 +48,7 @@ func (app *Application) readLinePath(session *pager.Session, prompt, defaults st
 	return app.readLineOpt(session, prompt, defaults, opt)
 }
 
-func (app *Application) readLineElement(session *pager.Session, prompt, defaults string) (string, error) {
+func (app *Application) readLineElement(session *Session, prompt, defaults string) (string, error) {
 	opt := func(editor *readline.Editor) {
 		if len(defaults) > 0 && strings.IndexByte(`"]}`, defaults[len(defaults)-1]) >= 0 {
 			editor.Cursor = readline.MojiCountInString(defaults) - 1
@@ -58,7 +57,7 @@ func (app *Application) readLineElement(session *pager.Session, prompt, defaults
 	return app.readLineOpt(session, prompt, defaults, opt)
 }
 
-func (app *Application) readLineString(session *pager.Session, prompt, defaults string) (string, error) {
+func (app *Application) readLineString(session *Session, prompt, defaults string) (string, error) {
 	opt := func(e *readline.Editor) {
 		e.OnAfterRender = func(B *readline.Buffer, availWidth int) {
 			if availWidth >= 1 {
@@ -72,7 +71,7 @@ func (app *Application) readLineString(session *pager.Session, prompt, defaults 
 	return app.readLineOpt(session, "", defaults, opt)
 }
 
-func (app *Application) readLineOpt(session *pager.Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
+func (app *Application) readLineOpt(session *Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
 	if ap, ok := app.ttyIn.(*autoPilot); ok {
 		return ap.next()
 	}
@@ -106,7 +105,7 @@ func (app *Application) readLineOpt(session *pager.Session, prompt, defaults str
 	return result, err
 }
 
-func askYesNo(session *pager.Session, message string) (bool, error) {
+func askYesNo(session *Session, message string) (bool, error) {
 	io.WriteString(session.TtyOut, ansi.CursorOn)
 	defer io.WriteString(session.TtyOut, ansi.CursorOff)
 
