@@ -13,7 +13,7 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-### 🛡 Preserve original JSON formatting
+### &#x1F6E1; Preserve original JSON formatting
 
 Jegan keeps your JSON exactly as it was loaded.
 Only the parts you edit are changed.
@@ -23,27 +23,27 @@ Only the parts you edit are changed.
 * String representations (e.g. `\uXXXX` vs raw UTF-8) are preserved
 * Even non-JSON parts (e.g. JavaScript wrappers) are kept intact
 
-### ✏️ Minimal and safe edits
+### &#x270F;&#xFE0F; Minimal and safe edits
 
 * Only modified fields are updated
 * Changes are highlighted in bold
 * Original style is reused when inserting new values
 * Backup file is created on save
 
-### 📦 Supports real-world JSON formats
+### &#x1F4E6; Supports real-world JSON formats
 
 * JSON
 * JSON Lines (JSONL)
 * JavaScript-style assignments (e.g. X/Twitter archives)
 
-### 🧭 Structured navigation in terminal
+### &#x1F9ED; Structured navigation in terminal
 
 * Navigate items with `j` / `k`
 * Horizontal scrolling for long lines
 * JSON path and current value shown in status line
 * Search with `/`, `?`, `n`, `N`
 
-### 🔌 CLI-friendly
+### &#x1F50C; CLI-friendly
 
 * Read from file or stdin
 * Write to file or stdout
@@ -53,7 +53,7 @@ Only the parts you edit are changed.
 jegan < input.json > output.json
 ```
 
-### ⌨️ Efficient editing
+### &#x2328;&#xFE0F; Efficient editing
 
 * vi-like navigation
 * Emacs-style input for editing values
