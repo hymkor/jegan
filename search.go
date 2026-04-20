@@ -16,7 +16,7 @@ func unwrap(v any) any {
 		v = vv.Literal
 	}
 	if vv, ok := v.(*unjson.Literal); ok {
-		v = vv.Value()
+		v = vv.Data()
 	}
 	return v
 }

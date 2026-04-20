@@ -94,8 +94,8 @@ func readString(br io.RuneScanner) (*Literal, error) {
 			bin := buffer.Bytes()
 			err := json.Unmarshal(bin, &str)
 			return &Literal{
-				value: str,
-				json:  bin,
+				data: str,
+				json: bin,
 			}, err
 		}
 		if !backslash && ch == '\\' {
@@ -152,8 +152,8 @@ func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
 		return nil, err2
 	}
 	return &Literal{
-		value: number,
-		json:  token,
+		data: number,
+		json: token,
 	}, nil
 }
 
@@ -360,13 +360,13 @@ func readEntry(br io.RuneScanner) (*Entry, error) {
 		n, err := readNumber(br, ch)
 		return &Entry{SpaceValue: prefix, Value: n}, err
 	} else if ch == 'n' {
-		v := &Literal{value: nil, json: []byte("null")}
+		v := &Literal{data: nil, json: []byte("null")}
 		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
-		v := &Literal{value: false, json: []byte("false")}
+		v := &Literal{data: false, json: []byte("false")}
 		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
 	} else if ch == 't' {
-		v := &Literal{value: true, json: []byte("true")}
+		v := &Literal{data: true, json: []byte("true")}
 		return &Entry{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)

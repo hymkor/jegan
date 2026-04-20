@@ -220,7 +220,7 @@ func render(v any, b *strings.Builder) {
 		return
 	}
 	if x, ok := v.(*unjson.Literal); ok {
-		v = x.Value()
+		v = x.Data()
 		if _, ok := v.(string); ok {
 			highlightString(x.Json(), ansi.Magenta, b)
 			return
