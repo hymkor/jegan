@@ -1,11 +1,9 @@
 package jegan
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -117,12 +115,7 @@ func (e *Item) DumpWithoutComma(w io.Writer) {
 	if v, ok := e.data.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
-		b, err := json.Marshal(e.data)
-		if err != nil {
-			fmt.Fprint(w, e.data)
-		} else {
-			w.Write(b)
-		}
+		w.Write(marshal(e.data))
 	}
 	w.Write(e.spaceCommaOrClose)
 }
@@ -229,12 +222,7 @@ func render(data any, b *strings.Builder) {
 		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := data.(string); ok {
-		jsonBin, err := json.Marshal(s)
-		if err != nil {
-			debug("(*Entry) highlight", s, err.Error())
-			jsonBin = []byte(strconv.Quote(s))
-		}
-		highlightString(jsonBin, ansi.Magenta, b)
+		highlightString(marshal(s), ansi.Magenta, b)
 	} else if data == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
 	} else if data == false {
@@ -242,12 +230,7 @@ func render(data any, b *strings.Builder) {
 	} else if data == nil {
 		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
-		bin, err := json.Marshal(data)
-		if err != nil {
-			fmt.Fprint(b, data)
-		} else {
-			b.Write(bin)
-		}
+		b.Write(marshal(data))
 	}
 }
 
@@ -285,12 +268,7 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	jsonBin, err := json.Marshal(pair.key)
-	if err != nil {
-		debug("(*Pair) Display", pair.key, err.Error())
-		jsonBin = []byte(strconv.Quote(pair.key))
-	}
-	highlightString(jsonBin, ansi.Yellow, &b)
+	highlightString(marshal(pair.key), ansi.Yellow, &b)
 	b.WriteString(": ")
 	pair.Item.highlight(&b)
 	if pair.cursor {
@@ -327,12 +305,7 @@ func (p *Pair) dumpKey(w io.Writer) {
 		return
 	}
 	w.Write(p.spaceKey)
-	b, err := json.Marshal(p.key)
-	if err != nil {
-		debug("(*Pair) Dump", p.key, err.Error())
-		b = []byte(strconv.Quote(p.key))
-	}
-	w.Write(b)
+	w.Write(marshal(p.key))
 	w.Write(p.spaceColon)
 	w.Write([]byte{':'})
 }

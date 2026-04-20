@@ -17,8 +17,6 @@ import (
 	"github.com/hymkor/jegan/internal/pager"
 )
 
-type Session = pager.Session[Line]
-
 type Application struct {
 	Name string
 

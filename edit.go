@@ -18,12 +18,8 @@ func backup(v any, backup any) any {
 		m.backup = backup
 		return m
 	}
-	json, err := json.Marshal(v)
-	if err != nil {
-		json = []byte(fmt.Sprint(v))
-	}
 	return &modifiedLiteral{
-		Literal: unjson.NewLiteral(v, json),
+		Literal: unjson.NewLiteral(v, marshal(v)),
 		backup:  backup,
 	}
 }
@@ -104,11 +100,7 @@ func makeDefaultFormat(v any) string {
 	if v, ok := v.(interface{ Json() []byte }); ok {
 		return string(v.Json())
 	}
-	bin, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Sprintf("%q", v)
-	}
-	return string(bin)
+	return string(marshal(v))
 }
 
 func inputToAny(rawText string) ([]any, error) {
@@ -511,12 +503,7 @@ func (app *Application) keyFuncCopy(session *Session) error {
 		if f, ok := data.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())
 		} else {
-			bin, err := json.Marshal(data)
-			if err != nil {
-				fmt.Fprint(&buffer, data)
-			} else {
-				buffer.Write(bin)
-			}
+			buffer.Write(marshal(data))
 		}
 	}
 	s := buffer.String()

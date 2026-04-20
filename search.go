@@ -4,19 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/hymkor/jegan/internal/unjson"
 )
-
-func unwrap(data any) any {
-	if x, ok := data.(*modifiedLiteral); ok {
-		data = x.Literal
-	}
-	if x, ok := data.(*unjson.Literal); ok {
-		data = x.Data()
-	}
-	return data
-}
 
 func newCompare(v any) (func(key string, data any) bool, bool) {
 	v = unwrap(v)
