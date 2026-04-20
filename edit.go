@@ -582,15 +582,15 @@ func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
 	var buffer strings.Builder
 	r.Path().Dump(&buffer)
 
-	v := r.Data()
-	if _, ok := unwrap(v).(Mark); !ok {
+	data := r.Data()
+	if _, ok := unwrap(data).(Mark); !ok {
 		buffer.WriteString(" = ")
-		if f, ok := v.(interface{ Json() []byte }); ok {
+		if f, ok := data.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())
 		} else {
-			bin, err := json.Marshal(v)
+			bin, err := json.Marshal(data)
 			if err != nil {
-				fmt.Fprint(&buffer, v)
+				fmt.Fprint(&buffer, data)
 			} else {
 				buffer.Write(bin)
 			}
@@ -666,13 +666,13 @@ func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) erro
 	data := element.Data()
 	var end Mark
 	var name string
-	if v := unwrap(data); v == objStart {
+	if date := unwrap(data); date == objStart {
 		end = objEnd
 		name = "{..}"
-	} else if v == arrayStart {
+	} else if date == arrayStart {
 		end = arrayEnd
 		name = "[..]"
-	} else if c, ok := v.(*collapsed); ok {
+	} else if c, ok := date.(*collapsed); ok {
 		app.expand(app.cursor, c.rest)
 		r := app.cursor.Value
 		r.SetData(c.first)

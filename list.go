@@ -184,15 +184,15 @@ func (e *Item) highlightWithoutComma(b *strings.Builder) {
 	render(e.data, b)
 }
 
-func render(v any, b *strings.Builder) {
+func render(data any, b *strings.Builder) {
 	type renderType interface {
 		Render(*strings.Builder, func(any, *strings.Builder))
 	}
-	if r, ok := v.(renderType); ok {
+	if r, ok := data.(renderType); ok {
 		r.Render(b, render)
 		return
 	}
-	if x, ok := v.(*unjson.RawBytes); ok {
+	if x, ok := data.(*unjson.RawBytes); ok {
 		b.WriteString(ansi.Red)
 		escape := false
 		for _, v := range x.String() {
@@ -215,13 +215,13 @@ func render(v any, b *strings.Builder) {
 		b.WriteString(ansi.Default)
 		return
 	}
-	if x, ok := v.(*unjson.Literal); ok {
-		v = x.Data()
-		if _, ok := v.(string); ok {
+	if x, ok := data.(*unjson.Literal); ok {
+		data = x.Data()
+		if _, ok := data.(string); ok {
 			highlightString(x.Json(), ansi.Magenta, b)
 			return
 		}
-		if _, ok := v.(float64); ok {
+		if _, ok := data.(float64); ok {
 			b.Write(x.Json())
 			return
 		}
@@ -229,23 +229,23 @@ func render(v any, b *strings.Builder) {
 		io.WriteString(b, ansi.Bold)
 		defer io.WriteString(b, ansi.Thin)
 	}
-	if s, ok := v.(string); ok {
+	if s, ok := data.(string); ok {
 		jsonBin, err := json.Marshal(s)
 		if err != nil {
 			debug("(*Entry) highlight", s, err.Error())
 			jsonBin = []byte(strconv.Quote(s))
 		}
 		highlightString(jsonBin, ansi.Magenta, b)
-	} else if v == true {
+	} else if data == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
-	} else if v == false {
+	} else if data == false {
 		io.WriteString(b, ansi.Cyan+"false"+ansi.Default)
-	} else if v == nil {
+	} else if data == nil {
 		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
-		bin, err := json.Marshal(v)
+		bin, err := json.Marshal(data)
 		if err != nil {
-			fmt.Fprint(b, v)
+			fmt.Fprint(b, data)
 		} else {
 			b.Write(bin)
 		}
@@ -347,14 +347,14 @@ func isToBeContinued(p *list.Element[Line]) bool {
 		if p == nil {
 			return false
 		}
-		v := p.Value.Data()
-		if objEnd.Equals(v) {
+		data := p.Value.Data()
+		if objEnd.Equals(data) {
 			return false
 		}
-		if arrayEnd.Equals(v) {
+		if arrayEnd.Equals(data) {
 			return false
 		}
-		if _, ok := v.(*tombstone); !ok {
+		if _, ok := data.(*tombstone); !ok {
 			return true
 		}
 	}

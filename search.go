@@ -11,14 +11,14 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func unwrap(v any) any {
-	if vv, ok := v.(*modifiedLiteral); ok {
-		v = vv.Literal
+func unwrap(data any) any {
+	if x, ok := data.(*modifiedLiteral); ok {
+		data = x.Literal
 	}
-	if vv, ok := v.(*unjson.Literal); ok {
-		v = vv.Data()
+	if x, ok := data.(*unjson.Literal); ok {
+		data = x.Data()
 	}
-	return v
+	return data
 }
 
 func newCompare(v any) (func(key string, data any) bool, bool) {
