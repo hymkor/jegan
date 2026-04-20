@@ -28,7 +28,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 			spaceColon: pair.SpaceColon,
 			Element: Element{
 				spaceValue: pair.Value.SpaceValue,
-				value:      orgF.Value(),
+				value:      orgF.Data(),
 				comma:      orgF.Comma(),
 				nest:       nest + 1,
 				path:       orgF.Path(),

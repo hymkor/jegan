@@ -38,18 +38,18 @@ func (app *Application) keyFuncReplace(
 	input func(*pager.Session[Line], any) ([]any, error)) error {
 
 	element := ref(app.cursor)
-	defaultv := element.Value()
+	defaultv := element.Data()
 	if _, ok := defaultv.(*unjson.RawBytes); ok {
 		return nil
 	}
 	prev := func() bool { return false }
 
-	if v, ok := unwrap(element.Value()).(Mark); ok {
+	if v, ok := unwrap(element.Data()).(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := unwrap(ref(next).Value()).(Mark)
+		nextv, ok := unwrap(ref(next).Data()).(Mark)
 		if !ok {
 			return nil
 		}
@@ -69,18 +69,18 @@ func (app *Application) keyFuncReplace(
 	}
 	switch len(values) {
 	case 1:
-		if prev() || element.Value() != values[0] {
+		if prev() || element.Data() != values[0] {
 			app.dirty = true
-			values[0] = backup(values[0], element.Value())
+			values[0] = backup(values[0], element.Data())
 		}
-		element.SetValue(values[0])
+		element.SetData(values[0])
 	case 2:
 		prefix := ref(app.cursor).LeadingSpace()
 		prev()
 		app.list.InsertAfter(
 			newElement(values[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
-		element.SetValue(backup(values[0], element.Value()))
+		element.SetData(backup(values[0], element.Data()))
 		element.SetComma(false)
 		app.dirty = true
 	}
@@ -271,7 +271,7 @@ func findSameLevelPairBefore(p *list.Element[Line]) (*Pair, bool) {
 				return pair, true
 			}
 		} else if i < nest {
-			if element.Value() != objStart {
+			if element.Data() != objStart {
 				return nil, false
 			}
 			return findPairBefore(p), true
@@ -296,7 +296,7 @@ func reflectIndex(p *list.Element[Line], nest int, plusminus int) {
 			continue
 		}
 		if path := r.Path(); path != nil {
-			if v := r.Value(); v != objEnd && v != arrayEnd {
+			if v := r.Data(); v != objEnd && v != arrayEnd {
 				path.index += plusminus
 			}
 		}
@@ -306,14 +306,14 @@ func reflectIndex(p *list.Element[Line], nest int, plusminus int) {
 func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 	space := ref(app.cursor).LeadingSpace()
 	currentNest := ref(app.cursor).Nest()
-	if e := ref(app.cursor); arrayStart.Equals(e.Value()) {
+	if e := ref(app.cursor); arrayStart.Equals(e.Data()) {
 		next := app.cursor.Next()
 		nextElement := ref(next)
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if arrayEnd.Equals(nextElement.Value()) {
+		if arrayEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -356,7 +356,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		}
 		return nil
 	}
-	if e := ref(app.cursor); objStart.Equals(e.Value()) {
+	if e := ref(app.cursor); objStart.Equals(e.Data()) {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return err
@@ -368,7 +368,7 @@ func (app *Application) keyFuncInsert(session *pager.Session[Line]) error {
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if objEnd.Equals(nextElement.Value()) {
+		if objEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
@@ -530,7 +530,7 @@ func (app *Application) collapse(p *list.Element[Line], nest int, end Mark) (*li
 		kill.PushBack(n)
 		q := p.Next()
 		app.list.Remove(p)
-		if n.Nest() == nest && end.Equals(n.Value()) {
+		if n.Nest() == nest && end.Equals(n.Data()) {
 			return kill, n.Comma(), nil
 		}
 		p = q
@@ -545,7 +545,7 @@ func (app *Application) expand(at *list.Element[Line], lines *list.List[Line]) {
 
 func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
-	value := element.Value()
+	value := element.Data()
 	if _, ok := value.(*tombstone); ok {
 		return nil
 	}
@@ -556,7 +556,7 @@ func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 		end = arrayEnd
 	} else {
 		if _, ok := v.(Mark); !ok {
-			element.SetValue(&tombstone{first: value})
+			element.SetData(&tombstone{first: value})
 		}
 		return nil
 	}
@@ -568,10 +568,11 @@ func (app *Application) keyFuncRemove(session *pager.Session[Line]) error {
 	if err != nil {
 		return err
 	}
-	element.SetValue(&tombstone{
-		first: element.Value(),
+	element.SetData(&tombstone{
+		first: element.Data(),
 		rest:  kill,
 	})
+
 	element.SetComma(comma)
 	return nil
 }
@@ -581,7 +582,7 @@ func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
 	var buffer strings.Builder
 	r.Path().Dump(&buffer)
 
-	v := r.Value()
+	v := r.Data()
 	if _, ok := unwrap(v).(Mark); !ok {
 		buffer.WriteString(" = ")
 		if f, ok := v.(interface{ Json() []byte }); ok {
@@ -603,32 +604,32 @@ func (app *Application) keyFuncCopy(session *pager.Session[Line]) error {
 
 func (app *Application) keyFuncUndo(session *pager.Session[Line]) error {
 	r := ref(app.cursor)
-	if d, ok := r.Value().(*tombstone); ok {
-		r.SetValue(d.first)
+	if d, ok := r.Data().(*tombstone); ok {
+		r.SetData(d.first)
 		if d.rest.Len() > 0 {
 			r.SetComma(false)
 			app.expand(app.cursor, d.rest)
 		}
 		return nil
 	}
-	m, ok := r.Value().(*modifiedLiteral)
+	m, ok := r.Data().(*modifiedLiteral)
 	if !ok || m.backup == nil {
 		return nil
 	}
 	if objStart.Equals(m.Literal) {
 		next := app.cursor.Next()
-		if next == nil || !objEnd.Equals(ref(next).Value()) {
+		if next == nil || !objEnd.Equals(ref(next).Data()) {
 			return errors.New("not empty object")
 		}
 		app.list.Remove(next)
 	} else if arrayStart.Equals(m.Literal) {
 		next := app.cursor.Next()
-		if next == nil || !arrayEnd.Equals(ref(next).Value()) {
+		if next == nil || !arrayEnd.Equals(ref(next).Data()) {
 			return errors.New("not empty array")
 		}
 		app.list.Remove(next)
 	}
-	r.SetValue(m.backup)
+	r.SetData(m.backup)
 	return nil
 }
 
@@ -662,7 +663,7 @@ func (c *collapsed) Json() []byte {
 
 func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) error {
 	element := ref(app.cursor)
-	value := element.Value()
+	value := element.Data()
 	var end Mark
 	var name string
 	if v := unwrap(value); v == objStart {
@@ -674,7 +675,7 @@ func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) erro
 	} else if c, ok := v.(*collapsed); ok {
 		app.expand(app.cursor, c.rest)
 		r := ref(app.cursor)
-		r.SetValue(c.first)
+		r.SetData(c.first)
 		r.SetComma(false)
 		return nil
 	} else {
@@ -688,11 +689,12 @@ func (app *Application) keyFuncCollapseExpand(session *pager.Session[Line]) erro
 	if err != nil {
 		return err
 	}
-	element.SetValue(&collapsed{
+	element.SetData(&collapsed{
 		name:  name,
 		first: value,
 		rest:  kill,
 	})
+
 	element.SetComma(comma)
 	return nil
 }

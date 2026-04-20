@@ -121,7 +121,7 @@ func compareKeyAndValue(p *list.Element[Line], compare func(string, any) bool) b
 	if pair, ok := p.Value.(*Pair); ok {
 		return compare(pair.key, pair.value)
 	}
-	return compare("", ref(p).Value())
+	return compare("", ref(p).Data())
 }
 
 func (app *Application) searchForward(

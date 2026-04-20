@@ -61,8 +61,8 @@ func (j *JsonPath) Dump(w io.Writer) {
 type Line interface {
 	LeadingSpace() []byte
 	SetLeadingSpace(v []byte)
-	Value() any
-	SetValue(any)
+	Data() any
+	SetData(any)
 	SpaceCommaOrClose() []byte
 	SetSpaceCommaOrClose([]byte)
 	Comma() bool
@@ -96,8 +96,8 @@ type Element struct {
 
 func (e *Element) LeadingSpace() []byte          { return e.spaceValue }
 func (e *Element) SetLeadingSpace(v []byte)      { e.spaceValue = v }
-func (e *Element) Value() any                    { return e.value }
-func (e *Element) SetValue(v any)                { e.value = v }
+func (e *Element) Data() any                     { return e.value }
+func (e *Element) SetData(v any)                 { e.value = v }
 func (e *Element) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
 func (e *Element) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
 func (e *Element) Comma() bool                   { return e.comma }
@@ -220,16 +220,15 @@ func render(v any, b *strings.Builder) {
 		return
 	}
 	if x, ok := v.(*unjson.Literal); ok {
-		value := x.Value()
-		if _, ok := value.(string); ok {
+		v = x.Value()
+		if _, ok := v.(string); ok {
 			highlightString(x.Json(), ansi.Magenta, b)
 			return
 		}
-		if _, ok := value.(float64); ok {
+		if _, ok := v.(float64); ok {
 			b.Write(x.Json())
 			return
 		}
-		v = x.Value()
 	} else {
 		io.WriteString(b, ansi.Bold)
 		defer io.WriteString(b, ansi.Thin)
@@ -321,7 +320,7 @@ func (p *Pair) Dump(w io.Writer) {
 }
 
 func (p *Pair) DumpWithoutComma(w io.Writer) {
-	if _, ok := p.Value().(*tombstone); ok {
+	if _, ok := p.Data().(*tombstone); ok {
 		return
 	}
 	p.dumpKey(w)
@@ -344,7 +343,7 @@ func (p *Pair) dumpKey(w io.Writer) {
 }
 
 func isToBeContinued(p *list.Element[Line]) bool {
-	if _, ok := ref(p).Value().(*tombstone); ok {
+	if _, ok := ref(p).Data().(*tombstone); ok {
 		return false
 	}
 	for {
@@ -352,7 +351,7 @@ func isToBeContinued(p *list.Element[Line]) bool {
 		if p == nil {
 			return false
 		}
-		v := ref(p).Value()
+		v := ref(p).Data()
 		if objEnd.Equals(v) {
 			return false
 		}
