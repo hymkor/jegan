@@ -241,7 +241,7 @@ func readObject(br io.RuneScanner) (*Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		val, err := readEntry(br)
+		val, err := readItem(br)
 		if err != nil {
 			return nil, err
 		}
@@ -302,7 +302,7 @@ func (a Array) GoString() string {
 
 func readArray(br io.RuneScanner) (*Array, error) {
 	debug("Enter readArray")
-	defer debug("Leave readEntry")
+	defer debug("Leave readArray")
 
 	firstPrefix, first, err := read1st(br) // check '['
 	if err != nil {
@@ -314,7 +314,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 	}
 	br.UnreadRune()
 	for {
-		token, err := readEntry(br)
+		token, err := readItem(br)
 		if err != nil {
 			return nil, err
 		}
@@ -344,7 +344,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 	}
 }
 
-func readEntry(br io.RuneScanner) (*Item, error) {
+func readItem(br io.RuneScanner) (*Item, error) {
 	prefix, ch, err := read1st(br)
 	if err != nil {
 		if len(prefix) <= 0 {
@@ -406,7 +406,7 @@ func readEntry(br io.RuneScanner) (*Item, error) {
 
 func Unmarshal(r io.RuneScanner) (*Item, error) {
 	sc := newScanner(r)
-	v, err := readEntry(sc)
+	v, err := readItem(sc)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return v, err
