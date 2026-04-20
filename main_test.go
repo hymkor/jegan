@@ -132,3 +132,13 @@ func TestDelete(t *testing.T) {
 		`j|j|j|j|j|d`,
 		"{ \"a\":1 , \"b\":2\n, \"c\":{} }")
 }
+
+func testCollapse(t *testing.T, source, operation string) {
+	t.Helper()
+	test(t, source, operation, source)
+}
+
+func TestCollapse(t *testing.T) {
+	testCollapse(t, "[ 1 , [ 2 , 3 ,4 ], 5 ]", `j|j|z`)
+	testCollapse(t, "{\r\n\t\"one\":1 ,\r\n\t\"two\":[ 2 , 3 , 4 ],\r\n\t\"three\":5\n}\r\n", `j|j|z`)
+}
