@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/completion"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-skk"
 
@@ -44,6 +45,9 @@ func (app *Application) readLinePath(session *Session, prompt, defaults string) 
 		if len(defaults) > 5 && strings.HasSuffix(defaults, ".json") {
 			editor.Cursor = readline.MojiCountInString(defaults) - 5
 		}
+		editor.BindKey(keys.CtrlI, &completion.CmdCompletion2{
+			Candidates: completion.PathComplete,
+		})
 	}
 	return app.readLineOpt(session, prompt, defaults, opt)
 }
