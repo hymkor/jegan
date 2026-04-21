@@ -10,6 +10,10 @@ Changelog
   - `<DEL>` entries are omitted when saving, so deletions are finalized on disk
 - Allow deleting non-empty containers by collapsing them into `<DEL>` markers (#70)
 - Support collapsing and expanding objects and arrays with `z` (#71)
+- Improve readline input: (#74)
+  - Add filename completion for "w" command
+  - Enable history and prediction
+  - Preload common JSON literals ( `null`, `false`, `true`, `""`, `{}`, `[]` )
 
 v0.4.0
 ------
