@@ -7,7 +7,6 @@ import (
 	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/pager"
-	"github.com/hymkor/jegan/internal/unjson"
 )
 
 type Session = pager.Session[Line]
@@ -24,12 +23,17 @@ func marshal[T any](data T) []byte {
 	return bin
 }
 
+type Unwraper interface {
+	Unwrap() any
+}
+
 func unwrap(data any) any {
-	if x, ok := data.(*modifiedLiteral); ok {
-		data = x.Literal
-	}
-	if x, ok := data.(*unjson.Literal); ok {
-		data = x.Data()
+	for {
+		v, ok := data.(Unwraper)
+		if !ok {
+			return data
+		}
+		data = v.Unwrap()
 	}
 	return data
 }

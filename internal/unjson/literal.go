@@ -17,6 +17,7 @@ func (L *Literal) Data() any       { return L.data }
 func (L *Literal) Json() []byte    { return L.json }
 func (L *Literal) String() string  { return fmt.Sprint(L.data) }
 func (L Literal) GoString() string { return fmt.Sprint(string(L.json)) }
+func (L *Literal) Unwrap() any     { return L.data }
 
 type RawBytes struct {
 	json []byte

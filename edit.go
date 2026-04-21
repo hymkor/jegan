@@ -83,6 +83,10 @@ type modifiedLiteral struct {
 	backup any
 }
 
+func (m *modifiedLiteral) Unwrap() any {
+	return m.Literal
+}
+
 func (m *modifiedLiteral) Render(b *strings.Builder, render func(any, *strings.Builder)) {
 	io.WriteString(b, ansi.Bold)
 	render(m.Literal, b)
