@@ -6,7 +6,7 @@ import (
 	"unicode"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/unjson"
+	"github.com/hymkor/jegan/internal/source"
 )
 
 type Line interface {
@@ -43,7 +43,7 @@ func renderString(s []byte, color string, b *strings.Builder) {
 	}
 }
 
-func renderRawBytes(x *unjson.RawBytes, b *strings.Builder) {
+func renderRawBytes(x *source.RawBytes, b *strings.Builder) {
 	b.WriteString(ansi.Red)
 	escape := false
 	for _, v := range x.String() {
@@ -74,11 +74,11 @@ func RenderData(data any, b *strings.Builder) {
 		r.Render(b)
 		return
 	}
-	if x, ok := data.(*unjson.RawBytes); ok {
+	if x, ok := data.(*source.RawBytes); ok {
 		renderRawBytes(x, b)
 		return
 	}
-	if x, ok := data.(*unjson.Literal); ok {
+	if x, ok := data.(*source.Literal); ok {
 		data = x.Data()
 		if _, ok := data.(string); ok {
 			renderString(x.Json(), ansi.Magenta, b)

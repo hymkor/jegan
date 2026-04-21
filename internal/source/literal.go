@@ -1,4 +1,4 @@
-package unjson
+package source
 
 import (
 	"fmt"
@@ -21,6 +21,10 @@ func (L *Literal) Unwrap() any     { return L.data }
 
 type RawBytes struct {
 	json []byte
+}
+
+func NewRawBytes(j []byte) *RawBytes {
+	return &RawBytes{json: j}
 }
 
 func (R *RawBytes) Data() any       { return string(R.json) }

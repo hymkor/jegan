@@ -10,8 +10,8 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/source"
 	"github.com/hymkor/jegan/internal/types"
-	"github.com/hymkor/jegan/internal/unjson"
 )
 
 func backup(v any, backup any) any {
@@ -20,7 +20,7 @@ func backup(v any, backup any) any {
 		return m
 	}
 	return &modifiedLiteral{
-		Literal: unjson.NewLiteral(v, types.Marshal(v)),
+		Literal: source.NewLiteral(v, types.Marshal(v)),
 		backup:  backup,
 	}
 }
@@ -31,7 +31,7 @@ func (app *Application) keyFuncReplace(
 
 	element := app.cursor.Value
 	defaultv := element.Data()
-	if _, ok := defaultv.(*unjson.RawBytes); ok {
+	if _, ok := defaultv.(*source.RawBytes); ok {
 		return nil
 	}
 	prev := func() bool { return false }
@@ -80,7 +80,7 @@ func (app *Application) keyFuncReplace(
 }
 
 type modifiedLiteral struct {
-	*unjson.Literal
+	*source.Literal
 	backup any
 }
 
@@ -95,7 +95,7 @@ func (m *modifiedLiteral) Render(b *strings.Builder) {
 }
 
 func newModifiedLiteral(v any, j string) *modifiedLiteral {
-	return &modifiedLiteral{Literal: unjson.NewLiteral(v, []byte(j))}
+	return &modifiedLiteral{Literal: source.NewLiteral(v, []byte(j))}
 }
 
 func makeDefaultFormat(v any) string {
