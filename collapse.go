@@ -40,8 +40,8 @@ func (c *collapsed) Json() []byte {
 	return b.Bytes()
 }
 
-func (app *Application) collapse(p *Element, nest int, end Mark) (*List, bool, error) {
-	kill := list.New[Line]()
+func (app *Application) collapse(p *Element, nest int, end types.Mark) (*List, bool, error) {
+	kill := list.New[types.Line]()
 	for {
 		if p == nil {
 			return nil, false, errors.New("Unexpected state: missing element after '{' or '['")
@@ -66,7 +66,7 @@ func (app *Application) expand(at *Element, lines *List) {
 func (app *Application) keyFuncCollapseExpand(session *Session) error {
 	element := app.cursor.Value
 	data := element.Data()
-	var end Mark
+	var end types.Mark
 	var name string
 	if date := types.Unwrap(data); date == types.ObjStart {
 		end = types.ObjEnd
@@ -124,13 +124,13 @@ func (app *Application) keyFuncRemove(session *Session) error {
 	if _, ok := data.(*tombstone); ok {
 		return nil
 	}
-	var end Mark
+	var end types.Mark
 	if v := types.Unwrap(data); v == types.ObjStart {
 		end = types.ObjEnd
 	} else if v == types.ArrayStart {
 		end = types.ArrayEnd
 	} else {
-		if _, ok := v.(Mark); !ok {
+		if _, ok := v.(types.Mark); !ok {
 			element.SetData(&tombstone{first: data})
 		}
 		return nil

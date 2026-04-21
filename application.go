@@ -20,6 +20,14 @@ import (
 	"github.com/hymkor/jegan/internal/types"
 )
 
+type Pair = types.Pair
+
+type Session = pager.Session[types.Line]
+
+type List = list.List[types.Line]
+
+type Element = list.Element[types.Line]
+
 type Application struct {
 	Name string
 
@@ -183,13 +191,13 @@ func (app *Application) status(session *Session) (text string) {
 		}
 		r := app.cursor.Value
 		r.Path().Dump(&b)
-		if p, ok := r.(*Pair); ok {
-			if _, ok := types.Unwrap(p.Item.Data()).(Mark); !ok {
+		if p, ok := r.(*types.Pair); ok {
+			if _, ok := types.Unwrap(p.Item.Data()).(types.Mark); !ok {
 				b.WriteString(" = ")
 				p.Item.RenderWithoutComma(&b)
 			}
 		} else if e, ok := r.(*types.Item); ok {
-			if _, ok := types.Unwrap(e.Data()).(Mark); !ok {
+			if _, ok := types.Unwrap(e.Data()).(types.Mark); !ok {
 				b.WriteString(" = ")
 				e.RenderWithoutComma(&b)
 			}
@@ -207,7 +215,7 @@ func (app *Application) status(session *Session) (text string) {
 func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error {
 	app.ttyIn = ttyIn
 	if app.list == nil {
-		app.list = list.New[Line]()
+		app.list = list.New[types.Line]()
 	}
 	if app.list.Len() <= 0 {
 		app.list.PushBack(types.NewItem(types.ObjStart, 0, false, nil))
@@ -223,7 +231,7 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 			app.indent = prefix[pos+1:]
 		}
 	}
-	pager1 := &pager.Pager[Line]{
+	pager1 := &pager.Pager[types.Line]{
 		Status:  app.status,
 		Handler: app.handle,
 	}

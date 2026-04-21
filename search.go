@@ -105,7 +105,7 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 }
 
 func compareKeyAndValue(p *Element, compare func(string, any) bool) bool {
-	if pair, ok := p.Value.(*Pair); ok {
+	if pair, ok := p.Value.(*types.Pair); ok {
 		return compare(pair.Key, pair.Data())
 	}
 	return compare("", p.Value.Data())
