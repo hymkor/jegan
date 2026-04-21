@@ -10,6 +10,8 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
+
+	"github.com/hymkor/jegan/internal/auto"
 )
 
 func parseArgs(args []string, load func(io.Reader, string) error) (useStdin bool, names []string, err error) {
@@ -67,7 +69,7 @@ func (c *Config) Run(args []string) error {
 
 	var ttyIn ttyadapter.Tty
 	if c.Auto != "" {
-		ttyIn = &autoPilot{script: c.Auto}
+		ttyIn = auto.New(c.Auto)
 	} else {
 		ttyIn = &tty8pe.Tty{}
 	}

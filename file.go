@@ -14,6 +14,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
+	"github.com/hymkor/jegan/internal/tree2list"
 	"github.com/hymkor/jegan/internal/types"
 	"github.com/hymkor/jegan/internal/unjson"
 )
@@ -98,7 +99,7 @@ func (app *Application) Load(r io.Reader, name string) error {
 		v, err := unjson.Unmarshal(br)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				app.Store(Read(v))
+				app.Store(tree2list.Read(v))
 				if err == io.EOF {
 					return nil
 				}
@@ -108,6 +109,6 @@ func (app *Application) Load(r io.Reader, name string) error {
 			}
 			return fmt.Errorf("%s:%w", name, err)
 		}
-		app.Store(Read(v))
+		app.Store(tree2list.Read(v))
 	}
 }

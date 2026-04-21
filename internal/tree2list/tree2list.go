@@ -1,4 +1,4 @@
-package jegan
+package tree2list
 
 import (
 	"github.com/hymkor/go-generics-list"
@@ -7,15 +7,15 @@ import (
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
-func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *List {
-	L := list.New[Line]()
+func readPairs(basePath *types.JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *list.List[types.Line] {
+	L := list.New[types.Line]()
 
 	begin := types.NewItem(types.ObjStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
 	for _, pair := range pairs {
-		jp := &JsonPath{
+		jp := &types.JsonPath{
 			Parent: basePath,
 			Text:   pair.Key,
 		}
@@ -23,7 +23,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 
 		front := sub.Front()
 		orgF := front.Value
-		newF := &Pair{
+		newF := &types.Pair{
 			SpaceKey:   pair.SpaceKey,
 			Key:        pair.Key,
 			SpaceColon: pair.SpaceColon,
@@ -47,9 +47,9 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 	return L
 }
 
-func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest int) *List {
+func readObject(basePath *types.JsonPath, prefix []byte, object *unjson.Object, nest int) *list.List[types.Line] {
 	if len(object.Pairs) <= 0 {
-		L := list.New[Line]()
+		L := list.New[types.Line]()
 
 		begin := types.NewItem(types.ObjStart, nest, false, prefix)
 		begin.SetPath(basePath)
@@ -64,15 +64,15 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	return readPairs(basePath, prefix, object.Pairs, nest)
 }
 
-func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *List {
-	L := list.New[Line]()
+func readElements(basePath *types.JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *list.List[types.Line] {
+	L := list.New[types.Line]()
 
 	begin := types.NewItem(types.ArrayStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
 	for i, element := range elements {
-		jp := &JsonPath{
+		jp := &types.JsonPath{
 			Parent: basePath,
 			Index:  i,
 		}
@@ -92,9 +92,9 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 	return L
 }
 
-func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int) *List {
+func readArray(basePath *types.JsonPath, prefix []byte, array *unjson.Array, nest int) *list.List[types.Line] {
 	if len(array.Element) <= 0 {
-		L := list.New[Line]()
+		L := list.New[types.Line]()
 
 		begin := types.NewItem(types.ArrayStart, nest, false, prefix)
 		begin.SetPath(basePath)
@@ -109,7 +109,7 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	return readElements(basePath, prefix, array.Element, nest)
 }
 
-func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
+func read(basePath *types.JsonPath, t *unjson.Item, nest int) *list.List[types.Line] {
 	v := t.Value
 	prefix := t.SpaceValue
 	if x, ok := v.(*unjson.Object); ok {
@@ -118,7 +118,7 @@ func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
 	if x, ok := v.(*unjson.Array); ok {
 		return readArray(basePath, prefix, x, nest)
 	}
-	L := list.New[Line]()
+	L := list.New[types.Line]()
 
 	e := types.NewItem(v, nest, true, prefix)
 	e.SetPath(basePath)
@@ -126,7 +126,7 @@ func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
 	return L
 }
 
-func Read(v *unjson.Item) *List {
+func Read(v *unjson.Item) *list.List[types.Line] {
 	if v == nil {
 		return nil
 	}

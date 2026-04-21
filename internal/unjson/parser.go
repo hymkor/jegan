@@ -9,14 +9,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/nyaosorg/go-windows-dbg"
+	"github.com/hymkor/jegan/internal/dbg"
+	"github.com/hymkor/jegan/internal/source"
 )
-
-func debug(s ...any) {
-	if false {
-		dbg.Println(s...)
-	}
-}
 
 func read1st(br io.RuneScanner) ([]byte, rune, error) {
 	var prefix bytes.Buffer
@@ -76,7 +71,7 @@ func expectRune(br io.RuneScanner, expect rune) ([]byte, error) {
 	return prefix, nil
 }
 
-func readString(br io.RuneScanner) (*Literal, error) {
+func readString(br io.RuneScanner) (*source.Literal, error) {
 	var buffer bytes.Buffer
 	buffer.WriteByte('"')
 	backslash := false
@@ -93,10 +88,7 @@ func readString(br io.RuneScanner) (*Literal, error) {
 			var str string
 			bin := buffer.Bytes()
 			err := json.Unmarshal(bin, &str)
-			return &Literal{
-				data: str,
-				json: bin,
-			}, err
+			return source.NewLiteral(str, bin), err
 		}
 		if !backslash && ch == '\\' {
 			backslash = true
@@ -141,7 +133,7 @@ func expectToken(br io.RuneScanner, first rune, expect string) error {
 	return err
 }
 
-func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
+func readNumber(br io.RuneScanner, first rune) (*source.Literal, error) {
 	token, err1 := readToken(br, first)
 	if err1 != nil {
 		return nil, err1
@@ -151,10 +143,7 @@ func readNumber(br io.RuneScanner, first rune) (*Literal, error) {
 	if err2 != nil {
 		return nil, err2
 	}
-	return &Literal{
-		data: number,
-		json: token,
-	}, nil
+	return source.NewLiteral(number, token), nil
 }
 
 type Item struct {
@@ -207,8 +196,8 @@ func (o *Object) GoString() string {
 }
 
 func readObject(br io.RuneScanner) (*Object, error) {
-	debug("Enter readObject")
-	defer debug("Leave readObject")
+	dbg.Println("Enter readObject")
+	defer dbg.Println("Leave readObject")
 
 	firstPrefix, first, err := read1st(br) // check '{'
 	// first, _, err := br.ReadRune()
@@ -236,7 +225,7 @@ func readObject(br io.RuneScanner) (*Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		debug("key:", key)
+		dbg.Println("key:", key)
 		preVal, err := expectRune(br, ':')
 		if err != nil {
 			return nil, err
@@ -301,8 +290,8 @@ func (a Array) GoString() string {
 }
 
 func readArray(br io.RuneScanner) (*Array, error) {
-	debug("Enter readArray")
-	defer debug("Leave readArray")
+	dbg.Println("Enter readArray")
+	defer dbg.Println("Leave readArray")
 
 	firstPrefix, first, err := read1st(br) // check '['
 	if err != nil {
@@ -330,7 +319,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 			Item:     token,
 			PreComma: prefix,
 		})
-		debug("array:", len(array1))
+		dbg.Println("array:", len(array1))
 		if ch == ']' {
 			return &Array{Element: array1}, nil
 		}
@@ -350,23 +339,23 @@ func readItem(br io.RuneScanner) (*Item, error) {
 		if len(prefix) <= 0 {
 			return nil, err
 		}
-		return &Item{Value: &RawBytes{json: prefix}}, err
+		return &Item{Value: source.NewRawBytes(prefix)}, err
 	}
 	if ch == '"' {
 		s, err := readString(br)
-		debug("readString:", s)
+		dbg.Println("readString:", s)
 		return &Item{SpaceValue: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := readNumber(br, ch)
 		return &Item{SpaceValue: prefix, Value: n}, err
 	} else if ch == 'n' {
-		v := &Literal{data: nil, json: []byte("null")}
+		v := source.NewLiteral(nil, []byte("null"))
 		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
 	} else if ch == 'f' {
-		v := &Literal{data: false, json: []byte("false")}
+		v := source.NewLiteral(false, []byte("false"))
 		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
 	} else if ch == 't' {
-		v := &Literal{data: true, json: []byte("true")}
+		v := source.NewLiteral(true, []byte("true"))
 		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
@@ -382,8 +371,8 @@ func readItem(br io.RuneScanner) (*Item, error) {
 		ch, siz, err := br.ReadRune()
 		if err != nil && !errors.Is(err, io.EOF) {
 			bin := b.Bytes()
-			rb := &RawBytes{json: bin}
-			debug("RawBytes(1):", bin)
+			rb := source.NewRawBytes(bin)
+			dbg.Println("RawBytes(1):", bin)
 			return &Item{Value: rb}, err
 		}
 		if siz > 0 {
@@ -391,21 +380,21 @@ func readItem(br io.RuneScanner) (*Item, error) {
 		}
 		if err != nil {
 			bin := b.Bytes()
-			debug("RawBytes(2):", bin)
-			rb := &RawBytes{json: bin}
+			dbg.Println("RawBytes(2):", bin)
+			rb := source.NewRawBytes(bin)
 			return &Item{Value: rb}, err
 		}
 		if ch == '=' {
 			bin := b.Bytes()
-			debug("JavaScript equation ?:", bin)
-			rb := &RawBytes{json: bin}
+			dbg.Println("JavaScript equation ?:", bin)
+			rb := source.NewRawBytes(bin)
 			return &Item{Value: rb}, nil
 		}
 	}
 }
 
 func Unmarshal(r io.RuneScanner) (*Item, error) {
-	sc := newScanner(r)
+	sc := source.NewScanner(r)
 	v, err := readItem(sc)
 	if err != nil {
 		if errors.Is(err, io.EOF) {

@@ -1,4 +1,4 @@
-package jegan
+package auto
 
 import (
 	"fmt"
@@ -7,19 +7,23 @@ import (
 	"unicode/utf8"
 )
 
-type autoPilot struct {
+type Pilot struct {
 	script string
 }
 
-func (ap *autoPilot) Open(_ func(w, h int)) error {
+func New(s string) *Pilot {
+	return &Pilot{script: s}
+}
+
+func (ap *Pilot) Open(_ func(w, h int)) error {
 	return nil
 }
 
-func (ap *autoPilot) Size() (int, int, error) {
+func (ap *Pilot) Size() (int, int, error) {
 	return 80, 25, nil
 }
 
-func (ap *autoPilot) next() (string, error) {
+func (ap *Pilot) Next() (string, error) {
 	if ap.script == "" {
 		return "", io.EOF
 	}
@@ -28,12 +32,12 @@ func (ap *autoPilot) next() (string, error) {
 	return command, nil
 }
 
-func (ap *autoPilot) ReadLine(io.Writer, string, string) (string, error) {
-	return ap.next()
+func (ap *Pilot) ReadLine(io.Writer, string, string) (string, error) {
+	return ap.Next()
 }
 
-func (ap *autoPilot) GetKey() (string, error) {
-	key, err := ap.next()
+func (ap *Pilot) GetKey() (string, error) {
+	key, err := ap.Next()
 	if err != nil || len(key) <= 1 || key[0] == '\x1B' {
 		return key, err
 	}
@@ -43,6 +47,6 @@ func (ap *autoPilot) GetKey() (string, error) {
 	return key, nil
 }
 
-func (ap *autoPilot) Close() error {
+func (ap *Pilot) Close() error {
 	return nil
 }

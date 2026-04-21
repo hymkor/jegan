@@ -10,8 +10,8 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/source"
 	"github.com/hymkor/jegan/internal/types"
-	"github.com/hymkor/jegan/internal/unjson"
 )
 
 func backup(v any, backup any) any {
@@ -20,7 +20,7 @@ func backup(v any, backup any) any {
 		return m
 	}
 	return &modifiedLiteral{
-		Literal: unjson.NewLiteral(v, types.Marshal(v)),
+		Literal: source.NewLiteral(v, types.Marshal(v)),
 		backup:  backup,
 	}
 }
@@ -31,17 +31,17 @@ func (app *Application) keyFuncReplace(
 
 	element := app.cursor.Value
 	defaultv := element.Data()
-	if _, ok := defaultv.(*unjson.RawBytes); ok {
+	if _, ok := defaultv.(*source.RawBytes); ok {
 		return nil
 	}
 	prev := func() bool { return false }
 
-	if v, ok := types.Unwrap(element.Data()).(Mark); ok {
+	if v, ok := types.Unwrap(element.Data()).(types.Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := types.Unwrap(next.Value.Data()).(Mark)
+		nextv, ok := types.Unwrap(next.Value.Data()).(types.Mark)
 		if !ok {
 			return nil
 		}
@@ -80,7 +80,7 @@ func (app *Application) keyFuncReplace(
 }
 
 type modifiedLiteral struct {
-	*unjson.Literal
+	*source.Literal
 	backup any
 }
 
@@ -95,7 +95,7 @@ func (m *modifiedLiteral) Render(b *strings.Builder) {
 }
 
 func newModifiedLiteral(v any, j string) *modifiedLiteral {
-	return &modifiedLiteral{Literal: unjson.NewLiteral(v, []byte(j))}
+	return &modifiedLiteral{Literal: source.NewLiteral(v, []byte(j))}
 }
 
 func makeDefaultFormat(v any) string {
@@ -201,7 +201,7 @@ func isDuplicated(cursor *Element, nest int, key string) bool {
 			break
 		}
 		if i == nest {
-			q, ok := p.Value.(*Pair)
+			q, ok := p.Value.(*types.Pair)
 			if ok && q.Key == key {
 				return true
 			}
@@ -213,7 +213,7 @@ func isDuplicated(cursor *Element, nest int, key string) bool {
 			break
 		}
 		if i == nest {
-			q, ok := p.Value.(*Pair)
+			q, ok := p.Value.(*types.Pair)
 			if ok && q.Key == key {
 				return true
 			}
@@ -222,17 +222,17 @@ func isDuplicated(cursor *Element, nest int, key string) bool {
 	return false
 }
 
-func findPairBefore(p *Element) *Pair {
+func findPairBefore(p *Element) *types.Pair {
 	for ; p != nil; p = p.Prev() {
-		if pair, ok := p.Value.(*Pair); ok {
+		if pair, ok := p.Value.(*types.Pair); ok {
 			return pair
 		}
 	}
 	return nil
 }
 
-func findSameLevelPairBefore(p *Element) (*Pair, bool) {
-	if pair, ok := p.Value.(*Pair); ok {
+func findSameLevelPairBefore(p *Element) (*types.Pair, bool) {
+	if pair, ok := p.Value.(*types.Pair); ok {
 		return pair, true
 	}
 	nest := p.Value.Nest()
@@ -244,7 +244,7 @@ func findSameLevelPairBefore(p *Element) (*Pair, bool) {
 		element := p.Value
 		i := element.Nest()
 		if i == nest {
-			if pair, ok := p.Value.(*Pair); ok {
+			if pair, ok := p.Value.(*types.Pair); ok {
 				return pair, true
 			}
 		} else if i < nest {
@@ -368,7 +368,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		}
 		switch len(newData) {
 		case 2: // { key:[]
-			p1 := &Pair{
+			p1 := &types.Pair{
 				SpaceKey: newPrefix,
 				Key:      key,
 				Item:     *types.NewItem(newData[0], nest, false, nil),
@@ -384,7 +384,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // { key:value
-			p1 := &Pair{
+			p1 := &types.Pair{
 				SpaceKey: newPrefix,
 				Key:      key,
 				Item:     *types.NewItem(newData[0], nest, comma, nil),
@@ -415,7 +415,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		}
 		switch len(newData) {
 		case 2: // key:[],
-			p1 := &Pair{
+			p1 := &types.Pair{
 				SpaceKey: space,
 				Key:      key,
 				Item:     *types.NewItem(newData[0], element.Nest(), false, nil),
@@ -430,7 +430,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
-			p := &Pair{
+			p := &types.Pair{
 				SpaceKey: space,
 				Key:      key,
 				Item:     *types.NewItem(newData[0], element.Nest(), element.Comma(), nil),
@@ -487,7 +487,7 @@ func (app *Application) keyFuncCopy(session *Session) error {
 	r.Path().Dump(&buffer)
 
 	data := r.Data()
-	if _, ok := types.Unwrap(data).(Mark); !ok {
+	if _, ok := types.Unwrap(data).(types.Mark); !ok {
 		buffer.WriteString(" = ")
 		if f, ok := data.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())

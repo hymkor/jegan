@@ -16,6 +16,7 @@ import (
 	"github.com/nyaosorg/go-readline-skk"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/auto"
 )
 
 var errCanceled = errors.New("Canceled")
@@ -77,8 +78,8 @@ func (app *Application) readLineString(session *Session, prompt, defaults string
 }
 
 func (app *Application) readLineOpt(session *Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
-	if ap, ok := app.ttyIn.(*autoPilot); ok {
-		return ap.next()
+	if ap, ok := app.ttyIn.(*auto.Pilot); ok {
+		return ap.Next()
 	}
 	skkInit()
 	editor := &readline.Editor{

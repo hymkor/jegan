@@ -1,4 +1,4 @@
-package unjson
+package source
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type scanner struct {
 	lastColumn int
 }
 
-func newScanner(r io.RuneScanner) *scanner {
+func NewScanner(r io.RuneScanner) *scanner {
 	return &scanner{
 		r: r,
 	}
