@@ -66,7 +66,7 @@ func (pg *Pager[T]) EventLoop(
 		return err
 	}
 	session.Pager.Width = width
-	session.Pager.Height = height - 1
+	session.Pager.ContentHeight = height - 1
 
 	const interval = 4
 	displayUpdateTime := time.Now().Add(time.Second / interval)
@@ -87,7 +87,7 @@ func (pg *Pager[T]) EventLoop(
 			break
 		}
 		i++
-		if i >= session.Pager.Height {
+		if i >= session.Pager.ContentHeight {
 			newTtyX1 := newTtyX(tty, getter, newStore)
 			session.GetKey = newTtyX1.GetKey
 			defer newTtyX1.Close()

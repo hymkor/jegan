@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-readline-ny/simplehistory"
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/go-generics-list"
@@ -27,6 +28,7 @@ type Application struct {
 	dirty   bool
 	indent  []byte
 	ttyIn   ttyadapter.Tty
+	history *simplehistory.Container
 
 	search func() error
 	revert func() error
@@ -56,7 +58,7 @@ func (app *Application) nextLine(session *Session) {
 	}
 	app.setCursor(c)
 	app.csrline++
-	for app.csrline-session.WinPos >= session.Height {
+	for app.csrline-session.WinPos >= session.ContentHeight {
 		session.MoveNextLine()
 	}
 }
@@ -67,7 +69,7 @@ func (app *Application) keyFuncNextPage(session *Session) {
 		app.cursor.Value.SetCursor(true)
 	}()
 
-	for i := 0; i < session.Height; i++ {
+	for i := 0; i < session.ContentHeight; i++ {
 		c := app.cursor.Next()
 		if c == nil {
 			break
@@ -85,7 +87,7 @@ func (app *Application) keyFuncPrevPage(session *Session) {
 	}()
 
 	session.MovePrevPage()
-	for i := 0; i < session.Height; i++ {
+	for i := 0; i < session.ContentHeight; i++ {
 		c := app.cursor.Prev()
 		if c == nil {
 			break

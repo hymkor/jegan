@@ -126,7 +126,7 @@ func (app *Application) searchForward(
 		if compareKeyAndValue(_cursor, compare) {
 			app.setCursor(_cursor)
 			app.csrline = _csrPos
-			for _csrPos-session.WinPos >= session.Height {
+			for _csrPos-session.WinPos >= session.ContentHeight {
 				session.Window = session.Window.Next()
 				session.WinPos++
 			}

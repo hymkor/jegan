@@ -45,7 +45,7 @@ func main1(source io.Reader, title string) error {
 			}
 			L := lines.Len()
 			start := session.WinPos
-			end := session.WinPos + session.Pager.Height - 1
+			end := session.WinPos + session.Pager.ContentHeight - 1
 			if end+1 > L {
 				end = L - 1
 			}
