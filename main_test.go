@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/mattn/go-colorable"
+
+	"github.com/hymkor/jegan/internal/auto"
 )
 
 func test(t *testing.T, source, operation, expect string) {
@@ -20,9 +22,7 @@ func test(t *testing.T, source, operation, expect string) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	ttyIn := &autoPilot{
-		script: fmt.Sprintf("%s|w|%s|q", operation, resPath),
-	}
+	ttyIn := auto.New(fmt.Sprintf("%s|w|%s|q", operation, resPath))
 	ttyOut := io.Discard
 	if testing.Verbose() {
 		ttyOut = colorable.NewColorableStderr()
