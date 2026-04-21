@@ -1,11 +1,11 @@
 //go:build debug
 
-package jegan
+package dbg
 
 import (
 	"github.com/nyaosorg/go-windows-dbg"
 )
 
-func debug(v ...any) {
+func Println(v ...any) {
 	dbg.Println(v...)
 }

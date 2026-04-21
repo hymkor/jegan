@@ -15,6 +15,7 @@ import (
 	"github.com/hymkor/go-safewrite/perm"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/dbg"
 	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/types"
 )
@@ -160,7 +161,7 @@ func (app *Application) handle(session *Session, key string) (pager.EventResult,
 	}
 	if err != nil {
 		app.message = err.Error()
-		debug(app.message)
+		dbg.Println(app.message)
 	}
 	return result, nil
 }
