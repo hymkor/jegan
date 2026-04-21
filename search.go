@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/hymkor/jegan/internal/types"
 )
 
 func newCompare(v any) (func(key string, data any) bool, bool) {
-	v = unwrap(v)
+	v = types.Unwrap(v)
 	if s, ok := v.(string); ok {
 		s = strings.ToLower(s)
 		return func(key string, data any) bool {
@@ -15,7 +17,7 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 			if strings.Contains(key, s) {
 				return true
 			}
-			other := unwrap(data)
+			other := types.Unwrap(data)
 			if o, ok := other.(string); ok {
 				o = strings.ToLower(o)
 				return strings.Contains(o, s)
@@ -25,7 +27,7 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 	}
 	if n, ok := v.(float64); ok {
 		return func(_ string, other any) bool {
-			other = unwrap(other)
+			other = types.Unwrap(other)
 			if o, ok := other.(float64); ok {
 				return n == o
 			}
@@ -34,13 +36,13 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 	}
 	if v == nil {
 		return func(_ string, other any) bool {
-			other = unwrap(other)
+			other = types.Unwrap(other)
 			return other == nil
 		}, true
 	}
 	if v == true {
 		return func(_ string, other any) bool {
-			other = unwrap(other)
+			other = types.Unwrap(other)
 			if o, ok := other.(bool); ok {
 				return o == true
 			}
@@ -49,7 +51,7 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 	}
 	if v == false {
 		return func(_ string, other any) bool {
-			other = unwrap(other)
+			other = types.Unwrap(other)
 			if o, ok := other.(bool); ok {
 				return o == false
 			}
@@ -104,7 +106,7 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 
 func compareKeyAndValue(p *Element, compare func(string, any) bool) bool {
 	if pair, ok := p.Value.(*Pair); ok {
-		return compare(pair.key, pair.data)
+		return compare(pair.Key, pair.Data())
 	}
 	return compare("", p.Value.Data())
 }

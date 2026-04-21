@@ -11,10 +11,6 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-var _ Line = &Item{}
-
-var _ Line = &Pair{}
-
 func test(t *testing.T, source, operation, expect string) {
 	t.Helper()
 	resPath := filepath.Join(t.TempDir(), "result.json")

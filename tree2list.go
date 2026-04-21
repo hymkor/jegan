@@ -3,37 +3,33 @@ package jegan
 import (
 	"github.com/hymkor/go-generics-list"
 
+	"github.com/hymkor/jegan/internal/types"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
 func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, nest int) *List {
 	L := list.New[Line]()
 
-	begin := newItem(objStart, nest, false, prefix)
+	begin := types.NewItem(types.ObjStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
 	for _, pair := range pairs {
 		jp := &JsonPath{
-			parent: basePath,
-			text:   pair.Key,
+			Parent: basePath,
+			Text:   pair.Key,
 		}
 		sub := read(jp, pair.Value, nest+1)
 
 		front := sub.Front()
 		orgF := front.Value
 		newF := &Pair{
-			spaceKey:   pair.SpaceKey,
-			key:        pair.Key,
-			spaceColon: pair.SpaceColon,
-			Item: Item{
-				spaceValue: pair.Value.SpaceValue,
-				data:       orgF.Data(),
-				comma:      orgF.Comma(),
-				nest:       nest + 1,
-				path:       orgF.Path(),
-			},
+			SpaceKey:   pair.SpaceKey,
+			Key:        pair.Key,
+			SpaceColon: pair.SpaceColon,
+			Item:       *types.NewItem(orgF.Data(), nest+1, orgF.Comma(), pair.Value.SpaceValue),
 		}
+		newF.SetPath(orgF.Path())
 		front.Value = newF
 
 		sub.Back().Value.SetSpaceCommaOrClose(pair.SpaceCommaOrClose)
@@ -44,7 +40,7 @@ func readPairs(basePath *JsonPath, prefix []byte, pairs []unjson.KeyValuePair, n
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newItem(objEnd, nest, true, finalSpace)
+	end := types.NewItem(types.ObjEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
@@ -55,11 +51,11 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 	if len(object.Pairs) <= 0 {
 		L := list.New[Line]()
 
-		begin := newItem(objStart, nest, false, prefix)
+		begin := types.NewItem(types.ObjStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newItem(objEnd, nest, true, object.Blank)
+		end := types.NewItem(types.ObjEnd, nest, true, object.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -71,14 +67,14 @@ func readObject(basePath *JsonPath, prefix []byte, object *unjson.Object, nest i
 func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElement, nest int) *List {
 	L := list.New[Line]()
 
-	begin := newItem(arrayStart, nest, false, prefix)
+	begin := types.NewItem(types.ArrayStart, nest, false, prefix)
 	begin.SetPath(basePath)
 	L.PushBack(begin)
 
 	for i, element := range elements {
 		jp := &JsonPath{
-			parent: basePath,
-			index:  i,
+			Parent: basePath,
+			Index:  i,
 		}
 		sub := read(jp, element.Item, nest+1)
 		sub.Back().Value.SetSpaceCommaOrClose(element.PreComma)
@@ -89,7 +85,7 @@ func readElements(basePath *JsonPath, prefix []byte, elements []unjson.ArrayElem
 	back.SetSpaceCommaOrClose(nil)
 	back.SetComma(false)
 
-	end := newItem(arrayEnd, nest, true, finalSpace)
+	end := types.NewItem(types.ArrayEnd, nest, true, finalSpace)
 	end.SetPath(basePath)
 	L.PushBack(end)
 
@@ -100,11 +96,11 @@ func readArray(basePath *JsonPath, prefix []byte, array *unjson.Array, nest int)
 	if len(array.Element) <= 0 {
 		L := list.New[Line]()
 
-		begin := newItem(arrayStart, nest, false, prefix)
+		begin := types.NewItem(types.ArrayStart, nest, false, prefix)
 		begin.SetPath(basePath)
 		L.PushBack(begin)
 
-		end := newItem(arrayEnd, nest, true, array.Blank)
+		end := types.NewItem(types.ArrayEnd, nest, true, array.Blank)
 		end.SetPath(basePath)
 		L.PushBack(end)
 
@@ -124,8 +120,8 @@ func read(basePath *JsonPath, t *unjson.Item, nest int) *List {
 	}
 	L := list.New[Line]()
 
-	e := newItem(v, nest, true, prefix)
-	e.path = basePath
+	e := types.NewItem(v, nest, true, prefix)
+	e.SetPath(basePath)
 	L.PushBack(e)
 	return L
 }

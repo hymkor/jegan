@@ -14,6 +14,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
+	"github.com/hymkor/jegan/internal/types"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -31,7 +32,7 @@ func (app *Application) writeFile(session *Session) error {
 		end := animation.Dots.Progress(session.TtyOut)
 		defer end()
 
-		Dump(app.list, os.Stdout)
+		types.Dump(app.list, os.Stdout)
 		app.dirty = false
 		return nil
 	}
@@ -60,7 +61,7 @@ func (app *Application) writeFile(session *Session) error {
 	end := animation.Dots.Progress(session.TtyOut)
 	defer end()
 
-	Dump(app.list, fd)
+	types.Dump(app.list, fd)
 	if err := fd.Close(); err != nil {
 		return err
 	}

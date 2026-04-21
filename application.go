@@ -16,6 +16,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/pager"
+	"github.com/hymkor/jegan/internal/types"
 )
 
 type Application struct {
@@ -182,14 +183,14 @@ func (app *Application) status(session *Session) (text string) {
 		r := app.cursor.Value
 		r.Path().Dump(&b)
 		if p, ok := r.(*Pair); ok {
-			if _, ok := unwrap(p.Item.data).(Mark); !ok {
+			if _, ok := types.Unwrap(p.Item.Data()).(Mark); !ok {
 				b.WriteString(" = ")
-				p.Item.highlightWithoutComma(&b)
+				p.Item.RenderWithoutComma(&b)
 			}
-		} else if e, ok := r.(*Item); ok {
-			if _, ok := unwrap(e.data).(Mark); !ok {
+		} else if e, ok := r.(*types.Item); ok {
+			if _, ok := types.Unwrap(e.Data()).(Mark); !ok {
 				b.WriteString(" = ")
-				e.highlightWithoutComma(&b)
+				e.RenderWithoutComma(&b)
 			}
 		}
 		b.WriteString(ansi.EraseLine)
@@ -208,8 +209,8 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 		app.list = list.New[Line]()
 	}
 	if app.list.Len() <= 0 {
-		app.list.PushBack(newItem(objStart, 0, false, nil))
-		app.list.PushBack(newItem(objEnd, 0, false, nil))
+		app.list.PushBack(types.NewItem(types.ObjStart, 0, false, nil))
+		app.list.PushBack(types.NewItem(types.ObjEnd, 0, false, nil))
 	}
 	if app.cursor == nil {
 		app.cursor = app.list.Front()
