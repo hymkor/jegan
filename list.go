@@ -102,7 +102,7 @@ func render(data any, b *strings.Builder) {
 }
 
 func isToBeContinued(p *Element) bool {
-	if _, ok := p.Value.Data().(*tombstone); ok {
+	if _, ok := p.Value.Data().(SkipDump); ok {
 		return false
 	}
 	for {
@@ -117,7 +117,7 @@ func isToBeContinued(p *Element) bool {
 		if arrayEnd.Equals(data) {
 			return false
 		}
-		if _, ok := data.(*tombstone); !ok {
+		if _, ok := data.(SkipDump); !ok {
 			return true
 		}
 	}

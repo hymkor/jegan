@@ -41,7 +41,7 @@ func (p *Pair) Dump(w io.Writer) {
 }
 
 func (p *Pair) DumpWithoutComma(w io.Writer) {
-	if _, ok := p.Data().(*tombstone); ok {
+	if _, ok := p.Data().(SkipDump); ok {
 		return
 	}
 	p.dumpKey(w)
@@ -49,7 +49,7 @@ func (p *Pair) DumpWithoutComma(w io.Writer) {
 }
 
 func (p *Pair) dumpKey(w io.Writer) {
-	if _, ok := p.Item.data.(*tombstone); ok {
+	if _, ok := p.Item.data.(SkipDump); ok {
 		return
 	}
 	w.Write(p.spaceKey)

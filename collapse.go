@@ -105,6 +105,8 @@ type tombstone struct {
 	rest  *List
 }
 
+func (r *tombstone) SkipDump() {}
+
 func (r *tombstone) Json() []byte {
 	return []byte{}
 }

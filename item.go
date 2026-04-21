@@ -7,6 +7,10 @@ import (
 	"github.com/hymkor/jegan/internal/ansi"
 )
 
+type SkipDump interface {
+	SkipDump()
+}
+
 type Item struct {
 	spaceValue        []byte
 	data              any
@@ -39,7 +43,7 @@ func (e *Item) Dump(w io.Writer) {
 }
 
 func (e *Item) DumpWithoutComma(w io.Writer) {
-	if _, ok := e.data.(*tombstone); ok {
+	if _, ok := e.data.(SkipDump); ok {
 		return
 	}
 	w.Write(e.spaceValue)
