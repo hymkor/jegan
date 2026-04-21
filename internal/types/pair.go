@@ -1,4 +1,4 @@
-package jegan
+package types
 
 import (
 	"io"
@@ -8,14 +8,19 @@ import (
 )
 
 type Pair struct {
-	spaceKey   []byte
-	key        string
-	spaceColon []byte
+	SpaceKey   []byte
+	Key        string
+	SpaceColon []byte
 	Item
 }
 
-func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
-func (p *Pair) SetLeadingSpace(v []byte) { p.spaceValue = v }
+func (p *Pair) Clone() *Pair {
+	clone := *p
+	return &clone
+}
+
+func (p *Pair) LeadingSpace() []byte     { return p.SpaceKey }
+func (p *Pair) SetLeadingSpace(v []byte) { p.SpaceValue = v }
 
 func (pair *Pair) Display(w int) string {
 	var b strings.Builder
@@ -25,7 +30,7 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	highlightString(marshal(pair.key), ansi.Yellow, &b)
+	highlightString(Marshal(pair.Key), ansi.Yellow, &b)
 	b.WriteString(": ")
 	pair.Item.highlight(&b)
 	if pair.cursor {
@@ -52,8 +57,8 @@ func (p *Pair) dumpKey(w io.Writer) {
 	if _, ok := p.Item.data.(SkipDump); ok {
 		return
 	}
-	w.Write(p.spaceKey)
-	w.Write(marshal(p.key))
-	w.Write(p.spaceColon)
+	w.Write(p.SpaceKey)
+	w.Write(Marshal(p.Key))
+	w.Write(p.SpaceColon)
 	w.Write([]byte{':'})
 }

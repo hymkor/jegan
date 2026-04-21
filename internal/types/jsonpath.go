@@ -1,4 +1,4 @@
-package jegan
+package types
 
 import (
 	"fmt"
@@ -7,23 +7,23 @@ import (
 )
 
 type JsonPath struct {
-	parent *JsonPath
-	text   string
-	index  int
+	Parent *JsonPath
+	Text   string
+	Index  int
 }
 
 func (j *JsonPath) ChildIndex(i int) *JsonPath {
 	return &JsonPath{
-		parent: j,
-		index:  i,
+		Parent: j,
+		Index:  i,
 	}
 }
 
 func (j *JsonPath) ChildKey(key string) *JsonPath {
 	return &JsonPath{
-		parent: j,
-		text:   key,
-		index:  -1,
+		Parent: j,
+		Text:   key,
+		Index:  -1,
 	}
 }
 
@@ -33,19 +33,19 @@ func (j *JsonPath) Dump(w io.Writer) {
 	if j == nil {
 		return
 	}
-	if j.parent != nil {
-		j.parent.Dump(w)
+	if j.Parent != nil {
+		j.Parent.Dump(w)
 	}
-	if j.text != "" {
-		if rxSymbol.MatchString(j.text) {
-			fmt.Fprintf(w, ".%s", j.text)
+	if j.Text != "" {
+		if rxSymbol.MatchString(j.Text) {
+			fmt.Fprintf(w, ".%s", j.Text)
 		} else {
-			fmt.Fprintf(w, ".%q", j.text)
+			fmt.Fprintf(w, ".%q", j.Text)
 		}
 	} else {
-		if j.parent == nil {
+		if j.Parent == nil {
 			w.Write([]byte{'.'})
 		}
-		fmt.Fprintf(w, "[%d]", j.index)
+		fmt.Fprintf(w, "[%d]", j.Index)
 	}
 }

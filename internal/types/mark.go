@@ -1,4 +1,4 @@
-package jegan
+package types
 
 import (
 	"strings"
@@ -21,7 +21,7 @@ func (m Mark) Json() []byte {
 }
 
 func (m Mark) Equals(v any) bool {
-	v = unwrap(v)
+	v = Unwrap(v)
 	return v == m
 }
 
@@ -32,8 +32,8 @@ func (m Mark) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
 }
 
 const (
-	objStart   = Mark('{')
-	objEnd     = Mark('}')
-	arrayStart = Mark('[')
-	arrayEnd   = Mark(']')
+	ObjStart   = Mark('{')
+	ObjEnd     = Mark('}')
+	ArrayStart = Mark('[')
+	ArrayEnd   = Mark(']')
 )

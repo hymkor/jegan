@@ -9,6 +9,7 @@ import (
 	"github.com/hymkor/go-generics-list"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/types"
 )
 
 type collapsed struct {
@@ -29,7 +30,7 @@ func (c *collapsed) Json() []byte {
 	p := c.rest.Front()
 	for p != nil {
 		next := p.Next()
-		if isToBeContinued(p) && next != nil {
+		if types.IsToBeContinued(p) && next != nil {
 			p.Value.Dump(&b)
 		} else {
 			p.Value.DumpWithoutComma(&b)
@@ -67,11 +68,11 @@ func (app *Application) keyFuncCollapseExpand(session *Session) error {
 	data := element.Data()
 	var end Mark
 	var name string
-	if date := unwrap(data); date == objStart {
-		end = objEnd
+	if date := types.Unwrap(data); date == types.ObjStart {
+		end = types.ObjEnd
 		name = "{..}"
-	} else if date == arrayStart {
-		end = arrayEnd
+	} else if date == types.ArrayStart {
+		end = types.ArrayEnd
 		name = "[..]"
 	} else if c, ok := date.(*collapsed); ok {
 		app.expand(app.cursor, c.rest)
@@ -124,10 +125,10 @@ func (app *Application) keyFuncRemove(session *Session) error {
 		return nil
 	}
 	var end Mark
-	if v := unwrap(data); v == objStart {
-		end = objEnd
-	} else if v == arrayStart {
-		end = arrayEnd
+	if v := types.Unwrap(data); v == types.ObjStart {
+		end = types.ObjEnd
+	} else if v == types.ArrayStart {
+		end = types.ArrayEnd
 	} else {
 		if _, ok := v.(Mark); !ok {
 			element.SetData(&tombstone{first: data})
@@ -165,15 +166,15 @@ func (app *Application) keyFuncUndo(session *Session) error {
 	if !ok || m.backup == nil {
 		return nil
 	}
-	if objStart.Equals(m.Literal) {
+	if types.ObjStart.Equals(m.Literal) {
 		next := app.cursor.Next()
-		if next == nil || !objEnd.Equals(next.Value.Data()) {
+		if next == nil || !types.ObjEnd.Equals(next.Value.Data()) {
 			return errors.New("not empty object")
 		}
 		app.list.Remove(next)
-	} else if arrayStart.Equals(m.Literal) {
+	} else if types.ArrayStart.Equals(m.Literal) {
 		next := app.cursor.Next()
-		if next == nil || !arrayEnd.Equals(next.Value.Data()) {
+		if next == nil || !types.ArrayEnd.Equals(next.Value.Data()) {
 			return errors.New("not empty array")
 		}
 		app.list.Remove(next)

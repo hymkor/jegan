@@ -10,6 +10,7 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/types"
 	"github.com/hymkor/jegan/internal/unjson"
 )
 
@@ -19,7 +20,7 @@ func backup(v any, backup any) any {
 		return m
 	}
 	return &modifiedLiteral{
-		Literal: unjson.NewLiteral(v, marshal(v)),
+		Literal: unjson.NewLiteral(v, types.Marshal(v)),
 		backup:  backup,
 	}
 }
@@ -35,19 +36,19 @@ func (app *Application) keyFuncReplace(
 	}
 	prev := func() bool { return false }
 
-	if v, ok := unwrap(element.Data()).(Mark); ok {
+	if v, ok := types.Unwrap(element.Data()).(Mark); ok {
 		next := app.cursor.Next()
 		if next == nil {
 			return nil
 		}
-		nextv, ok := unwrap(next.Value.Data()).(Mark)
+		nextv, ok := types.Unwrap(next.Value.Data()).(Mark)
 		if !ok {
 			return nil
 		}
-		if objStart.Equals(v) && objEnd.Equals(nextv) {
+		if types.ObjStart.Equals(v) && types.ObjEnd.Equals(nextv) {
 			defaultv = map[string]any{}
 			prev = func() bool { app.list.Remove(next); return true }
-		} else if arrayStart.Equals(v) && arrayEnd.Equals(nextv) {
+		} else if types.ArrayStart.Equals(v) && types.ArrayEnd.Equals(nextv) {
 			defaultv = []any{}
 			prev = func() bool { app.list.Remove(next); return true }
 		} else {
@@ -69,7 +70,7 @@ func (app *Application) keyFuncReplace(
 		prefix := app.cursor.Value.LeadingSpace()
 		prev()
 		app.list.InsertAfter(
-			newItem(newData[1], element.Nest(), element.Comma(), prefix),
+			types.NewItem(newData[1], element.Nest(), element.Comma(), prefix),
 			app.cursor)
 		element.SetData(backup(newData[0], element.Data()))
 		element.SetComma(false)
@@ -104,7 +105,7 @@ func makeDefaultFormat(v any) string {
 	if v, ok := v.(interface{ Json() []byte }); ok {
 		return string(v.Json())
 	}
-	return string(marshal(v))
+	return string(types.Marshal(v))
 }
 
 func inputToAny(rawText string) ([]any, error) {
@@ -130,10 +131,10 @@ func inputToAny(rawText string) ([]any, error) {
 		return []any{false}, nil
 	}
 	if normText == "{}" {
-		return []any{objStart, objEnd}, nil
+		return []any{types.ObjStart, types.ObjEnd}, nil
 	}
 	if normText == "[]" {
-		return []any{arrayStart, arrayEnd}, nil
+		return []any{types.ArrayStart, types.ArrayEnd}, nil
 	}
 	return []any{rawText}, nil
 }
@@ -184,9 +185,9 @@ func (app *Application) inputTypeAndValue(session *Session, defaultv any) ([]any
 		case "f":
 			return []any{false}, nil
 		case "o":
-			return []any{objStart, objEnd}, nil
+			return []any{types.ObjStart, types.ObjEnd}, nil
 		case "a":
-			return []any{arrayStart, arrayEnd}, nil
+			return []any{types.ArrayStart, types.ArrayEnd}, nil
 		default:
 			session.TtyOut.Write([]byte{'\a'})
 		}
@@ -201,7 +202,7 @@ func isDuplicated(cursor *Element, nest int, key string) bool {
 		}
 		if i == nest {
 			q, ok := p.Value.(*Pair)
-			if ok && q.key == key {
+			if ok && q.Key == key {
 				return true
 			}
 		}
@@ -213,7 +214,7 @@ func isDuplicated(cursor *Element, nest int, key string) bool {
 		}
 		if i == nest {
 			q, ok := p.Value.(*Pair)
-			if ok && q.key == key {
+			if ok && q.Key == key {
 				return true
 			}
 		}
@@ -247,7 +248,7 @@ func findSameLevelPairBefore(p *Element) (*Pair, bool) {
 				return pair, true
 			}
 		} else if i < nest {
-			if element.Data() != objStart {
+			if element.Data() != types.ObjStart {
 				return nil, false
 			}
 			return findPairBefore(p), true
@@ -272,8 +273,8 @@ func reflectIndex(p *Element, nest int, plusminus int) {
 			continue
 		}
 		if path := r.Path(); path != nil {
-			if v := r.Data(); v != objEnd && v != arrayEnd {
-				path.index += plusminus
+			if v := r.Data(); v != types.ObjEnd && v != types.ArrayEnd {
+				path.Index += plusminus
 			}
 		}
 	}
@@ -282,14 +283,14 @@ func reflectIndex(p *Element, nest int, plusminus int) {
 func (app *Application) keyFuncInsert(session *Session) error {
 	space := app.cursor.Value.LeadingSpace()
 	currentNest := app.cursor.Value.Nest()
-	if e := app.cursor.Value; arrayStart.Equals(e.Data()) {
+	if e := app.cursor.Value; types.ArrayStart.Equals(e.Data()) {
 		next := app.cursor.Next()
 		nextElement := next.Value
 		var comma bool
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if arrayEnd.Equals(nextElement.Data()) {
+		if types.ArrayEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before ]
 			if len(outerPrefix) == 0 {
@@ -312,9 +313,9 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		switch len(newData) {
 		case 2: // [\n[\n],\n
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newItem(newData[0], nest, false, newPrefix)
+			e1 := types.NewItem(newData[0], nest, false, newPrefix)
 			e1.SetPath(app.cursor.Value.Path().ChildIndex(0))
-			e2 := newItem(newData[1], nest, comma, nil)
+			e2 := types.NewItem(newData[1], nest, comma, nil)
 			e2.SetPath(e1.Path())
 			app.list.InsertBefore(e1, next)
 			app.list.InsertBefore(e2, next)
@@ -323,7 +324,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 			app.dirty = true
 		case 1: // [\n value
 			reflectIndex(app.cursor.Next(), currentNest+1, +1)
-			e1 := newItem(newData[0], nest, comma, newPrefix)
+			e1 := types.NewItem(newData[0], nest, comma, newPrefix)
 			e1.SetPath(app.cursor.Value.Path().ChildIndex(0))
 			app.list.InsertBefore(e1, next)
 			todo()
@@ -332,7 +333,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		}
 		return nil
 	}
-	if e := app.cursor.Value; objStart.Equals(e.Data()) {
+	if e := app.cursor.Value; types.ObjStart.Equals(e.Data()) {
 		key, err := app.readLineString(session, "Key:", "")
 		if err != nil {
 			return err
@@ -344,7 +345,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		var nest int
 		var newPrefix []byte
 		todo := func() {}
-		if objEnd.Equals(nextElement.Data()) {
+		if types.ObjEnd.Equals(nextElement.Data()) {
 			comma = false
 			outerPrefix := nextElement.LeadingSpace() // space before }
 			if len(outerPrefix) == 0 {
@@ -368,19 +369,15 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		switch len(newData) {
 		case 2: // { key:[]
 			p1 := &Pair{
-				spaceKey: newPrefix,
-				key:      key,
-				Item: Item{
-					data:  newData[0],
-					nest:  nest,
-					comma: false,
-				},
+				SpaceKey: newPrefix,
+				Key:      key,
+				Item:     *types.NewItem(newData[0], nest, false, nil),
 			}
 			if sample != nil {
-				p1.spaceColon = sample.spaceColon
-				p1.spaceValue = sample.spaceValue
+				p1.SpaceColon = sample.SpaceColon
+				p1.SpaceValue = sample.SpaceValue
 			}
-			e2 := newItem(newData[1], nest, comma, nil)
+			e2 := types.NewItem(newData[1], nest, comma, nil)
 			app.list.InsertBefore(p1, next)
 			app.list.InsertBefore(e2, next)
 			todo()
@@ -388,17 +385,13 @@ func (app *Application) keyFuncInsert(session *Session) error {
 			app.dirty = true
 		case 1: // { key:value
 			p1 := &Pair{
-				spaceKey: newPrefix,
-				key:      key,
-				Item: Item{
-					data:  newData[0],
-					nest:  nest,
-					comma: comma,
-				},
+				SpaceKey: newPrefix,
+				Key:      key,
+				Item:     *types.NewItem(newData[0], nest, comma, nil),
 			}
 			if sample != nil {
-				p1.spaceColon = sample.spaceColon
-				p1.spaceValue = sample.spaceValue
+				p1.SpaceColon = sample.SpaceColon
+				p1.SpaceValue = sample.SpaceValue
 			}
 			app.list.InsertBefore(p1, next)
 			todo()
@@ -423,36 +416,28 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		switch len(newData) {
 		case 2: // key:[],
 			p1 := &Pair{
-				spaceKey: space,
-				key:      key,
-				Item: Item{
-					data:  newData[0],
-					nest:  element.Nest(),
-					comma: false,
-				},
+				SpaceKey: space,
+				Key:      key,
+				Item:     *types.NewItem(newData[0], element.Nest(), false, nil),
 			}
 			if sample != nil {
-				p1.spaceColon = sample.spaceColon
-				p1.spaceValue = sample.spaceValue
+				p1.SpaceColon = sample.SpaceColon
+				p1.SpaceValue = sample.SpaceValue
 			}
-			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
+			e2 := types.NewItem(newData[1], element.Nest(), element.Comma(), nil)
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(p1, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
 		case 1: // key:value,
 			p := &Pair{
-				spaceKey: space,
-				key:      key,
-				Item: Item{
-					data:  newData[0],
-					nest:  element.Nest(),
-					comma: element.Comma(),
-				},
+				SpaceKey: space,
+				Key:      key,
+				Item:     *types.NewItem(newData[0], element.Nest(), element.Comma(), nil),
 			}
 			if sample != nil {
-				p.spaceColon = sample.spaceColon
-				p.spaceValue = sample.spaceValue
+				p.SpaceColon = sample.SpaceColon
+				p.SpaceValue = sample.SpaceValue
 			}
 			app.list.InsertAfter(p, app.cursor)
 			app.nextLine(session)
@@ -461,7 +446,7 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		element.SetComma(true)
 		return nil
 	}
-	if element, ok := app.cursor.Value.(*Item); ok {
+	if element, ok := app.cursor.Value.(*types.Item); ok {
 		nest := app.cursor.Value.Nest()
 		if nest < 0 {
 			return nil
@@ -473,10 +458,10 @@ func (app *Application) keyFuncInsert(session *Session) error {
 		switch len(newData) {
 		case 2: // [ \n ],
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e1 := newItem(newData[0], element.Nest(), false, space)
-			e2 := newItem(newData[1], element.Nest(), element.Comma(), nil)
+			e1 := types.NewItem(newData[0], element.Nest(), false, space)
+			e2 := types.NewItem(newData[1], element.Nest(), element.Comma(), nil)
 			j := app.cursor.Value.Path()
-			e1.SetPath(j.parent.ChildIndex(j.index + 1))
+			e1.SetPath(j.Parent.ChildIndex(j.Index + 1))
 			e2.SetPath(e1.Path())
 			app.list.InsertAfter(e2, app.cursor)
 			app.list.InsertAfter(e1, app.cursor)
@@ -484,9 +469,9 @@ func (app *Application) keyFuncInsert(session *Session) error {
 			app.dirty = true
 		case 1: // value,
 			reflectIndex(app.cursor.Next(), currentNest, +1)
-			e := newItem(newData[0], element.Nest(), element.Comma(), space)
+			e := types.NewItem(newData[0], element.Nest(), element.Comma(), space)
 			j := app.cursor.Value.Path()
-			e.SetPath(j.parent.ChildIndex(j.index + 1))
+			e.SetPath(j.Parent.ChildIndex(j.Index + 1))
 			app.list.InsertAfter(e, app.cursor)
 			app.nextLine(session)
 			app.dirty = true
@@ -502,12 +487,12 @@ func (app *Application) keyFuncCopy(session *Session) error {
 	r.Path().Dump(&buffer)
 
 	data := r.Data()
-	if _, ok := unwrap(data).(Mark); !ok {
+	if _, ok := types.Unwrap(data).(Mark); !ok {
 		buffer.WriteString(" = ")
 		if f, ok := data.(interface{ Json() []byte }); ok {
 			buffer.Write(f.Json())
 		} else {
-			buffer.Write(marshal(data))
+			buffer.Write(types.Marshal(data))
 		}
 	}
 	s := buffer.String()

@@ -1,4 +1,4 @@
-package jegan
+package types
 
 import (
 	"io"
@@ -89,7 +89,7 @@ func render(data any, b *strings.Builder) {
 		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := data.(string); ok {
-		highlightString(marshal(s), ansi.Magenta, b)
+		highlightString(Marshal(s), ansi.Magenta, b)
 	} else if data == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
 	} else if data == false {
@@ -97,11 +97,11 @@ func render(data any, b *strings.Builder) {
 	} else if data == nil {
 		io.WriteString(b, ansi.Cyan+"null"+ansi.Default)
 	} else {
-		b.Write(marshal(data))
+		b.Write(Marshal(data))
 	}
 }
 
-func isToBeContinued(p *Element) bool {
+func IsToBeContinued(p *Element) bool {
 	if _, ok := p.Value.Data().(SkipDump); ok {
 		return false
 	}
@@ -111,10 +111,10 @@ func isToBeContinued(p *Element) bool {
 			return false
 		}
 		data := p.Value.Data()
-		if objEnd.Equals(data) {
+		if ObjEnd.Equals(data) {
 			return false
 		}
-		if arrayEnd.Equals(data) {
+		if ArrayEnd.Equals(data) {
 			return false
 		}
 		if _, ok := data.(SkipDump); !ok {
@@ -125,7 +125,7 @@ func isToBeContinued(p *Element) bool {
 
 func Dump(L *List, w io.Writer) {
 	for p := L.Front(); p != nil; p = p.Next() {
-		if isToBeContinued(p) {
+		if IsToBeContinued(p) {
 			p.Value.Dump(w)
 		} else {
 			p.Value.DumpWithoutComma(w)

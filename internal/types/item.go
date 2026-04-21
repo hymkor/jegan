@@ -1,4 +1,4 @@
-package jegan
+package types
 
 import (
 	"io"
@@ -12,7 +12,7 @@ type SkipDump interface {
 }
 
 type Item struct {
-	spaceValue        []byte
+	SpaceValue        []byte
 	data              any
 	spaceCommaOrClose []byte
 	comma             bool
@@ -22,8 +22,13 @@ type Item struct {
 	path   *JsonPath
 }
 
-func (e *Item) LeadingSpace() []byte          { return e.spaceValue }
-func (e *Item) SetLeadingSpace(v []byte)      { e.spaceValue = v }
+func (e *Item) Clone() *Item {
+	clone := *e
+	return &clone
+}
+
+func (e *Item) LeadingSpace() []byte          { return e.SpaceValue }
+func (e *Item) SetLeadingSpace(v []byte)      { e.SpaceValue = v }
 func (e *Item) Data() any                     { return e.data }
 func (e *Item) SetData(v any)                 { e.data = v }
 func (e *Item) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
@@ -46,23 +51,23 @@ func (e *Item) DumpWithoutComma(w io.Writer) {
 	if _, ok := e.data.(SkipDump); ok {
 		return
 	}
-	w.Write(e.spaceValue)
+	w.Write(e.SpaceValue)
 	if v, ok := e.data.(interface{ Json() []byte }); ok {
 		w.Write(v.Json())
 	} else {
-		w.Write(marshal(e.data))
+		w.Write(Marshal(e.data))
 	}
 	w.Write(e.spaceCommaOrClose)
 }
 
 func (e *Item) highlight(b *strings.Builder) {
-	e.highlightWithoutComma(b)
+	e.HighlightWithoutComma(b)
 	if e.comma {
 		b.WriteByte(',')
 	}
 }
 
-func (e *Item) highlightWithoutComma(b *strings.Builder) {
+func (e *Item) HighlightWithoutComma(b *strings.Builder) {
 	render(e.data, b)
 }
 
@@ -82,11 +87,11 @@ func (e *Item) Display(w int) string {
 	return b.String()
 }
 
-func newItem(v any, i int, comma bool, prefix []byte) *Item {
+func NewItem(data any, nest int, comma bool, space []byte) *Item {
 	return &Item{
-		spaceValue: prefix,
-		data:       v,
+		SpaceValue: space,
+		data:       data,
 		comma:      comma,
-		nest:       i,
+		nest:       nest,
 	}
 }
