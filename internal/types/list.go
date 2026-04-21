@@ -30,7 +30,7 @@ type Line interface {
 	DumpWithoutComma(w io.Writer)
 }
 
-func highlightString(s []byte, color string, b *strings.Builder) {
+func renderString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
 	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
 		b.WriteByte('"')
@@ -43,12 +43,12 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 	}
 }
 
-func render(data any, b *strings.Builder) {
+func RenderData(data any, b *strings.Builder) {
 	type renderType interface {
-		Render(*strings.Builder, func(any, *strings.Builder))
+		Render(*strings.Builder)
 	}
 	if r, ok := data.(renderType); ok {
-		r.Render(b, render)
+		r.Render(b)
 		return
 	}
 	if x, ok := data.(*unjson.RawBytes); ok {
@@ -77,7 +77,7 @@ func render(data any, b *strings.Builder) {
 	if x, ok := data.(*unjson.Literal); ok {
 		data = x.Data()
 		if _, ok := data.(string); ok {
-			highlightString(x.Json(), ansi.Magenta, b)
+			renderString(x.Json(), ansi.Magenta, b)
 			return
 		}
 		if _, ok := data.(float64); ok {
@@ -89,7 +89,7 @@ func render(data any, b *strings.Builder) {
 		defer io.WriteString(b, ansi.Thin)
 	}
 	if s, ok := data.(string); ok {
-		highlightString(Marshal(s), ansi.Magenta, b)
+		renderString(Marshal(s), ansi.Magenta, b)
 	} else if data == true {
 		io.WriteString(b, ansi.Cyan+"true"+ansi.Default)
 	} else if data == false {

@@ -25,7 +25,7 @@ func (m Mark) Equals(v any) bool {
 	return v == m
 }
 
-func (m Mark) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+func (m Mark) Render(b *strings.Builder) {
 	b.WriteString(ansi.Red)
 	b.WriteRune(rune(m))
 	b.WriteString(ansi.Default)

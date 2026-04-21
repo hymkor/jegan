@@ -185,12 +185,12 @@ func (app *Application) status(session *Session) (text string) {
 		if p, ok := r.(*Pair); ok {
 			if _, ok := types.Unwrap(p.Item.Data()).(Mark); !ok {
 				b.WriteString(" = ")
-				p.Item.HighlightWithoutComma(&b)
+				p.Item.RenderWithoutComma(&b)
 			}
 		} else if e, ok := r.(*types.Item); ok {
 			if _, ok := types.Unwrap(e.Data()).(Mark); !ok {
 				b.WriteString(" = ")
-				e.HighlightWithoutComma(&b)
+				e.RenderWithoutComma(&b)
 			}
 		}
 		b.WriteString(ansi.EraseLine)

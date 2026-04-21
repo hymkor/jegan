@@ -60,15 +60,15 @@ func (e *Item) DumpWithoutComma(w io.Writer) {
 	w.Write(e.spaceCommaOrClose)
 }
 
-func (e *Item) highlight(b *strings.Builder) {
-	e.HighlightWithoutComma(b)
+func (e *Item) render(b *strings.Builder) {
+	e.RenderWithoutComma(b)
 	if e.comma {
 		b.WriteByte(',')
 	}
 }
 
-func (e *Item) HighlightWithoutComma(b *strings.Builder) {
-	render(e.data, b)
+func (e *Item) RenderWithoutComma(b *strings.Builder) {
+	RenderData(e.data, b)
 }
 
 func (e *Item) Display(w int) string {
@@ -79,7 +79,7 @@ func (e *Item) Display(w int) string {
 	for i := 0; i < e.nest; i++ {
 		b.WriteString("  ")
 	}
-	e.highlight(&b)
+	e.render(&b)
 	if e.cursor {
 		b.WriteString(strings.Repeat(" ", w))
 		b.WriteString(ansi.NoUnderLine)

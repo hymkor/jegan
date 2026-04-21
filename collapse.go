@@ -18,7 +18,7 @@ type collapsed struct {
 	rest  *List
 }
 
-func (c *collapsed) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+func (c *collapsed) Render(b *strings.Builder) {
 	b.WriteString(ansi.Red)
 	b.WriteString(c.name)
 	b.WriteString(ansi.Default)
@@ -112,7 +112,7 @@ func (r *tombstone) Json() []byte {
 	return []byte{}
 }
 
-func (t *tombstone) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
+func (t *tombstone) Render(b *strings.Builder) {
 	b.WriteString(ansi.Red)
 	b.WriteString("<DEL>")
 	b.WriteString(ansi.Default)

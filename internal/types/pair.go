@@ -30,9 +30,9 @@ func (pair *Pair) Display(w int) string {
 	for i := 0; i < pair.nest; i++ {
 		b.WriteString("  ")
 	}
-	highlightString(Marshal(pair.Key), ansi.Yellow, &b)
+	renderString(Marshal(pair.Key), ansi.Yellow, &b)
 	b.WriteString(": ")
-	pair.Item.highlight(&b)
+	pair.Item.render(&b)
 	if pair.cursor {
 		b.WriteString(strings.Repeat(" ", w))
 		b.WriteString(ansi.NoUnderLine)

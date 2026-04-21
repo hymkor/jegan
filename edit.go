@@ -88,9 +88,9 @@ func (m *modifiedLiteral) Unwrap() any {
 	return m.Literal
 }
 
-func (m *modifiedLiteral) Render(b *strings.Builder, render func(any, *strings.Builder)) {
+func (m *modifiedLiteral) Render(b *strings.Builder) {
 	io.WriteString(b, ansi.Bold)
-	render(m.Literal, b)
+	types.RenderData(m.Literal, b)
 	io.WriteString(b, ansi.Thin)
 }
 
