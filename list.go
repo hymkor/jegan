@@ -1,59 +1,13 @@
 package jegan
 
 import (
-	"fmt"
 	"io"
-	"regexp"
 	"strings"
 	"unicode"
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/unjson"
 )
-
-type JsonPath struct {
-	parent *JsonPath
-	text   string
-	index  int
-}
-
-func (j *JsonPath) ChildIndex(i int) *JsonPath {
-	return &JsonPath{
-		parent: j,
-		index:  i,
-	}
-}
-
-func (j *JsonPath) ChildKey(key string) *JsonPath {
-	return &JsonPath{
-		parent: j,
-		text:   key,
-		index:  -1,
-	}
-}
-
-var rxSymbol = regexp.MustCompile("^[_A-Za-z][_A-Za-z0-9]*$")
-
-func (j *JsonPath) Dump(w io.Writer) {
-	if j == nil {
-		return
-	}
-	if j.parent != nil {
-		j.parent.Dump(w)
-	}
-	if j.text != "" {
-		if rxSymbol.MatchString(j.text) {
-			fmt.Fprintf(w, ".%s", j.text)
-		} else {
-			fmt.Fprintf(w, ".%q", j.text)
-		}
-	} else {
-		if j.parent == nil {
-			w.Write([]byte{'.'})
-		}
-		fmt.Fprintf(w, "[%d]", j.index)
-	}
-}
 
 type Line interface {
 	LeadingSpace() []byte
@@ -76,82 +30,6 @@ type Line interface {
 	DumpWithoutComma(w io.Writer)
 }
 
-type Item struct {
-	spaceValue        []byte
-	data              any
-	spaceCommaOrClose []byte
-	comma             bool
-
-	nest   int
-	cursor bool
-	path   *JsonPath
-}
-
-func (e *Item) LeadingSpace() []byte          { return e.spaceValue }
-func (e *Item) SetLeadingSpace(v []byte)      { e.spaceValue = v }
-func (e *Item) Data() any                     { return e.data }
-func (e *Item) SetData(v any)                 { e.data = v }
-func (e *Item) SpaceCommaOrClose() []byte     { return e.spaceCommaOrClose }
-func (e *Item) SetSpaceCommaOrClose(v []byte) { e.spaceCommaOrClose = v }
-func (e *Item) Comma() bool                   { return e.comma }
-func (e *Item) SetComma(v bool)               { e.comma = v }
-func (e *Item) Nest() int                     { return e.nest }
-func (e *Item) SetCursor(v bool)              { e.cursor = v }
-func (e *Item) Path() *JsonPath               { return e.path }
-func (e *Item) SetPath(v *JsonPath)           { e.path = v }
-
-func (e *Item) Dump(w io.Writer) {
-	e.DumpWithoutComma(w)
-	if e.comma {
-		w.Write([]byte{','})
-	}
-}
-
-func (e *Item) DumpWithoutComma(w io.Writer) {
-	if _, ok := e.data.(*tombstone); ok {
-		return
-	}
-	w.Write(e.spaceValue)
-	if v, ok := e.data.(interface{ Json() []byte }); ok {
-		w.Write(v.Json())
-	} else {
-		w.Write(marshal(e.data))
-	}
-	w.Write(e.spaceCommaOrClose)
-}
-
-type Mark rune
-
-func (m Mark) String() string {
-	return string(rune(m))
-}
-
-func (m Mark) GoString() string {
-	return string(rune(m))
-}
-
-func (m Mark) Json() []byte {
-	return []byte{byte(m)}
-}
-
-func (m Mark) Equals(v any) bool {
-	v = unwrap(v)
-	return v == m
-}
-
-func (m Mark) Render(b *strings.Builder, _ func(any, *strings.Builder)) {
-	b.WriteString(ansi.Red)
-	b.WriteRune(rune(m))
-	b.WriteString(ansi.Default)
-}
-
-const (
-	objStart   = Mark('{')
-	objEnd     = Mark('}')
-	arrayStart = Mark('[')
-	arrayEnd   = Mark(']')
-)
-
 func highlightString(s []byte, color string, b *strings.Builder) {
 	L := len(s) - 1
 	if len(s) >= 2 && s[0] == '"' && s[L] == '"' {
@@ -163,17 +41,6 @@ func highlightString(s []byte, color string, b *strings.Builder) {
 	} else {
 		b.Write(s)
 	}
-}
-
-func (e *Item) highlight(b *strings.Builder) {
-	e.highlightWithoutComma(b)
-	if e.comma {
-		b.WriteByte(',')
-	}
-}
-
-func (e *Item) highlightWithoutComma(b *strings.Builder) {
-	render(e.data, b)
 }
 
 func render(data any, b *strings.Builder) {
@@ -232,82 +99,6 @@ func render(data any, b *strings.Builder) {
 	} else {
 		b.Write(marshal(data))
 	}
-}
-
-func (e *Item) Display(w int) string {
-	var b strings.Builder
-	if e.cursor {
-		b.WriteString(ansi.UnderLine)
-	}
-	for i := 0; i < e.nest; i++ {
-		b.WriteString("  ")
-	}
-	e.highlight(&b)
-	if e.cursor {
-		b.WriteString(strings.Repeat(" ", w))
-		b.WriteString(ansi.NoUnderLine)
-	}
-	return b.String()
-}
-
-type Pair struct {
-	spaceKey   []byte
-	key        string
-	spaceColon []byte
-	Item
-}
-
-func (p *Pair) LeadingSpace() []byte     { return p.spaceKey }
-func (p *Pair) SetLeadingSpace(v []byte) { p.spaceValue = v }
-
-func (pair *Pair) Display(w int) string {
-	var b strings.Builder
-	if pair.cursor {
-		b.WriteString(ansi.UnderLine)
-	}
-	for i := 0; i < pair.nest; i++ {
-		b.WriteString("  ")
-	}
-	highlightString(marshal(pair.key), ansi.Yellow, &b)
-	b.WriteString(": ")
-	pair.Item.highlight(&b)
-	if pair.cursor {
-		b.WriteString(strings.Repeat(" ", w))
-		b.WriteString(ansi.NoUnderLine)
-	}
-	return b.String()
-}
-
-func newItem(v any, i int, comma bool, prefix []byte) *Item {
-	return &Item{
-		spaceValue: prefix,
-		data:       v,
-		comma:      comma,
-		nest:       i,
-	}
-}
-
-func (p *Pair) Dump(w io.Writer) {
-	p.dumpKey(w)
-	p.Item.Dump(w)
-}
-
-func (p *Pair) DumpWithoutComma(w io.Writer) {
-	if _, ok := p.Data().(*tombstone); ok {
-		return
-	}
-	p.dumpKey(w)
-	p.Item.DumpWithoutComma(w)
-}
-
-func (p *Pair) dumpKey(w io.Writer) {
-	if _, ok := p.Item.data.(*tombstone); ok {
-		return
-	}
-	w.Write(p.spaceKey)
-	w.Write(marshal(p.key))
-	w.Write(p.spaceColon)
-	w.Write([]byte{':'})
 }
 
 func isToBeContinued(p *Element) bool {
