@@ -43,6 +43,29 @@ func renderString(s []byte, color string, b *strings.Builder) {
 	}
 }
 
+func renderRawBytes(x *unjson.RawBytes, b *strings.Builder) {
+	b.WriteString(ansi.Red)
+	escape := false
+	for _, v := range x.String() {
+		if escape {
+			if ('a' <= v && v <= 'z') || ('A' <= v && v <= 'Z') {
+				escape = false
+			}
+			continue
+		}
+		if v == '\x1B' {
+			escape = true
+			continue
+		}
+		if unicode.IsSpace(v) {
+			b.Write([]byte{' '})
+		} else {
+			b.WriteRune(v)
+		}
+	}
+	b.WriteString(ansi.Default)
+}
+
 func RenderData(data any, b *strings.Builder) {
 	type renderType interface {
 		Render(*strings.Builder)
@@ -52,26 +75,7 @@ func RenderData(data any, b *strings.Builder) {
 		return
 	}
 	if x, ok := data.(*unjson.RawBytes); ok {
-		b.WriteString(ansi.Red)
-		escape := false
-		for _, v := range x.String() {
-			if escape {
-				if ('a' <= v && v <= 'z') || ('A' <= v && v <= 'Z') {
-					escape = false
-				}
-				continue
-			}
-			if v == '\x1B' {
-				escape = true
-				continue
-			}
-			if unicode.IsSpace(v) {
-				b.Write([]byte{' '})
-			} else {
-				b.WriteRune(v)
-			}
-		}
-		b.WriteString(ansi.Default)
+		renderRawBytes(x, b)
 		return
 	}
 	if x, ok := data.(*unjson.Literal); ok {
