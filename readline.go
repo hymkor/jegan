@@ -12,6 +12,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/completion"
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-readline-ny/simplehistory"
 	"github.com/nyaosorg/go-readline-skk"
 
 	"github.com/hymkor/jegan/internal/ansi"
@@ -96,16 +97,32 @@ func (app *Application) readLineOpt(session *Session, prompt, defaults string, o
 		},
 		ResetColor:   "\x1B[0m",
 		DefaultColor: "\x1B[0m",
+		PredictColor: [...]string{"\x1B[3;22;34m", "\x1B[23;39m"},
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.CtrlL, readline.CmdRepaintLine)
 	opt(editor)
+	updateHistory := func(string) {}
+	if editor.History == nil {
+		if app.history == nil {
+			app.history = simplehistory.New()
+			app.history.Add("null")
+			app.history.Add("false")
+			app.history.Add("true")
+			app.history.Add("\"\"")
+			app.history.Add("{}")
+			app.history.Add("[]")
+		}
+		editor.History = app.history
+		updateHistory = func(s string) { app.history.Add(s) }
+	}
 	result, err := editor.ReadLine(context.Background())
 	io.WriteString(session.TtyOut, ansi.CursorOff)
 	if err == readline.CtrlC {
 		return "", errCanceled
 	}
+	updateHistory(result)
 	return result, err
 }
 

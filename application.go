@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-readline-ny/simplehistory"
 	"github.com/nyaosorg/go-ttyadapter"
 
 	"github.com/hymkor/go-generics-list"
@@ -27,6 +28,7 @@ type Application struct {
 	dirty   bool
 	indent  []byte
 	ttyIn   ttyadapter.Tty
+	history *simplehistory.Container
 
 	search func() error
 	revert func() error
