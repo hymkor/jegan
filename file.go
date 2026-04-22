@@ -9,14 +9,16 @@ import (
 
 	"github.com/nyaosorg/go-inline-animation"
 
+	"github.com/hymkor/go-generics-list"
 	"github.com/hymkor/go-safewrite"
 	"github.com/hymkor/go-safewrite/perm"
 
 	"github.com/hymkor/jegan/internal/ansi"
+	"github.com/hymkor/jegan/internal/decode"
 	"github.com/hymkor/jegan/internal/pager"
-	"github.com/hymkor/jegan/internal/tree2list"
 	"github.com/hymkor/jegan/internal/types"
-	"github.com/hymkor/jegan/internal/unjson"
+	// "github.com/hymkor/jegan/internal/tree2list"
+	// "github.com/hymkor/jegan/internal/unjson"
 )
 
 func (app *Application) keyFuncSave(session *Session) error {
@@ -90,16 +92,20 @@ func (app *Application) keyFuncQuit(session *Session) (pager.EventResult, error)
 	}
 	return pager.QuitApp, nil
 }
+
 func (app *Application) Load(r io.Reader, name string) error {
 	br, ok := r.(io.RuneScanner)
 	if !ok {
 		br = bufio.NewReader(r)
 	}
+	L := list.New[types.Line]()
+	defer app.Store(L)
 	for {
-		v, err := unjson.Unmarshal(br)
+		err := decode.Unmarshal(br, func(line types.Line) {
+			L.PushBack(line)
+		})
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				app.Store(tree2list.Read(v))
 				if err == io.EOF {
 					return nil
 				}
@@ -109,6 +115,5 @@ func (app *Application) Load(r io.Reader, name string) error {
 			}
 			return fmt.Errorf("%s:%w", name, err)
 		}
-		app.Store(tree2list.Read(v))
 	}
 }
