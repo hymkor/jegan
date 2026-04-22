@@ -2,149 +2,14 @@ package unjson
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"unicode"
 
 	"github.com/hymkor/jegan/internal/dbg"
 	"github.com/hymkor/jegan/internal/source"
 )
-
-func read1st(br io.RuneScanner) ([]byte, rune, error) {
-	var prefix bytes.Buffer
-	for {
-		ch, _, err := br.ReadRune()
-		if err != nil {
-			return prefix.Bytes(), ch, err
-		}
-		if !unicode.IsSpace(ch) {
-			return prefix.Bytes(), ch, nil
-		}
-		prefix.WriteRune(ch)
-	}
-}
-
-type UnexpectedTokenError struct {
-	expect rune
-	got    rune
-}
-
-func (e UnexpectedTokenError) Error() string {
-	return fmt.Sprintf("expected '%c', but got '%c'", e.expect, e.got)
-}
-
-type UnexpectedTokenError2 struct {
-	expect1 rune
-	expect2 rune
-	got     rune
-}
-
-func (e UnexpectedTokenError2) Error() string {
-	return fmt.Sprintf("expected '%c' or '%c', but got '%c'",
-		e.expect1,
-		e.expect2,
-		e.got)
-}
-
-type InvalidLiteralError struct {
-	got string
-}
-
-func (e InvalidLiteralError) Error() string {
-	return fmt.Sprintf("invalid literal: %q", e.got)
-}
-
-func expectRune(br io.RuneScanner, expect rune) ([]byte, error) {
-	prefix, ch, err := read1st(br)
-	if err != nil {
-		if err == io.EOF {
-			return prefix, io.ErrUnexpectedEOF
-		}
-		return prefix, err
-	}
-	if ch != expect {
-		return prefix, &UnexpectedTokenError{expect: expect, got: ch}
-	}
-	return prefix, nil
-}
-
-func readString(br io.RuneScanner) (*source.Literal, error) {
-	var buffer bytes.Buffer
-	buffer.WriteByte('"')
-	backslash := false
-	for {
-		ch, _, err := br.ReadRune()
-		if err != nil {
-			if err == io.EOF {
-				return nil, io.ErrUnexpectedEOF
-			}
-			return nil, err
-		}
-		if !backslash && ch == '"' {
-			buffer.WriteByte('"')
-			var str string
-			bin := buffer.Bytes()
-			err := json.Unmarshal(bin, &str)
-			return source.NewLiteral(str, bin), err
-		}
-		if !backslash && ch == '\\' {
-			backslash = true
-		} else {
-			backslash = false
-		}
-		buffer.WriteRune(ch)
-	}
-}
-
-func readToken(br io.RuneScanner, first rune) ([]byte, error) {
-	var buffer bytes.Buffer
-	buffer.WriteRune(first)
-	for {
-		ch, _, err := br.ReadRune()
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				return nil, err
-			}
-		}
-		if unicode.IsSpace(ch) {
-			br.UnreadRune()
-			return buffer.Bytes(), err
-		}
-		if ch == ',' || ch == ']' || ch == '}' {
-			br.UnreadRune()
-			return buffer.Bytes(), err
-		}
-		buffer.WriteRune(ch)
-		if errors.Is(err, io.EOF) {
-			return buffer.Bytes(), err
-		}
-	}
-}
-
-func expectToken(br io.RuneScanner, first rune, expect string) error {
-	s, err := readToken(br, first)
-	result := string(s)
-	if result != expect {
-		return &InvalidLiteralError{got: result}
-	}
-	return err
-}
-
-func readNumber(br io.RuneScanner, first rune) (*source.Literal, error) {
-	token, err1 := readToken(br, first)
-	if err1 != nil {
-		return nil, err1
-	}
-	var number float64
-	err2 := json.Unmarshal(token, &number)
-	if err2 != nil {
-		return nil, err2
-	}
-	return source.NewLiteral(number, token), nil
-}
 
 type Item struct {
 	SpaceValue []byte
@@ -199,7 +64,7 @@ func readObject(br io.RuneScanner) (*Object, error) {
 	dbg.Println("Enter readObject")
 	defer dbg.Println("Leave readObject")
 
-	firstPrefix, first, err := read1st(br) // check '{'
+	firstPrefix, first, err := source.Read1st(br) // check '{'
 	// first, _, err := br.ReadRune()
 	if err != nil {
 		return nil, err
@@ -213,7 +78,7 @@ func readObject(br io.RuneScanner) (*Object, error) {
 
 	var pairs []KeyValuePair
 	for {
-		preKey, err := expectRune(br, '"')
+		preKey, err := source.ExpectRune(br, '"')
 		if err != nil {
 			return nil, err
 		}
@@ -221,12 +86,12 @@ func readObject(br io.RuneScanner) (*Object, error) {
 			preKey = append(preKey, firstPrefix...)
 			firstPrefix = nil
 		}
-		key, err := readString(br)
+		key, err := source.ReadString(br)
 		if err != nil {
 			return nil, err
 		}
 		dbg.Println("key:", key)
-		preVal, err := expectRune(br, ':')
+		preVal, err := source.ExpectRune(br, ':')
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +99,7 @@ func readObject(br io.RuneScanner) (*Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		last, ch, err := read1st(br)
+		last, ch, err := source.Read1st(br)
 		if err != nil {
 			return nil, err
 		}
@@ -249,10 +114,10 @@ func readObject(br io.RuneScanner) (*Object, error) {
 			return &Object{Pairs: pairs}, nil
 		}
 		if ch != ',' {
-			return nil, &UnexpectedTokenError2{
-				expect1: '}',
-				expect2: ',',
-				got:     ch}
+			return nil, &source.UnexpectedTokenError2{
+				Expect1: '}',
+				Expect2: ',',
+				Got:     ch}
 		}
 	}
 }
@@ -293,7 +158,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 	dbg.Println("Enter readArray")
 	defer dbg.Println("Leave readArray")
 
-	firstPrefix, first, err := read1st(br) // check '['
+	firstPrefix, first, err := source.Read1st(br) // check '['
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +176,7 @@ func readArray(br io.RuneScanner) (*Array, error) {
 			token.SpaceValue = append(firstPrefix, token.SpaceValue...)
 			firstPrefix = nil
 		}
-		prefix, ch, err := read1st(br)
+		prefix, ch, err := source.Read1st(br)
 		if err != nil {
 			return nil, err
 		}
@@ -324,17 +189,17 @@ func readArray(br io.RuneScanner) (*Array, error) {
 			return &Array{Element: array1}, nil
 		}
 		if ch != ',' {
-			return nil, &UnexpectedTokenError2{
-				expect1: ']',
-				expect2: ',',
-				got:     ch,
+			return nil, &source.UnexpectedTokenError2{
+				Expect1: ']',
+				Expect2: ',',
+				Got:     ch,
 			}
 		}
 	}
 }
 
 func readItem(br io.RuneScanner) (*Item, error) {
-	prefix, ch, err := read1st(br)
+	prefix, ch, err := source.Read1st(br)
 	if err != nil {
 		if len(prefix) <= 0 {
 			return nil, err
@@ -342,21 +207,21 @@ func readItem(br io.RuneScanner) (*Item, error) {
 		return &Item{Value: source.NewRawBytes(prefix)}, err
 	}
 	if ch == '"' {
-		s, err := readString(br)
+		s, err := source.ReadString(br)
 		dbg.Println("readString:", s)
 		return &Item{SpaceValue: prefix, Value: s}, err
 	} else if strings.ContainsRune("0123456789-+.", ch) {
-		n, err := readNumber(br, ch)
+		n, err := source.ReadNumber(br, ch)
 		return &Item{SpaceValue: prefix, Value: n}, err
 	} else if ch == 'n' {
 		v := source.NewLiteral(nil, []byte("null"))
-		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "null")
+		return &Item{SpaceValue: prefix, Value: v}, source.ExpectToken(br, ch, "null")
 	} else if ch == 'f' {
 		v := source.NewLiteral(false, []byte("false"))
-		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "false")
+		return &Item{SpaceValue: prefix, Value: v}, source.ExpectToken(br, ch, "false")
 	} else if ch == 't' {
 		v := source.NewLiteral(true, []byte("true"))
-		return &Item{SpaceValue: prefix, Value: v}, expectToken(br, ch, "true")
+		return &Item{SpaceValue: prefix, Value: v}, source.ExpectToken(br, ch, "true")
 	} else if ch == '{' {
 		o, err := readObject(br)
 		return &Item{SpaceValue: prefix, Value: o}, err
