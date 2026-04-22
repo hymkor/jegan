@@ -145,15 +145,13 @@ func (app *Application) keyFuncQuit(session *Session) (pager.EventResult, error)
 	return pager.QuitApp, nil
 }
 
-func (app *Application) load(r io.Reader, name string, store func(types.Line)) error {
+func (app *Application) load(r io.Reader, name string, store func(types.Line) error) error {
 	br, ok := r.(io.RuneScanner)
 	if !ok {
 		br = bufio.NewReader(r)
 	}
 	for {
-		err := decode.Unmarshal(br, func(line types.Line) {
-			store(line)
-		})
+		err := decode.Unmarshal(br, store)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if err == io.EOF {
@@ -172,7 +170,8 @@ func (app *Application) Load(r io.Reader, name string) error {
 	if app.list == nil {
 		app.list = list.New[types.Line]()
 	}
-	return app.load(r, name, func(line types.Line) {
+	return app.load(r, name, func(line types.Line) error {
 		app.list.PushBack(line)
+		return nil
 	})
 }
