@@ -51,12 +51,14 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 		}
 		err = readItem(br, jp, nest+1, func(line types.Line) {
 			if last == nil {
+				path := line.Path()
 				line = &types.Pair{
 					SpaceKey:   space1,
 					Key:        key.String(),
 					SpaceColon: space2,
 					Item:       *types.NewItem(line.Data(), nest+1, false, line.LeadingSpace()),
 				}
+				line.SetPath(path)
 			}
 			last = line
 			store(line)
