@@ -1,6 +1,7 @@
 package jegan
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +20,7 @@ func test(t *testing.T, source, operation, expect string) {
 
 	app := &Application{Name: "TEST"}
 	err := app.Load(strings.NewReader(source), "TEST SCRIPT")
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		t.Fatal(err.Error())
 	}
 	ttyIn := auto.New(fmt.Sprintf("%s|w|%s|q", operation, resPath))
@@ -78,6 +79,8 @@ func TestLoadSaveOnly(t *testing.T) {
 
 	testLoadSaveOnly(t, `[ "<TEST>" ]`)
 	testLoadSaveOnly(t, `[ "\u003cTEST\u003e" ]`)
+
+	testLoadSaveOnly(t, `bar = [ "ahaha" ]`)
 }
 
 func TestInsert(t *testing.T) {
