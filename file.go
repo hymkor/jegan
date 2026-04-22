@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/mattn/go-isatty"
+	"os/signal"
 
 	"github.com/nyaosorg/go-inline-animation"
 
@@ -20,8 +21,6 @@ import (
 	"github.com/hymkor/jegan/internal/decode"
 	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/types"
-	// "github.com/hymkor/jegan/internal/tree2list"
-	// "github.com/hymkor/jegan/internal/unjson"
 )
 
 func expandArgs(args []string) (useStdin bool, names []string) {
@@ -82,6 +81,34 @@ func (app *Application) writeFile(session *Session) error {
 	if err != nil {
 		return err
 	}
+
+	io.WriteString(session.TtyOut, "\rCompleting background loading before saving..."+ansi.EraseLine)
+	end0 := animation.Dots.Progress(session.TtyOut)
+
+	sig := make(chan os.Signal, 1)
+	defer close(sig)
+	signal.Notify(sig, os.Interrupt)
+	defer signal.Stop(sig)
+
+	for err == nil && app.fetch != nil {
+		select {
+		case <-sig:
+			end0()
+			return errors.New("Interrupted. Save was canceled.")
+		default:
+			var line types.Line
+			line, err = app.fetch()
+			if err != nil && !errors.Is(err, io.EOF) {
+				end0()
+				return err
+			}
+			if line != nil {
+				app.list.PushBack(line)
+			}
+		}
+	}
+	end0()
+
 	if fname == "" || fname == "-" {
 		session.TtyOut.Write([]byte{' '})
 		end := animation.Dots.Progress(session.TtyOut)

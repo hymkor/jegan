@@ -1,6 +1,8 @@
 package jegan
 
 import (
+	"context"
+	"errors"
 	"io"
 
 	"github.com/mattn/go-colorable"
@@ -8,7 +10,12 @@ import (
 	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 
+	"github.com/hymkor/go-generics-list"
+
 	"github.com/hymkor/jegan/internal/auto"
+	"github.com/hymkor/jegan/internal/nonblockpush"
+	"github.com/hymkor/jegan/internal/ttywrap"
+	"github.com/hymkor/jegan/internal/types"
 )
 
 type Config struct {
@@ -16,9 +23,6 @@ type Config struct {
 }
 
 func (c *Config) Run(args []string) error {
-	app := &Application{}
-	defer app.Close()
-
 	disable := colorable.EnableColorsStdout(nil)
 	if disable != nil {
 		defer disable()
@@ -32,18 +36,49 @@ func (c *Config) Run(args []string) error {
 	}
 
 	useStdin, names := expandArgs(args)
-	app.Name = names[0]
-
 	var ttyOut io.Writer
 	if useStdin {
 		ttyOut = colorable.NewColorableStderr()
 	} else {
 		ttyOut = colorable.NewColorableStdout()
 	}
+	return Start(ttyIn, names, ttyOut)
+}
 
-	if err := loadEach(names, app.Load); err != nil {
-		return err
+func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
+	keyWorker := nonblockpush.New[types.Line](ttyIn.GetKey)
+	defer keyWorker.Close()
+
+	app := &Application{
+		list:     list.New[types.Line](),
+		Name:     names[0],
+		fetch:    keyWorker.Fetch,
+		tryfetch: keyWorker.TryFetch,
 	}
+	defer app.Close()
 
-	return app.EventLoop(ttyIn, ttyOut)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		loadEach(names, func(r io.Reader, name string) error {
+			return app.load(r, name, func(line types.Line) error {
+				return keyWorker.PushData(ctx, line, nil)
+			})
+		})
+		keyWorker.CloseData()
+	}()
+
+	newTtyIn := ttywrap.New(ttyIn, func() (string, error) {
+		return keyWorker.GetOr(func(data types.Line, err error) bool {
+			if err != nil && !errors.Is(err, io.EOF) {
+				return false
+			}
+			if data != nil {
+				app.list.PushBack(data)
+			}
+			return err == nil
+		})
+	})
+	return app.EventLoop(newTtyIn, ttyOut)
 }

@@ -77,6 +77,10 @@ func (w *NonBlockPush[T]) PushData(ctx context.Context, data T, err error) error
 	}
 }
 
+func (w *NonBlockPush[T]) CloseData() {
+	close(w.chDataRes)
+}
+
 func (w *NonBlockPush[T]) getOr1(work func(val T, err error) bool) (string, error) {
 	w.chKeyReq <- struct{}{}
 	res, ok := <-w.chKeyRes
