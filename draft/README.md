@@ -13,22 +13,32 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-### &#x1F6E1; Preserve original JSON formatting
+### &#x1F6E1;&#xFE0F; Preserve original JSON with minimal changes
 
-Jegan keeps your JSON exactly as it was loaded.
-Only the parts you edit are changed.
+Jegan keeps your JSON as close to the original as possible.
+Only the parts you edit are modified.
 
 * Key order is preserved
 * Whitespace, indentation, and line endings are preserved
 * String representations (e.g. `\uXXXX` vs raw UTF-8) are preserved
-* Even non-JSON parts (e.g. JavaScript wrappers) are kept intact
-
-### &#x270F;&#xFE0F; Minimal and safe edits
-
+* Even non-JSON parts (e.g. JavaScript wrappers) are kept intact  
+&nbsp;
 * Only modified fields are updated
 * Changes are highlighted in bold
 * Original style is reused when inserting new values
 * Backup file is created on save
+
+### &#x26A1; Instant startup even with large JSON files
+
+Jegan starts immediately, even when loading large JSON files.
+
+Instead of blocking on file loading, data is processed in the background and becomes available progressively.
+
+* The UI appears instantly
+* Even for large files (tens of megabytes), startup is no longer delayed
+* You can start navigating before the entire file is loaded
+
+(In practice, a ~39MB archive that previously took about a minute to load now becomes usable immediately.)
 
 ### &#x1F504; Undo support for safe editing
 
