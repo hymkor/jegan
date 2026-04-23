@@ -14,6 +14,7 @@ Changelog
   - Add filename completion for "w" command
   - Enable history and prediction
   - Preload common JSON literals ( `null`, `false`, `true`, `""`, `{}`, `[]` )
+- Add background JSON loading support (improves startup time for large files) (#79)
 
 v0.4.0
 ------
