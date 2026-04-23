@@ -50,9 +50,8 @@ func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
 	defer keyWorker.Close()
 
 	app := &Application{
-		list:     list.New[types.Line](),
-		fetch:    keyWorker.Fetch,
-		tryfetch: keyWorker.TryFetch,
+		list:       list.New[types.Line](),
+		dataStream: keyWorker.DataStream(),
 	}
 	if len(names) == 1 {
 		app.Name = names[0]
@@ -65,10 +64,15 @@ func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
 	go func() {
 		loadEach(names, func(r io.Reader, name string) error {
 			return app.load(r, name, func(line types.Line) error {
-				return keyWorker.PushData(ctx, line, nil)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case app.dataStream <- nonblockpush.NewDataStream[types.Line](line, nil):
+					return nil
+				}
 			})
 		})
-		keyWorker.CloseData()
+		close(app.dataStream)
 	}()
 
 	newTtyIn := ttywrap.New(ttyIn, func() (string, error) {

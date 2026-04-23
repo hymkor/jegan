@@ -95,18 +95,22 @@ func (app *Application) writeFile(session *Session) error {
 	signal.Notify(sig, os.Interrupt)
 	defer signal.Stop(sig)
 
-	for err == nil && app.fetch != nil {
+loop:
+	for err == nil && app.dataStream != nil {
 		select {
 		case <-sig:
 			end0()
 			return errors.New("Interrupted. Save was canceled.")
-		default:
-			var line types.Line
-			line, err = app.fetch()
+		case d, ok := <-app.dataStream:
+			if !ok {
+				break loop
+			}
+			err = d.Err()
 			if err != nil && !errors.Is(err, io.EOF) {
 				end0()
 				return err
 			}
+			line := d.Val()
 			if line != nil {
 				app.list.PushBack(line)
 			}
