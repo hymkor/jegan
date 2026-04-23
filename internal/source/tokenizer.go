@@ -46,11 +46,11 @@ func (e UnexpectedTokenError2) Error() string {
 }
 
 type InvalidLiteralError struct {
-	got string
+	Got string
 }
 
 func (e InvalidLiteralError) Error() string {
-	return fmt.Sprintf("invalid literal: %q", e.got)
+	return fmt.Sprintf("invalid literal: %q", e.Got)
 }
 
 func ExpectRune(br io.RuneScanner, expect rune) ([]byte, error) {
@@ -109,7 +109,7 @@ func ReadToken(br io.RuneScanner, first rune) ([]byte, error) {
 			br.UnreadRune()
 			return buffer.Bytes(), err
 		}
-		if ch == ',' || ch == ']' || ch == '}' {
+		if ch == ',' || ch == ']' || ch == '}' || ch == '=' {
 			br.UnreadRune()
 			return buffer.Bytes(), err
 		}
@@ -124,7 +124,7 @@ func ExpectToken(br io.RuneScanner, first rune, expect string) error {
 	s, err := ReadToken(br, first)
 	result := string(s)
 	if result != expect {
-		return &InvalidLiteralError{got: result}
+		return &InvalidLiteralError{Got: result}
 	}
 	return err
 }

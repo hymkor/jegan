@@ -3,6 +3,7 @@ package decode
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 
@@ -171,72 +172,19 @@ func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func
 	return nil
 }
 
-func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func(types.Line) error) error {
-	store := func(line types.Line) error {
-		line.SetPath(basePath)
-		return store0(line)
-	}
-	spaces, ch, err := source.Read1st(br)
-	if err != nil {
-		if len(spaces) <= 0 {
-			return err
-		}
-		data := source.NewRawBytes(spaces)
-		return store(types.NewItem(data, nest, false, nil))
-	}
-	if ch == '"' {
-		s, err := source.ReadString(br)
-		if err != nil {
-			return err
-		}
-		return store(types.NewItem(s, nest, false, spaces))
-	}
-	if strings.ContainsRune("0123456789-+.", ch) {
-		n, err := source.ReadNumber(br, ch)
-		if err != nil {
-			return err
-		}
-		return store(types.NewItem(n, nest, false, spaces))
-	}
-	if ch == 'n' {
-		err := source.ExpectToken(br, ch, "null")
-		if err != nil {
-			return err
-		}
-		data := source.NewLiteral(nil, []byte("null"))
-		return store(types.NewItem(data, nest, false, spaces))
-	}
-	if ch == 'f' {
-		err := source.ExpectToken(br, ch, "false")
-		if err != nil {
-			return err
-		}
-		data := source.NewLiteral(false, []byte("false"))
-		return store(types.NewItem(data, nest, false, spaces))
-	}
-	if ch == 't' {
-		data := source.NewLiteral(true, []byte("true"))
-		err := source.ExpectToken(br, ch, "true")
-		if err != nil {
-			return err
-		}
-		return store(types.NewItem(data, nest, false, spaces))
-	}
-	if ch == '{' {
-		if err := store(types.NewItem(types.ObjStart, nest, false, spaces)); err != nil {
-			return err
-		}
-		return readObject(br, basePath, nest, store0)
-	}
-	if ch == '[' {
-		if err := store(types.NewItem(types.ArrayStart, nest, false, spaces)); err != nil {
-			return err
-		}
-		return readArray(br, basePath, nest, store0)
-	}
+func readRawBytes(br io.RuneScanner, nest int, store func(types.Line) error, rest ...any) error {
 	var b bytes.Buffer
-	b.Write(spaces)
-	b.WriteRune(ch)
+	for _, v := range rest {
+		if x, ok := v.([]byte); ok {
+			b.Write(x)
+		} else if x, ok := v.(rune); ok {
+			b.WriteRune(x)
+		} else if x, ok := v.(string); ok {
+			b.WriteString(x)
+		} else {
+			fmt.Fprint(&b, v)
+		}
+	}
 	for {
 		ch, siz, err := br.ReadRune()
 		if err != nil && !errors.Is(err, io.EOF) {
@@ -270,6 +218,84 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 		}
 	}
 	return nil
+}
+
+func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func(types.Line) error) error {
+	store := func(line types.Line) error {
+		line.SetPath(basePath)
+		return store0(line)
+	}
+	spaces, ch, err := source.Read1st(br)
+	if err != nil {
+		if len(spaces) <= 0 {
+			return err
+		}
+		data := source.NewRawBytes(spaces)
+		return store(types.NewItem(data, nest, false, nil))
+	}
+	if ch == '"' {
+		s, err := source.ReadString(br)
+		if err != nil {
+			return err
+		}
+		return store(types.NewItem(s, nest, false, spaces))
+	}
+	if strings.ContainsRune("0123456789-+.", ch) {
+		n, err := source.ReadNumber(br, ch)
+		if err != nil {
+			return err
+		}
+		return store(types.NewItem(n, nest, false, spaces))
+	}
+	if ch == 'n' {
+		err := source.ExpectToken(br, ch, "null")
+		if err != nil {
+			var e *source.InvalidLiteralError
+			if errors.As(err, &e) {
+				return readRawBytes(br, nest, store0, spaces, e.Got)
+			}
+			return err
+		}
+		data := source.NewLiteral(nil, []byte("null"))
+		return store(types.NewItem(data, nest, false, spaces))
+	}
+	if ch == 'f' {
+		err := source.ExpectToken(br, ch, "false")
+		if err != nil {
+			var e *source.InvalidLiteralError
+			if errors.As(err, &e) {
+				return readRawBytes(br, nest, store0, spaces, e.Got)
+			}
+			return err
+		}
+		data := source.NewLiteral(false, []byte("false"))
+		return store(types.NewItem(data, nest, false, spaces))
+	}
+	if ch == 't' {
+		err := source.ExpectToken(br, ch, "true")
+		if err != nil {
+			var e *source.InvalidLiteralError
+			if errors.As(err, &e) {
+				return readRawBytes(br, nest, store0, spaces, e.Got)
+			}
+			return err
+		}
+		data := source.NewLiteral(true, []byte("true"))
+		return store(types.NewItem(data, nest, false, spaces))
+	}
+	if ch == '{' {
+		if err := store(types.NewItem(types.ObjStart, nest, false, spaces)); err != nil {
+			return err
+		}
+		return readObject(br, basePath, nest, store0)
+	}
+	if ch == '[' {
+		if err := store(types.NewItem(types.ArrayStart, nest, false, spaces)); err != nil {
+			return err
+		}
+		return readArray(br, basePath, nest, store0)
+	}
+	return readRawBytes(br, nest, store0, spaces, ch)
 }
 
 func Unmarshal(r io.RuneScanner, store func(types.Line) error) error {
