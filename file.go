@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mattn/go-isatty"
 	"os/signal"
@@ -26,9 +27,7 @@ import (
 func expandArgs(args []string) (useStdin bool, names []string) {
 	if len(args) <= 0 {
 		useStdin = true
-		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			names = []string{""}
-		}
+		names = []string{""}
 		return
 	}
 	for _, arg := range args {
@@ -51,7 +50,13 @@ func expandArgs(args []string) (useStdin bool, names []string) {
 func loadEach(names []string, load func(io.Reader, string) error) error {
 	for _, fname := range names {
 		if fname == "" {
-			if err := load(os.Stdin, ""); err != nil {
+			var r io.Reader
+			if isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
+				r = strings.NewReader("{}")
+			} else {
+				r = os.Stdin
+			}
+			if err := load(r, ""); err != nil {
 				return err
 			}
 			continue
