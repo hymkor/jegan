@@ -23,6 +23,18 @@ Only the parts you edit are changed.
 * String representations (e.g. `\uXXXX` vs raw UTF-8) are preserved
 * Even non-JSON parts (e.g. JavaScript wrappers) are kept intact
 
+### &#x26A1; Instant startup even with large JSON files
+
+Jegan starts immediately, even when loading large JSON files.
+
+Instead of blocking on file loading, data is processed in the background and becomes available progressively.
+
+* The UI appears instantly
+* Even for large files (tens of megabytes), startup is no longer delayed
+* You can start navigating before the entire file is loaded
+
+(In practice, a ~39MB archive that previously took about a minute to load now becomes usable immediately.)
+
 ### &#x270F;&#xFE0F; Minimal and safe edits
 
 * Only modified fields are updated
