@@ -51,9 +51,11 @@ func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
 
 	app := &Application{
 		list:     list.New[types.Line](),
-		Name:     names[0],
 		fetch:    keyWorker.Fetch,
 		tryfetch: keyWorker.TryFetch,
+	}
+	if len(names) == 1 {
+		app.Name = names[0]
 	}
 	defer app.Close()
 
