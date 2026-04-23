@@ -2,10 +2,12 @@ package jegan
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-ny/simplehistory"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/dbg"
+	"github.com/hymkor/jegan/internal/nonblockpush"
 	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/types"
 )
@@ -42,6 +45,9 @@ type Application struct {
 
 	search func() error
 	revert func() error
+
+	fetch    func() (types.Line, error)
+	tryfetch func(time.Duration) (types.Line, error)
 }
 
 func (app *Application) Store(v *List) {
@@ -69,7 +75,12 @@ func (app *Application) nextLine(session *Session) {
 	app.setCursor(c)
 	app.csrline++
 	for app.csrline-session.WinPos >= session.ContentHeight {
-		session.MoveNextLine()
+		if w := session.Window.Next(); w != nil {
+			session.Window = w
+			session.WinPos++
+		} else {
+			break
+		}
 	}
 }
 
@@ -212,11 +223,56 @@ func (app *Application) status(session *Session) (text string) {
 	return
 }
 
+func getHeight(tty ttyadapter.Tty) (height int, err error) {
+	height = 40
+	err = tty.Open(nil)
+	if err != nil {
+		return
+	}
+	if _, height, err = tty.Size(); err != nil {
+		height = 40
+	}
+	tty.Close()
+	return
+}
+
 func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error {
 	app.ttyIn = ttyIn
 	if app.list == nil {
 		app.list = list.New[types.Line]()
 	}
+
+	if app.fetch != nil {
+		line, err := app.fetch()
+		if err != nil {
+			return err
+		}
+		app.list.PushBack(line)
+	}
+	if app.tryfetch != nil {
+		h, err := getHeight(ttyIn)
+		if err != nil {
+			return err
+		}
+
+		for i := 0; i < h; i++ {
+			line, err := app.tryfetch(time.Second / 10)
+			if errors.Is(err, nonblockpush.ErrNoKeyResponse) {
+				break
+			}
+			if errors.Is(err, io.EOF) {
+				if line != nil {
+					app.list.PushBack(line)
+				}
+				break
+			}
+			if err != nil {
+				return err
+			}
+			app.list.PushBack(line)
+		}
+	}
+
 	if app.list.Len() <= 0 {
 		app.list.PushBack(types.NewItem(types.ObjStart, 0, false, nil))
 		app.list.PushBack(types.NewItem(types.ObjEnd, 0, false, nil))

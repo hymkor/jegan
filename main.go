@@ -1,67 +1,28 @@
 package jegan
 
 import (
+	"context"
+	"errors"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/mattn/go-colorable"
-	"github.com/mattn/go-isatty"
 
 	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
 
-	"github.com/hymkor/jegan/internal/auto"
-)
+	"github.com/hymkor/go-generics-list"
 
-func parseArgs(args []string, load func(io.Reader, string) error) (useStdin bool, names []string, err error) {
-	if len(args) <= 0 {
-		useStdin = true
-		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
-			err = load(os.Stdin, "")
-		}
-		return
-	}
-	for _, arg := range args {
-		if arg == "-" {
-			useStdin = true
-			if err = load(os.Stdin, ""); err != nil {
-				return
-			}
-			continue
-		}
-		var fnames []string
-		fnames, err = filepath.Glob(arg)
-		if err != nil || len(fnames) <= 0 {
-			fnames = []string{arg}
-		}
-		for _, fn := range fnames {
-			var fd *os.File
-			fd, err = os.Open(fn)
-			if err != nil {
-				return
-			}
-			if err = load(fd, fn); err != nil {
-				fd.Close()
-				return
-			}
-			if err = fd.Close(); err != nil {
-				return
-			}
-			names = append(names, fn)
-		}
-	}
-	return
-}
+	"github.com/hymkor/jegan/internal/auto"
+	"github.com/hymkor/jegan/internal/nonblockpush"
+	"github.com/hymkor/jegan/internal/ttywrap"
+	"github.com/hymkor/jegan/internal/types"
+)
 
 type Config struct {
 	Auto string
 }
 
 func (c *Config) Run(args []string) error {
-	app := &Application{}
-	defer app.Close()
-
 	disable := colorable.EnableColorsStdout(nil)
 	if disable != nil {
 		defer disable()
@@ -74,20 +35,50 @@ func (c *Config) Run(args []string) error {
 		ttyIn = &tty8pe.Tty{}
 	}
 
-	useStdin, names, err := parseArgs(args, app.Load)
-	if err != nil {
-		return err
-	}
-	if len(names) == 1 {
-		app.Name = names[0]
-	}
-
+	useStdin, names := expandArgs(args)
 	var ttyOut io.Writer
 	if useStdin {
 		ttyOut = colorable.NewColorableStderr()
 	} else {
 		ttyOut = colorable.NewColorableStdout()
 	}
+	return Start(ttyIn, names, ttyOut)
+}
 
-	return app.EventLoop(ttyIn, ttyOut)
+func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
+	keyWorker := nonblockpush.New[types.Line](ttyIn.GetKey)
+	defer keyWorker.Close()
+
+	app := &Application{
+		list:     list.New[types.Line](),
+		Name:     names[0],
+		fetch:    keyWorker.Fetch,
+		tryfetch: keyWorker.TryFetch,
+	}
+	defer app.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		loadEach(names, func(r io.Reader, name string) error {
+			return app.load(r, name, func(line types.Line) error {
+				return keyWorker.PushData(ctx, line, nil)
+			})
+		})
+		keyWorker.CloseData()
+	}()
+
+	newTtyIn := ttywrap.New(ttyIn, func() (string, error) {
+		return keyWorker.GetOr(func(data types.Line, err error) bool {
+			if err != nil && !errors.Is(err, io.EOF) {
+				return false
+			}
+			if data != nil {
+				app.list.PushBack(data)
+			}
+			return err == nil
+		})
+	})
+	return app.EventLoop(newTtyIn, ttyOut)
 }

@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/mattn/go-isatty"
+	"os/signal"
 
 	"github.com/nyaosorg/go-inline-animation"
 
@@ -17,9 +21,56 @@ import (
 	"github.com/hymkor/jegan/internal/decode"
 	"github.com/hymkor/jegan/internal/pager"
 	"github.com/hymkor/jegan/internal/types"
-	// "github.com/hymkor/jegan/internal/tree2list"
-	// "github.com/hymkor/jegan/internal/unjson"
 )
+
+func expandArgs(args []string) (useStdin bool, names []string) {
+	if len(args) <= 0 {
+		useStdin = true
+		if !isatty.IsTerminal(uintptr(os.Stdin.Fd())) {
+			names = []string{""}
+		}
+		return
+	}
+	for _, arg := range args {
+		if arg == "-" {
+			useStdin = true
+			names = append(names, "")
+			continue
+		}
+		var fnames []string
+		fnames, err := filepath.Glob(arg)
+		if err != nil || len(fnames) <= 0 {
+			names = append(names, arg)
+		} else {
+			names = append(names, fnames...)
+		}
+	}
+	return
+}
+
+func loadEach(names []string, load func(io.Reader, string) error) error {
+	for _, fname := range names {
+		if fname == "" {
+			if err := load(os.Stdin, ""); err != nil {
+				return err
+			}
+			continue
+		}
+		fd, err := os.Open(fname)
+		if err != nil {
+			return err
+		}
+		err1 := load(fd, fname)
+		err2 := fd.Close()
+		if err1 != nil {
+			return err1
+		}
+		if err2 != nil {
+			return err2
+		}
+	}
+	return nil
+}
 
 func (app *Application) keyFuncSave(session *Session) error {
 	return app.writeFile(session)
@@ -30,6 +81,34 @@ func (app *Application) writeFile(session *Session) error {
 	if err != nil {
 		return err
 	}
+
+	io.WriteString(session.TtyOut, "\rCompleting background loading before saving..."+ansi.EraseLine)
+	end0 := animation.Dots.Progress(session.TtyOut)
+
+	sig := make(chan os.Signal, 1)
+	defer close(sig)
+	signal.Notify(sig, os.Interrupt)
+	defer signal.Stop(sig)
+
+	for err == nil && app.fetch != nil {
+		select {
+		case <-sig:
+			end0()
+			return errors.New("Interrupted. Save was canceled.")
+		default:
+			var line types.Line
+			line, err = app.fetch()
+			if err != nil && !errors.Is(err, io.EOF) {
+				end0()
+				return err
+			}
+			if line != nil {
+				app.list.PushBack(line)
+			}
+		}
+	}
+	end0()
+
 	if fname == "" || fname == "-" {
 		session.TtyOut.Write([]byte{' '})
 		end := animation.Dots.Progress(session.TtyOut)
@@ -93,17 +172,13 @@ func (app *Application) keyFuncQuit(session *Session) (pager.EventResult, error)
 	return pager.QuitApp, nil
 }
 
-func (app *Application) Load(r io.Reader, name string) error {
+func (app *Application) load(r io.Reader, name string, store func(types.Line) error) error {
 	br, ok := r.(io.RuneScanner)
 	if !ok {
 		br = bufio.NewReader(r)
 	}
-	L := list.New[types.Line]()
-	defer app.Store(L)
 	for {
-		err := decode.Unmarshal(br, func(line types.Line) {
-			L.PushBack(line)
-		})
+		err := decode.Unmarshal(br, store)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if err == io.EOF {
@@ -116,4 +191,14 @@ func (app *Application) Load(r io.Reader, name string) error {
 			return fmt.Errorf("%s:%w", name, err)
 		}
 	}
+}
+
+func (app *Application) Load(r io.Reader, name string) error {
+	if app.list == nil {
+		app.list = list.New[types.Line]()
+	}
+	return app.load(r, name, func(line types.Line) error {
+		app.list.PushBack(line)
+		return nil
+	})
 }

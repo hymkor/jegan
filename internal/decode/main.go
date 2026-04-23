@@ -17,14 +17,13 @@ type List = list.List[types.Line]
 
 type Element = list.Element[types.Line]
 
-func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store func(types.Line)) error {
+func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store func(types.Line) error) error {
 	space0, first, err := source.Read1st(br) // check '}'
 	if err != nil {
 		return err
 	}
 	if first == '}' {
-		store(types.NewItem(types.ObjEnd, nest, false, space0))
-		return nil
+		return store(types.NewItem(types.ObjEnd, nest, false, space0))
 	}
 	br.UnreadRune()
 	for {
@@ -49,7 +48,7 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 			Parent: basePath,
 			Text:   key.String(),
 		}
-		err = readItem(br, jp, nest+1, func(line types.Line) {
+		err = readItem(br, jp, nest+1, func(line types.Line) error {
 			if last == nil {
 				path := line.Path()
 				last = &types.Pair{
@@ -60,26 +59,36 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 				}
 				last.SetPath(path)
 			} else {
-				store(last)
+				if err := store(last); err != nil {
+					return err
+				}
 				last = line
 			}
+			return nil
 		})
 		if err != nil {
-			store(last)
+			if _err := store(last); _err != nil {
+				return _err
+			}
 			return err
 		}
 		space3, ch, err := source.Read1st(br)
 		if err != nil {
-			store(last)
+			if _err := store(last); _err != nil {
+				return _err
+			}
 			return err
 		}
 		if ch == '}' {
-			store(last)
-			store(types.NewItem(types.ObjEnd, nest, false, space3))
-			return nil
+			if err := store(last); err != nil {
+				return err
+			}
+			return store(types.NewItem(types.ObjEnd, nest, false, space3))
 		}
 		if ch != ',' {
-			store(last)
+			if err := store(last); err != nil {
+				return err
+			}
 			return &source.UnexpectedTokenError2{
 				Expect1: '}',
 				Expect2: ',',
@@ -87,19 +96,20 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 		}
 		last.SetSpaceCommaOrClose(space3)
 		last.SetComma(true)
-		store(last)
+		if err := store(last); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func(types.Line)) error {
+func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func(types.Line) error) error {
 	spaces, first, err := source.Read1st(br) // check ']'
 	if err != nil {
 		return err
 	}
 	if first == ']' {
-		store(types.NewItem(types.ArrayEnd, nest, false, spaces))
-		return nil
+		return store(types.NewItem(types.ArrayEnd, nest, false, spaces))
 	}
 	br.UnreadRune()
 	count := 0
@@ -110,32 +120,42 @@ func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func
 			Index:  count,
 		}
 		count++
-		err := readItem(br, jp, nest+1, func(line types.Line) {
+		err := readItem(br, jp, nest+1, func(line types.Line) error {
 			if len(spaces) > 0 {
 				line.SetLeadingSpace(append(spaces, line.LeadingSpace()...))
 				spaces = nil
 			}
 			if last != nil {
-				store(last)
+				if err := store(last); err != nil {
+					return err
+				}
 			}
 			last = line
+			return nil
 		})
 		if err != nil {
-			store(last)
+			if _err := store(last); _err != nil {
+				return _err
+			}
 			return err
 		}
 		space2, ch, err := source.Read1st(br)
 		if err != nil {
-			store(last)
+			if _err := store(last); _err != nil {
+				return _err
+			}
 			return err
 		}
 		if ch == ']' {
-			store(last)
-			store(types.NewItem(types.ArrayEnd, nest, false, space2))
-			return nil
+			if _err := store(last); _err != nil {
+				return _err
+			}
+			return store(types.NewItem(types.ArrayEnd, nest, false, space2))
 		}
 		if ch != ',' {
-			store(last)
+			if err := store(last); err != nil {
+				return err
+			}
 			return &source.UnexpectedTokenError2{
 				Expect1: ']',
 				Expect2: ',',
@@ -144,15 +164,17 @@ func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func
 		}
 		last.SetComma(true)
 		last.SetSpaceCommaOrClose(space2)
-		store(last)
+		if err := store(last); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func(types.Line)) error {
-	store := func(line types.Line) {
+func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func(types.Line) error) error {
+	store := func(line types.Line) error {
 		line.SetPath(basePath)
-		store0(line)
+		return store0(line)
 	}
 	spaces, ch, err := source.Read1st(br)
 	if err != nil {
@@ -160,24 +182,21 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 			return err
 		}
 		data := source.NewRawBytes(spaces)
-		store(types.NewItem(data, nest, false, nil))
-		return nil
+		return store(types.NewItem(data, nest, false, nil))
 	}
 	if ch == '"' {
 		s, err := source.ReadString(br)
 		if err != nil {
 			return err
 		}
-		store(types.NewItem(s, nest, false, spaces))
-		return nil
+		return store(types.NewItem(s, nest, false, spaces))
 	}
 	if strings.ContainsRune("0123456789-+.", ch) {
 		n, err := source.ReadNumber(br, ch)
 		if err != nil {
 			return err
 		}
-		store(types.NewItem(n, nest, false, spaces))
-		return nil
+		return store(types.NewItem(n, nest, false, spaces))
 	}
 	if ch == 'n' {
 		err := source.ExpectToken(br, ch, "null")
@@ -185,8 +204,7 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 			return err
 		}
 		data := source.NewLiteral(nil, []byte("null"))
-		store(types.NewItem(data, nest, false, spaces))
-		return nil
+		return store(types.NewItem(data, nest, false, spaces))
 	}
 	if ch == 'f' {
 		err := source.ExpectToken(br, ch, "false")
@@ -194,8 +212,7 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 			return err
 		}
 		data := source.NewLiteral(false, []byte("false"))
-		store(types.NewItem(data, nest, false, spaces))
-		return nil
+		return store(types.NewItem(data, nest, false, spaces))
 	}
 	if ch == 't' {
 		data := source.NewLiteral(true, []byte("true"))
@@ -203,15 +220,18 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 		if err != nil {
 			return err
 		}
-		store(types.NewItem(data, nest, false, spaces))
-		return nil
+		return store(types.NewItem(data, nest, false, spaces))
 	}
 	if ch == '{' {
-		store(types.NewItem(types.ObjStart, nest, false, spaces))
+		if err := store(types.NewItem(types.ObjStart, nest, false, spaces)); err != nil {
+			return err
+		}
 		return readObject(br, basePath, nest, store0)
 	}
 	if ch == '[' {
-		store(types.NewItem(types.ArrayStart, nest, false, spaces))
+		if err := store(types.NewItem(types.ArrayStart, nest, false, spaces)); err != nil {
+			return err
+		}
 		return readArray(br, basePath, nest, store0)
 	}
 	var b bytes.Buffer
@@ -222,7 +242,9 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 		if err != nil && !errors.Is(err, io.EOF) {
 			bin := b.Bytes()
 			rb := source.NewRawBytes(bin)
-			store(types.NewItem(rb, nest, false, nil))
+			if err := store(types.NewItem(rb, nest, false, nil)); err != nil {
+				return err
+			}
 			return err
 		}
 		if siz > 0 {
@@ -232,21 +254,25 @@ func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func
 			bin := b.Bytes()
 			dbg.Println("RawBytes(2):", bin)
 			rb := source.NewRawBytes(bin)
-			store(types.NewItem(rb, nest, false, nil))
+			if _err := store(types.NewItem(rb, nest, false, nil)); _err != nil {
+				return _err
+			}
 			return err
 		}
 		if ch == '=' {
 			bin := b.Bytes()
 			dbg.Println("JavaScript equation ?:", bin)
 			rb := source.NewRawBytes(bin)
-			store(types.NewItem(rb, nest, false, nil))
+			if _err := store(types.NewItem(rb, nest, false, nil)); _err != nil {
+				return _err
+			}
 			return nil
 		}
 	}
 	return nil
 }
 
-func Unmarshal(r io.RuneScanner, store func(types.Line)) error {
+func Unmarshal(r io.RuneScanner, store func(types.Line) error) error {
 	sc := source.NewScanner(r)
 	err := readItem(sc, nil, 0, store)
 	if err != nil {
