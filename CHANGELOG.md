@@ -15,6 +15,7 @@ Changelog
   - Enable history and prediction
   - Preload common JSON literals ( `null`, `false`, `true`, `""`, `{}`, `[]` )
 - Add background JSON loading support (improves startup time for large files) (#79)
+- Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)
 
 v0.4.0
 ------
