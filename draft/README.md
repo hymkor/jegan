@@ -35,10 +35,8 @@ Jegan starts immediately, even when loading large JSON files.
 Instead of blocking on file loading, data is processed in the background and becomes available progressively.
 
 * The UI appears instantly
-* Even for large files (tens of megabytes), startup is no longer delayed
 * You can start navigating before the entire file is loaded
-
-(In practice, a ~39MB archive that previously took about a minute to load now becomes usable immediately.)
+* No more waiting for the full file to load before interacting
 
 ### &#x1F504; Undo support for safe editing
 
