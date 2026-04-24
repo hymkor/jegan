@@ -1142,6 +1142,30 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( <a href="CHANGELOG.html">English</a> / Japanese )</p>
+<h2 id="v050">v0.5.0</h2>
+<p>Apr 24, 2026</p>
+<ul>
+<li>キーと値双方を見るよう検索を改善した。また英大文字・小文字を区別しないようにした (#68)</li>
+<li>置換(<code>r</code>, <code>R</code>) に対する UNDO をサポート (#69)</li>
+<li>削除(<code>d</code>) に対する UNDO をサポート (#69)
+<ul>
+<li>削除項目は即削除するかわりに <code>&lt;DEL&gt;</code> というマーカー表示になる</li>
+<li><code>u</code> により削除項目は復元される</li>
+<li><code>&lt;DEL&gt;</code> された項目は保存時に省かれることにより、ディスク上で削除が確定する</li>
+</ul>
+</li>
+<li>空でないオブジェクト・配列も削除できるようになった (#70)</li>
+<li><code>z</code> キーでオブジェクト・配列の折りたたみ／展開に対応 (#71)</li>
+<li>readline 入力を改善 (#74)
+<ul>
+<li>&quot;w&quot; コマンドでのファイル名補完</li>
+<li>ヒストリと予測入力を有効化</li>
+<li>共通の JSON リテラルを最初から呼び出せるようにした ( <code>null</code>, <code>false</code>, <code>true</code>, <code>&quot;&quot;</code>, <code>{}</code>, <code>[]</code> )</li>
+</ul>
+</li>
+<li>JSONのバックグランド読み込みをサポートし、大きなファイルの起動時間を改善した (#79)</li>
+<li><code>f</code>,<code>t</code>,<code>n</code> で始まる非JSON 識別子を読み取る時に、EOF エラーになる不具合を修正 (#84)</li>
+</ul>
 <h2 id="v040">v0.4.0</h2>
 <p>Apr 17, 2026</p>
 <ul>
@@ -1272,6 +1296,7 @@ a.permalink:hover{
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v050">v0.5.0</a></li>
 <li><a href="#v040">v0.4.0</a></li>
 <li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>
