@@ -1142,6 +1142,30 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( English / <a href="CHANGELOG_ja.html">Japanese</a> )</p>
+<h2 id="v050">v0.5.0</h2>
+<p>Apr 24, 2026</p>
+<ul>
+<li>Improve search: now matches both keys and values, case-insensitive (#68)</li>
+<li>Undo support for replace operations (<code>r</code>, <code>R</code>) (#69)</li>
+<li>Undo support for deletions (#69)
+<ul>
+<li>Deleted elements are now marked as <code>&lt;DEL&gt;</code> instead of being removed immediately</li>
+<li>Press <code>u</code> to restore deleted elements</li>
+<li><code>&lt;DEL&gt;</code> entries are omitted when saving, so deletions are finalized on disk</li>
+</ul>
+</li>
+<li>Allow deleting non-empty containers by collapsing them into <code>&lt;DEL&gt;</code> markers (#70)</li>
+<li>Support collapsing and expanding objects and arrays with <code>z</code> (#71)</li>
+<li>Improve readline input: (#74)
+<ul>
+<li>Add filename completion for &quot;w&quot; command</li>
+<li>Enable history and prediction</li>
+<li>Preload common JSON literals ( <code>null</code>, <code>false</code>, <code>true</code>, <code>&quot;&quot;</code>, <code>{}</code>, <code>[]</code> )</li>
+</ul>
+</li>
+<li>Add background JSON loading support (improves startup time for large files) (#79)</li>
+<li>Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)</li>
+</ul>
 <h2 id="v040">v0.4.0</h2>
 <p>Apr 17, 2026</p>
 <ul>
@@ -1282,6 +1306,7 @@ so users do not need to type them explicitly.</p>
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v050">v0.5.0</a></li>
 <li><a href="#v040">v0.4.0</a></li>
 <li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>

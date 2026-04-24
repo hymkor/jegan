@@ -1150,36 +1150,58 @@ a.permalink:hover{
 <p>( English / <a href="index_ja.html">Japanese</a> )</p>
 <p><img src="./demo.gif" alt="" /></p>
 <h2 id="features">Features</h2>
-<h3 id="%F0%9F%9B%A1-preserve-original-json-formatting">🛡 Preserve original JSON formatting</h3>
-<p>Jegan keeps your JSON exactly as it was loaded.
-Only the parts you edit are changed.</p>
+<h3 id="x1f6e1xfe0f-preserve-original-json-with-minimal-changes">🛡️ Preserve original JSON with minimal changes</h3>
+<p>Jegan keeps your JSON as close to the original as possible.
+Only the parts you edit are modified.</p>
 <ul>
 <li>Key order is preserved</li>
 <li>Whitespace, indentation, and line endings are preserved</li>
 <li>String representations (e.g. <code>\uXXXX</code> vs raw UTF-8) are preserved</li>
-<li>Even non-JSON parts (e.g. JavaScript wrappers) are kept intact</li>
-</ul>
-<h3 id="%E2%9C%8F%EF%B8%8F-minimal-and-safe-edits">✏️ Minimal and safe edits</h3>
-<ul>
+<li>Even non-JSON parts (e.g. JavaScript wrappers) are kept intact<br />
+ </li>
 <li>Only modified fields are updated</li>
 <li>Changes are highlighted in bold</li>
 <li>Original style is reused when inserting new values</li>
 <li>Backup file is created on save</li>
 </ul>
-<h3 id="%F0%9F%93%A6-supports-real-world-json-formats">📦 Supports real-world JSON formats</h3>
+<h3 id="x26a1-instant-startup-even-with-large-json-files">⚡ Instant startup even with large JSON files</h3>
+<p>Jegan starts immediately, even when loading large JSON files.</p>
+<p>Instead of blocking on file loading, data is processed in the background and becomes available progressively.</p>
+<ul>
+<li>The UI appears instantly</li>
+<li>You can start navigating before the entire file is loaded</li>
+<li>No more waiting for the full file to load before interacting</li>
+</ul>
+<h3 id="x1f504-undo-support-for-safe-editing">🔄 Undo support for safe editing</h3>
+<ul>
+<li>Press <code>u</code> to undo recent changes</li>
+<li>Replace operations (<code>r</code>, <code>R</code>, etc.) can be undone</li>
+<li>Deletions can also be undone</li>
+</ul>
+<p>Deleted entries are not removed immediately but marked as <code>&lt;DEL&gt;</code>:</p>
+<ul>
+<li><code>&lt;DEL&gt;</code> entries can be restored with <code>u</code></li>
+<li><code>&lt;DEL&gt;</code> entries are omitted when saving, so deletions are finalized on disk</li>
+</ul>
+<h3 id="x1f9e9-collapsible-view-for-containers">🧩 Collapsible view for containers</h3>
+<ul>
+<li>Press <code>z</code> to toggle collapse/expand for objects and arrays</li>
+<li>Collapsed elements are displayed as a single line</li>
+</ul>
+<h3 id="x1f4e6-supports-real-world-json-formats">📦 Supports real-world JSON formats</h3>
 <ul>
 <li>JSON</li>
 <li>JSON Lines (JSONL)</li>
 <li>JavaScript-style assignments (e.g. X/Twitter archives)</li>
 </ul>
-<h3 id="%F0%9F%A7%AD-structured-navigation-in-terminal">🧭 Structured navigation in terminal</h3>
+<h3 id="x1f9ed-structured-navigation-in-terminal">🧭 Structured navigation in terminal</h3>
 <ul>
 <li>Navigate items with <code>j</code> / <code>k</code></li>
 <li>Horizontal scrolling for long lines</li>
 <li>JSON path and current value shown in status line</li>
 <li>Search with <code>/</code>, <code>?</code>, <code>n</code>, <code>N</code></li>
 </ul>
-<h3 id="%F0%9F%94%8C-cli-friendly">🔌 CLI-friendly</h3>
+<h3 id="x1f50c-cli-friendly">🔌 CLI-friendly</h3>
 <ul>
 <li>Read from file or stdin</li>
 <li>Write to file or stdout</li>
@@ -1187,7 +1209,7 @@ Only the parts you edit are changed.</p>
 </ul>
 <pre><code>jegan &lt; input.json &gt; output.json
 </code></pre>
-<h3 id="%E2%8C%A8%EF%B8%8F-efficient-editing">⌨️ Efficient editing</h3>
+<h3 id="x2328xfe0f-efficient-editing">⌨️ Efficient editing</h3>
 <ul>
 <li>vi-like navigation</li>
 <li>Emacs-style input for editing values</li>
@@ -1237,10 +1259,11 @@ scoop install jegan
 <li><code>b</code>, <code>PageUp</code>       : Move to the previous page of items</li>
 <li><code>&lt;</code> : Move to the first item</li>
 <li><code>&gt;</code> : Move to the last item</li>
-<li><code>/</code> : Search forward (values only)</li>
-<li><code>?</code> : Search backward (values only)</li>
+<li><code>/</code> : Search forward</li>
+<li><code>?</code> : Search backward</li>
 <li><code>n</code> : Repeat search in the same direction</li>
 <li><code>N</code> : Repeat search in the opposite direction</li>
+<li><code>z</code> : Toggle collapse/expand</li>
 <li><code>o</code> : Insert a new item below the cursor.
 <ul>
 <li>For object items, enter both key and value.</li>
@@ -1266,6 +1289,7 @@ scoop install jegan
 <li><code>R</code> : Modify the item at the cursor (explicitly specify the value type)</li>
 <li><code>d</code> : Delete the item at the cursor<br />
 Non-empty objects and arrays cannot be deleted</li>
+<li><code>u</code> : UNDO</li>
 <li><code>Ctrl-C</code>: Copy the current path and value to the clipboard</li>
 <li><code>w</code> : Save to file</li>
 <li><code>q</code> : Quit</li>
@@ -1290,12 +1314,14 @@ Non-empty objects and arrays cannot be deleted</li>
 <ul>
 <li><a href="#features">Features</a>
 <ul>
-<li><a href="#preserve-original-json-formatting">🛡 Preserve original JSON formatting</a></li>
-<li><a href="#minimal-and-safe-edits">✏️ Minimal and safe edits</a></li>
-<li><a href="#supports-real-world-json-formats">📦 Supports real-world JSON formats</a></li>
-<li><a href="#structured-navigation-in-terminal">🧭 Structured navigation in terminal</a></li>
-<li><a href="#cli-friendly">🔌 CLI-friendly</a></li>
-<li><a href="#efficient-editing">⌨️ Efficient editing</a></li>
+<li><a href="#x1f6e1xfe0f-preserve-original-json-with-minimal-changes">🛡️ Preserve original JSON with minimal changes</a></li>
+<li><a href="#x26a1-instant-startup-even-with-large-json-files">⚡ Instant startup even with large JSON files</a></li>
+<li><a href="#x1f504-undo-support-for-safe-editing">🔄 Undo support for safe editing</a></li>
+<li><a href="#x1f9e9-collapsible-view-for-containers">🧩 Collapsible view for containers</a></li>
+<li><a href="#x1f4e6-supports-real-world-json-formats">📦 Supports real-world JSON formats</a></li>
+<li><a href="#x1f9ed-structured-navigation-in-terminal">🧭 Structured navigation in terminal</a></li>
+<li><a href="#x1f50c-cli-friendly">🔌 CLI-friendly</a></li>
+<li><a href="#x2328xfe0f-efficient-editing">⌨️ Efficient editing</a></li>
 </ul>
 </li>
 <li><a href="#install">Install</a>

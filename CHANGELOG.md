@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.5.0
+------
+Apr 24, 2026
+
 - Improve search: now matches both keys and values, case-insensitive (#68)
 - Undo support for replace operations (`r`, `R`) (#69)
 - Undo support for deletions (#69)

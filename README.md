@@ -13,22 +13,46 @@ Jegan - A terminal JSON editor
 Features
 --------
 
-### &#x1F6E1; Preserve original JSON formatting
+### &#x1F6E1;&#xFE0F; Preserve original JSON with minimal changes
 
-Jegan keeps your JSON exactly as it was loaded.
-Only the parts you edit are changed.
+Jegan keeps your JSON as close to the original as possible.
+Only the parts you edit are modified.
 
 * Key order is preserved
 * Whitespace, indentation, and line endings are preserved
 * String representations (e.g. `\uXXXX` vs raw UTF-8) are preserved
-* Even non-JSON parts (e.g. JavaScript wrappers) are kept intact
-
-### &#x270F;&#xFE0F; Minimal and safe edits
-
+* Even non-JSON parts (e.g. JavaScript wrappers) are kept intact  
+&nbsp;
 * Only modified fields are updated
 * Changes are highlighted in bold
 * Original style is reused when inserting new values
 * Backup file is created on save
+
+### &#x26A1; Instant startup even with large JSON files
+
+Jegan starts immediately, even when loading large JSON files.
+
+Instead of blocking on file loading, data is processed in the background and becomes available progressively.
+
+* The UI appears instantly
+* You can start navigating before the entire file is loaded
+* No more waiting for the full file to load before interacting
+
+### &#x1F504; Undo support for safe editing
+
+* Press `u` to undo recent changes
+* Replace operations (`r`, `R`, etc.) can be undone
+* Deletions can also be undone
+
+Deleted entries are not removed immediately but marked as `<DEL>`:
+
+* `<DEL>` entries can be restored with `u`
+* `<DEL>` entries are omitted when saving, so deletions are finalized on disk
+
+### &#x1F9E9; Collapsible view for containers
+
+* Press `z` to toggle collapse/expand for objects and arrays
+* Collapsed elements are displayed as a single line
 
 ### &#x1F4E6; Supports real-world JSON formats
 
@@ -132,10 +156,11 @@ Key bindings
 - `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
 - `>` : Move to the last item
-- `/` : Search forward (values only)
-- `?` : Search backward (values only)
+- `/` : Search forward
+- `?` : Search backward
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
+- `z` : Toggle collapse/expand
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
   - For array items, enter only the value.
@@ -155,6 +180,7 @@ Key bindings
 - `R` : Modify the item at the cursor (explicitly specify the value type)
 - `d` : Delete the item at the cursor  
   Non-empty objects and arrays cannot be deleted
+- `u` : UNDO
 - `Ctrl-C`: Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
