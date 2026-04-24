@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"sync"
-	"time"
 )
 
 var (
@@ -22,15 +20,21 @@ type keyResponse struct {
 	err error
 }
 
-type dataResponse[T any] struct {
+type DataStream[T any] struct {
 	val T
 	err error
+}
+
+func (d DataStream[T]) Val() T     { return d.val }
+func (d DataStream[T]) Err() error { return d.err }
+func NewDataStream[T any](v T, e error) DataStream[T] {
+	return DataStream[T]{val: v, err: e}
 }
 
 type NonBlockPush[T any] struct {
 	chKeyReq  chan struct{}
 	chKeyRes  chan keyResponse
-	chDataRes chan dataResponse[T]
+	chDataRes chan DataStream[T]
 	cancel    context.CancelFunc
 	wg        sync.WaitGroup
 	GetOr     func(work func(val T, err error) bool) (string, error)
@@ -42,7 +46,7 @@ func New[T any](keyGetter func() (string, error)) *NonBlockPush[T] {
 	w := &NonBlockPush[T]{
 		chKeyReq:  make(chan struct{}),
 		chKeyRes:  make(chan keyResponse),
-		chDataRes: make(chan dataResponse[T]),
+		chDataRes: make(chan DataStream[T]),
 		cancel:    cancel,
 	}
 	w.wg.Add(1)
@@ -66,19 +70,6 @@ func New[T any](keyGetter func() (string, error)) *NonBlockPush[T] {
 	}()
 	w.GetOr = w.getOr2
 	return w
-}
-
-func (w *NonBlockPush[T]) PushData(ctx context.Context, data T, err error) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case w.chDataRes <- dataResponse[T]{val: data, err: err}:
-		return nil
-	}
-}
-
-func (w *NonBlockPush[T]) CloseData() {
-	close(w.chDataRes)
 }
 
 func (w *NonBlockPush[T]) getOr1(work func(val T, err error) bool) (string, error) {
@@ -112,39 +103,8 @@ func (w *NonBlockPush[T]) getOr2(work func(val T, err error) bool) (string, erro
 	}
 }
 
-func (w *NonBlockPush[T]) Fetch() (T, error) {
-	res, ok := <-w.chDataRes
-	if !ok {
-		w.GetOr = w.getOr1
-		var zero T
-		return zero, ErrNoDataResponse
-	}
-	if errors.Is(res.err, io.EOF) {
-		w.GetOr = w.getOr1
-	}
-	return res.val, res.err
-}
-
-// TryFetch reads a single data item with a timeout.
-// This method is intended for use cases where only data retrieval is needed
-// and no key input is involved.
-// If the timeout expires, it returns os.ErrDeadlineExceeded.
-// If the data input channel is closed, it returns io.EOF.
-func (w *NonBlockPush[T]) TryFetch(timeout time.Duration) (T, error) {
-	var zero T
-	select {
-	case res, ok := <-w.chDataRes:
-		if !ok {
-			w.GetOr = w.getOr1
-			return zero, ErrNoDataResponse
-		}
-		if errors.Is(res.err, io.EOF) {
-			w.GetOr = w.getOr1
-		}
-		return res.val, res.err
-	case <-time.After(timeout):
-		return zero, os.ErrDeadlineExceeded
-	}
+func (w *NonBlockPush[T]) DataStream() chan DataStream[T] {
+	return w.chDataRes
 }
 
 func (w *NonBlockPush[T]) Close() {

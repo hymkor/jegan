@@ -46,8 +46,7 @@ type Application struct {
 	search func() error
 	revert func() error
 
-	fetch    func() (types.Line, error)
-	tryfetch func(time.Duration) (types.Line, error)
+	dataStream chan nonblockpush.DataStream[types.Line]
 }
 
 func (app *Application) Store(v *List) {
@@ -242,34 +241,42 @@ func (app *Application) EventLoop(ttyIn ttyadapter.Tty, ttyOut io.Writer) error 
 		app.list = list.New[types.Line]()
 	}
 
-	if app.fetch != nil {
-		line, err := app.fetch()
-		if err != nil {
+	if app.dataStream != nil {
+		d, ok := <-app.dataStream
+		if !ok {
+			return io.EOF
+		}
+		if err := d.Err(); err != nil {
 			return err
 		}
-		app.list.PushBack(line)
-	}
-	if app.tryfetch != nil {
+		app.list.PushBack(d.Val())
+
 		h, err := getHeight(ttyIn)
 		if err != nil {
 			return err
 		}
-
+	loop:
 		for i := 0; i < h; i++ {
-			line, err := app.tryfetch(time.Second / 10)
-			if errors.Is(err, nonblockpush.ErrNoKeyResponse) {
-				break
-			}
-			if errors.Is(err, io.EOF) {
-				if line != nil {
-					app.list.PushBack(line)
+			select {
+			case <-time.After(time.Second / 10):
+				break loop
+			case d, ok := <-app.dataStream:
+				if !ok {
+					break loop
 				}
-				break
+				err := d.Err()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						line := d.Val()
+						if line != nil {
+							app.list.PushBack(line)
+						}
+						break loop
+					}
+					return err
+				}
+				app.list.PushBack(d.Val())
 			}
-			if err != nil {
-				return err
-			}
-			app.list.PushBack(line)
 		}
 	}
 
