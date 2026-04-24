@@ -20,7 +20,7 @@ endif
 
 NAME:=$(notdir $(CURDIR))
 VERSION:=$(shell git describe --tags 2>$(NUL) || echo v0.0.0)
-GOOPT:=-ldflags "-s -w -X main.version=$(VERSION)"
+GOOPT:=-ldflags "-s -w -X github.com/hymkor/jegan.version=$(VERSION)"
 EXE:=$(shell $(GO) env GOEXE)
 
 build:
