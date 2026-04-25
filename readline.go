@@ -14,9 +14,9 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-ny/simplehistory"
 	"github.com/nyaosorg/go-readline-skk"
+	"github.com/nyaosorg/go-ttyadapter/auto"
 
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/auto"
 )
 
 var errCanceled = errors.New("Canceled")
@@ -79,7 +79,7 @@ func (app *Application) readLineString(session *Session, prompt, defaults string
 
 func (app *Application) readLineOpt(session *Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
 	if ap, ok := app.ttyIn.(*auto.Pilot); ok {
-		return ap.Next()
+		return ap.GetKey()
 	}
 	skkInit()
 	editor := &readline.Editor{

@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/mattn/go-colorable"
 
 	"github.com/nyaosorg/go-ttyadapter"
+	"github.com/nyaosorg/go-ttyadapter/auto"
 	"github.com/nyaosorg/go-ttyadapter/tty8pe"
+	"github.com/nyaosorg/go-ttyadapter/ttyhook"
 
 	"github.com/hymkor/go-generics-list"
 
-	"github.com/hymkor/jegan/internal/auto"
 	"github.com/hymkor/jegan/internal/nonblockpush"
-	"github.com/hymkor/jegan/internal/ttywrap"
 	"github.com/hymkor/jegan/internal/types"
 )
 
@@ -30,7 +31,7 @@ func (c *Config) Run(args []string) error {
 
 	var ttyIn ttyadapter.Tty
 	if c.Auto != "" {
-		ttyIn = auto.New(c.Auto)
+		ttyIn = &auto.Pilot{Text: strings.Split(c.Auto, "|")}
 	} else {
 		ttyIn = &tty8pe.Tty{}
 	}
@@ -75,7 +76,7 @@ func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
 		close(app.dataStream)
 	}()
 
-	newTtyIn := ttywrap.New(ttyIn, func() (string, error) {
+	newTtyIn := ttyhook.New(ttyIn, func(_ func() (string, error)) (string, error) {
 		return keyWorker.GetOr(func(data types.Line, err error) bool {
 			if err != nil && !errors.Is(err, io.EOF) {
 				return false
