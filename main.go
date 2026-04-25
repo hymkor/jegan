@@ -14,7 +14,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/auto"
 	"github.com/hymkor/jegan/internal/nonblockpush"
-	"github.com/hymkor/jegan/internal/ttywrap"
+	"github.com/hymkor/jegan/internal/ttyhook"
 	"github.com/hymkor/jegan/internal/types"
 )
 
@@ -75,7 +75,7 @@ func Start(ttyIn ttyadapter.Tty, names []string, ttyOut io.Writer) error {
 		close(app.dataStream)
 	}()
 
-	newTtyIn := ttywrap.New(ttyIn, func() (string, error) {
+	newTtyIn := ttyhook.New(ttyIn, func(_ func() (string, error)) (string, error) {
 		return keyWorker.GetOr(func(data types.Line, err error) bool {
 			if err != nil && !errors.Is(err, io.EOF) {
 				return false
