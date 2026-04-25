@@ -2,7 +2,6 @@ package jegan
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,7 +10,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 
-	"github.com/hymkor/jegan/internal/auto"
+	"github.com/nyaosorg/go-ttyadapter/auto"
 )
 
 func test(t *testing.T, source, operation, expect string) {
@@ -23,7 +22,11 @@ func test(t *testing.T, source, operation, expect string) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		t.Fatal(err.Error())
 	}
-	ttyIn := auto.New(fmt.Sprintf("%s|w|%s|q", operation, resPath))
+	ttyIn := &auto.Pilot{Text: append(
+		strings.Split(operation, "|"),
+		"w",
+		resPath,
+		"q")}
 	ttyOut := io.Discard
 	if testing.Verbose() {
 		ttyOut = colorable.NewColorableStderr()
