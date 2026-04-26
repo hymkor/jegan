@@ -6,7 +6,7 @@ import (
 
 	"github.com/hymkor/go-generics-list"
 
-	"github.com/hymkor/jegan/internal/pager"
+	"github.com/hymkor/nemo/pager"
 )
 
 type Session = pager.Session[Line]

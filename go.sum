@@ -6,12 +6,14 @@ github.com/hymkor/go-generics-list v0.2.3 h1:Xtiq4d8kP02W1UPjPbUYpxz2cr6lwabII7Z
 github.com/hymkor/go-generics-list v0.2.3/go.mod h1:n+lOMwdcZO6pf7O49/YZGoqIhZI6MJve3cL5nQ8rD7U=
 github.com/hymkor/go-safewrite v0.4.0 h1:ppq0/DPwYo+ETRvIeaNMfRBKeFL0U3g3pJAbJNiwm1E=
 github.com/hymkor/go-safewrite v0.4.0/go.mod h1:UiLRe1/Al1kAkJJK65+xAFMhiacBwK6oEVHsu9+n4fo=
+github.com/hymkor/nemo v0.1.0 h1:HaG5tDiiY8vczLG2nGRdxWbmxB3glL1i4KomOc8yB0Q=
+github.com/hymkor/nemo v0.1.0/go.mod h1:SkZSRm4VAgkjcMQ+y3uf5c1NaXyeYIcNFPz9tiJjPoE=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/mattn/go-runewidth v0.0.19 h1:v++JhqYnZuu5jSKrk9RbgF5v4CGUjqRfBm05byFGLdw=
-github.com/mattn/go-runewidth v0.0.19/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
+github.com/mattn/go-runewidth v0.0.23 h1:7ykA0T0jkPpzSvMS5i9uoNn2Xy3R383f9HDx3RybWcw=
+github.com/mattn/go-runewidth v0.0.23/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
 github.com/mattn/go-tty v0.0.7 h1:KJ486B6qI8+wBO7kQxYgmmEFDaFEE96JMBQ7h400N8Q=
 github.com/mattn/go-tty v0.0.7/go.mod h1:f2i5ZOvXBU/tCABmLmOfzLz9azMo5wdAaElRNnJKr+k=
 github.com/nyaosorg/go-box/v3 v3.0.0 h1:W5qfScEkKBoD68gbP/lwfWlvcTRB0rwXkhL+9iC62xI=
