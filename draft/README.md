@@ -161,6 +161,7 @@ Key bindings
 - `?` : Search backward
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
+- '@' : Jump to the item specified by a JSON path
 - `z` : Toggle collapse/expand
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
