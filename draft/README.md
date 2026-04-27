@@ -186,6 +186,31 @@ Key bindings
 - `w` : Save to file
 - `q` : Quit
 
+Non-interactive mode (-auto)
+----------------------------
+
+The `-auto` option allows scripted, non-interactive execution by simulating key inputs.
+
+Inputs are provided as a single string, where each step is separated by `|`.
+Each step corresponds to either a key press or a line input.
+
+Example:
+
+```
+jegan -auto "@|.architecture.\"32bit\".url|r|1|w|-|q|y" - < jegan.json > new-jegan.json
+```
+
+This performs the following steps:
+
+1. `@` : jump to a JSON path
+2. `.architecture."32bit".url` : input the path
+3. `r` : modify the item
+4. `1` : new value
+5. `w` : save
+6. `-` : write to standard output
+7. `q` : quit
+8. `y` : confirm
+
 Changelog
 ---------
 
