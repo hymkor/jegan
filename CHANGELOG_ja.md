@@ -3,6 +3,7 @@ Changelog
 ( [English](CHANGELOG.md) / Japanese )
 
 - `F1` によるヘルプを追加 (#89)
+- 指定した JSON Path へ移動するコマンド `@` を追加 (#90)
 
 v0.5.0
 ------

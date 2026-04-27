@@ -2,7 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
-- Add F1 key to open the help screen (#89)
+- Add `F1` key to open the help screen (#89)
+- Add JSON path navigation using '@' to jump to a specific item (#90)
 
 v0.5.0
 ------
