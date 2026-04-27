@@ -27,6 +27,22 @@ func (j *JsonPath) ChildKey(key string) *JsonPath {
 	}
 }
 
+func (j *JsonPath) Equals(other *JsonPath) bool {
+	if j == nil {
+		return other == nil
+	}
+	if other == nil {
+		return false
+	}
+	if j.Text != other.Text {
+		return false
+	}
+	if j.Text == "" && j.Index != other.Index {
+		return false
+	}
+	return j.Parent.Equals(other.Parent)
+}
+
 var rxSymbol = regexp.MustCompile("^[_A-Za-z][_A-Za-z0-9]*$")
 
 func (j *JsonPath) Dump(w io.Writer) {
