@@ -6,7 +6,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/hymkor/go-generics-list v0.2.3
 	github.com/hymkor/go-safewrite v0.4.0
-	github.com/hymkor/nemo v0.2.0
+	github.com/hymkor/nemo v0.3.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.22
 	github.com/nyaosorg/go-inline-animation v0.3.1

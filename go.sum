@@ -6,8 +6,8 @@ github.com/hymkor/go-generics-list v0.2.3 h1:Xtiq4d8kP02W1UPjPbUYpxz2cr6lwabII7Z
 github.com/hymkor/go-generics-list v0.2.3/go.mod h1:n+lOMwdcZO6pf7O49/YZGoqIhZI6MJve3cL5nQ8rD7U=
 github.com/hymkor/go-safewrite v0.4.0 h1:ppq0/DPwYo+ETRvIeaNMfRBKeFL0U3g3pJAbJNiwm1E=
 github.com/hymkor/go-safewrite v0.4.0/go.mod h1:UiLRe1/Al1kAkJJK65+xAFMhiacBwK6oEVHsu9+n4fo=
-github.com/hymkor/nemo v0.2.0 h1:SVzY2gWkWtyavj59WAHErX6MD14ZXgkVVG0JEz7N7wQ=
-github.com/hymkor/nemo v0.2.0/go.mod h1:c0W/wL6AIqmVqrN3yZPAKVwJl8LLGa6+XSHyql6RhgI=
+github.com/hymkor/nemo v0.3.0 h1:8T3Bqx2PzhajadD8r83ilsgrZT/pYuQS5qO+/+zLu8I=
+github.com/hymkor/nemo v0.3.0/go.mod h1:c0W/wL6AIqmVqrN3yZPAKVwJl8LLGa6+XSHyql6RhgI=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.22 h1:j8l17JJ9i6VGPUFUYoTUKPSgKe/83EYU2zBC7YNKMw4=

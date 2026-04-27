@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Add F1 key to open the help screen (#89)
+
 v0.5.0
 ------
 Apr 24, 2026

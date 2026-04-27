@@ -2,6 +2,8 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+- `F1` によるヘルプを追加 (#89)
+
 v0.5.0
 ------
 Apr 24, 2026
