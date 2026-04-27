@@ -147,11 +147,12 @@ jegan < some.json
 Key bindings
 ------------
 
+- `F1` : Show help screen (press `q` to close)
 - `j`, `↓`, `Ctrl-N` : Move to the next item
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
 - `h`, `←`, `Ctrl-B` : Scroll the view to the left
-- `0`, `^` : reset horizontal scroll (jump to column 0)
+- `0`, `^` : Reset horizontal scroll (jump to column 0)
 - `Space`, `PageDown` : Move to the next page of items
 - `b`, `PageUp`       : Move to the previous page of items
 - `<` : Move to the first item
@@ -167,7 +168,7 @@ Key bindings
   - The key is used as entered (no quotes required).
   - The value is interpreted as follows:
     - `"..."` → string (escape sequences are interpreted)
-    - Input that can be parsed as a number → number
+    - *Input that can be parsed as a number* → number
     - `null` → null
     - `true` / `false` → boolean
     - `{}` → empty object
@@ -178,10 +179,9 @@ Key bindings
   - Duplicate keys in objects are not allowed.
 - `r` : Modify the item at the cursor (same input method as `o`)
 - `R` : Modify the item at the cursor (explicitly specify the value type)
-- `d` : Delete the item at the cursor  
-  Non-empty objects and arrays cannot be deleted
+- `d` : Delete the item at the cursor
 - `u` : UNDO
-- `Ctrl-C`: Copy the current path and value to the clipboard
+- `Ctrl+C` : Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
 
