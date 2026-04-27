@@ -4,6 +4,7 @@ Changelog
 
 - Add `F1` key to open the help screen (#89)
 - Add JSON path navigation using '@' to jump to a specific item (#90)
+- Fix readline handling for `-auto` option in CLI mode (#91)
 
 v0.5.0
 ------
