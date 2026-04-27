@@ -14,7 +14,9 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-ny/simplehistory"
 	"github.com/nyaosorg/go-readline-skk"
+	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/auto"
+	"github.com/nyaosorg/go-ttyadapter/ttyhook"
 
 	"github.com/hymkor/jegan/internal/ansi"
 )
@@ -78,7 +80,15 @@ func (app *Application) readLineString(session *Session, prompt, defaults string
 }
 
 func (app *Application) readLineOpt(session *Session, prompt, defaults string, opt func(*readline.Editor)) (string, error) {
-	if ap, ok := app.ttyIn.(*auto.Pilot); ok {
+	var tt ttyadapter.Tty = app.ttyIn
+	for {
+		t, ok := tt.(*ttyhook.TtyHook)
+		if !ok {
+			break
+		}
+		tt = t.Tty
+	}
+	if ap, ok := tt.(*auto.Pilot); ok {
 		return ap.GetKey()
 	}
 	skkInit()
