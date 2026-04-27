@@ -125,6 +125,8 @@ func (app *Application) handle(session *Session, key string) (pager.EventResult,
 		return pager.PassToPager, nil
 	case keys.F1:
 		app.keyFuncHelp(session)
+	case "@":
+		err = app.keyFuncMoveTo(session)
 	case "j", keys.Down, keys.CtrlN:
 		app.nextLine(session)
 	case "k", keys.Up, keys.CtrlP:
