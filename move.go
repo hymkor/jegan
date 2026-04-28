@@ -39,5 +39,13 @@ func (app *Application) keyFuncMoveTo(session *Session) error {
 	app.csrline = n
 	session.Window = p
 	session.WinPos = n
+	for i := session.ContentHeight / 2; i > 0; i-- {
+		p := session.Window.Prev()
+		if p == nil {
+			break
+		}
+		session.Window = p
+		session.WinPos--
+	}
 	return nil
 }
