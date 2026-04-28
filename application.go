@@ -31,6 +31,19 @@ type List = list.List[types.Line]
 
 type Element = list.Element[types.Line]
 
+type killbuf struct {
+	value string
+}
+
+func (k *killbuf) Write(v string) error {
+	k.value = v
+	return nil
+}
+
+func (k *killbuf) Read() (string, error) {
+	return k.value, nil
+}
+
 type Application struct {
 	Name string
 
@@ -42,6 +55,7 @@ type Application struct {
 	indent  []byte
 	ttyIn   ttyadapter.Tty
 	history *simplehistory.Container
+	killbuf killbuf
 
 	search func() error
 	revert func() error

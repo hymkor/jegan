@@ -498,5 +498,6 @@ func (app *Application) keyFuncCopy(session *Session) error {
 	s := buffer.String()
 	app.message = s
 	clipboard.WriteAll(s)
+	app.killbuf.Write(s)
 	return nil
 }
