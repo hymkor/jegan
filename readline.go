@@ -109,6 +109,7 @@ func (app *Application) readLineOpt(session *Session, prompt, defaults string, o
 		ResetColor:   "\x1B[0m",
 		DefaultColor: "\x1B[0m",
 		PredictColor: [...]string{"\x1B[3;22;34m", "\x1B[23;39m"},
+		Clipboard:    &app.killbuf,
 	}
 	editor.BindKey(keys.CtrlG, readline.CmdInterrupt)
 	editor.BindKey(keys.Escape+keys.CtrlG, readline.CmdInterrupt)
