@@ -1,9 +1,12 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 type JsonPath struct {
@@ -64,4 +67,69 @@ func (j *JsonPath) Dump(w io.Writer) {
 		}
 		fmt.Fprintf(w, "[%d]", j.Index)
 	}
+}
+
+func (j *JsonPath) String() string {
+	var b strings.Builder
+	j.Dump(&b)
+	return b.String()
+}
+
+var (
+	rxIndex   = regexp.MustCompile(`^\s*(?:\[\s*)?([0-9]+)\s*(?:\]\s*)?$`)
+	rxSymbol2 = regexp.MustCompile(`^\s*([_a-zA-Z_][_a-zA-Z0-9]*)\s*$`)
+)
+
+func ParseJson(location string) (*JsonPath, error) {
+	tokens := []string{}
+	start := 0
+	quote := false
+	for i, c := range location {
+		if c == '"' {
+			quote = !quote
+		}
+		if !quote && (c == '.' || c == '[') {
+			tokens = append(tokens, location[start:i])
+			start = i + 1
+		}
+	}
+	tokens = append(tokens, location[start:])
+
+	var jsonpath *JsonPath
+	for _, s := range tokens {
+		if s == "" {
+			continue
+		}
+		if m := rxIndex.FindStringSubmatch(s); m != nil {
+			n, err := strconv.Atoi(m[1])
+			if err != nil {
+				panic(err.Error())
+			}
+			jsonpath = jsonpath.ChildIndex(n)
+			continue
+		}
+		if m := rxSymbol2.FindStringSubmatch(s); m != nil {
+			jsonpath = jsonpath.ChildKey(m[1])
+			continue
+		}
+		var str string
+		err := json.Unmarshal([]byte(s), &str)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", s, err)
+		}
+		jsonpath = jsonpath.ChildKey(str)
+	}
+	return jsonpath, nil
+}
+
+func (j *JsonPath) Search(p *Element) (*Element, int) {
+	count := 0
+	for p != nil {
+		if j.Equals(p.Value.Path()) {
+			return p, count
+		}
+		p = p.Next()
+		count++
+	}
+	return nil, -1
 }
