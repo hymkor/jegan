@@ -1,22 +1,12 @@
 package jegan
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/nyaosorg/go-readline-ny"
 
 	"github.com/hymkor/jegan/internal/types"
-)
-
-var (
-	rxIndex  = regexp.MustCompile(`^\s*(?:\[\s*)?([0-9]+)\s*(?:\]\s*)?$`)
-	rxSymbol = regexp.MustCompile(`^\s*([_a-zA-Z_][_a-zA-Z0-9]*)\s*`)
 )
 
 func (app *Application) keyFuncMoveTo(session *Session) error {
@@ -24,84 +14,30 @@ func (app *Application) keyFuncMoveTo(session *Session) error {
 	if err != nil {
 		return err
 	}
-
-	tokens := []string{}
-	start := 0
-	quote := false
-	for i, c := range location {
-		if c == '"' {
-			quote = !quote
-		}
-		if !quote && (c == '.' || c == '[') {
-			tokens = append(tokens, location[start:i])
-			start = i + 1
-		}
+	jsonpath, err := types.ParseJson(location)
+	if err != nil {
+		return err
 	}
-	tokens = append(tokens, location[start:])
+	p, n := jsonpath.Search(app.list.Front())
+	if p == nil {
+		p = app.list.Back()
+		n = app.list.Len() - 1
 
-	var jsonpath *types.JsonPath
-	for _, s := range tokens {
-		if s == "" {
-			continue
+		err = app.completeLoading(session)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return err
 		}
-		if m := rxIndex.FindStringSubmatch(s); m != nil {
-			n, err := strconv.Atoi(m[1])
-			if err != nil {
-				panic(err.Error())
-			}
-			jsonpath = &types.JsonPath{
-				Parent: jsonpath,
-				Index:  n,
-			}
-			continue
-		}
-		if m := rxSymbol.FindStringSubmatch(s); m != nil {
-			jsonpath = &types.JsonPath{
-				Parent: jsonpath,
-				Text:   m[1],
-				Index:  -1,
-			}
-			continue
-		}
-		var str string
-		err := json.Unmarshal([]byte(s), &str)
-		if err != nil {
-			return fmt.Errorf("%s: %w", s, err)
-		}
-		jsonpath = &types.JsonPath{
-			Parent: jsonpath,
-			Text:   str,
-			Index:  -1,
-		}
-	}
-	p := app.list.Front()
-	n := 0
-	retry := true
-	for {
-		if p == nil {
-			var b strings.Builder
-			jsonpath.Dump(&b)
-			b.WriteString(": not found")
-			app.message = b.String()
+		q, m := jsonpath.Search(p)
+		if q == nil {
+			app.message = jsonpath.String() + ": not found"
 			return nil
 		}
-		if jsonpath.Equals(p.Value.Path()) {
-			app.setCursor(p)
-			app.csrline = n
-			session.Window = p
-			session.WinPos = n
-			return nil
-		}
-		q := p.Next()
-		if q == nil && retry {
-			retry = false
-			err := app.completeLoading(session)
-			if err == nil || errors.Is(err, io.EOF) {
-				q = p.Next()
-				err = nil
-			}
-		}
+		n += m
 		p = q
-		n++
 	}
+	app.setCursor(p)
+	app.csrline = n
+	session.Window = p
+	session.WinPos = n
+	return nil
 }
