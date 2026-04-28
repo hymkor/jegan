@@ -2,7 +2,9 @@ package jegan
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,6 +76,7 @@ func (app *Application) keyFuncMoveTo(session *Session) error {
 	}
 	p := app.list.Front()
 	n := 0
+	retry := true
 	for {
 		if p == nil {
 			var b strings.Builder
@@ -89,7 +92,16 @@ func (app *Application) keyFuncMoveTo(session *Session) error {
 			session.WinPos = n
 			return nil
 		}
-		p = p.Next()
+		q := p.Next()
+		if q == nil && retry {
+			retry = false
+			err := app.completeLoading(session)
+			if err == nil || errors.Is(err, io.EOF) {
+				q = p.Next()
+				err = nil
+			}
+		}
+		p = q
 		n++
 	}
 }
