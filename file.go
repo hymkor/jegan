@@ -81,33 +81,26 @@ func (app *Application) keyFuncSave(session *Session) error {
 	return app.writeFile(session)
 }
 
-func (app *Application) writeFile(session *Session) error {
-	fname, err := app.readLinePath(session, "Write to:", app.Name)
-	if err != nil {
-		return err
-	}
-
-	io.WriteString(session.TtyOut, "\rCompleting background loading before saving..."+ansi.EraseLine)
-	end0 := animation.Dots.Progress(session.TtyOut)
+func (app *Application) completeLoading(session *Session) (err error) {
+	io.WriteString(session.TtyOut, "\rCompleting background loading..."+ansi.EraseLine)
+	end := animation.Dots.Progress(session.TtyOut)
+	defer end()
 
 	sig := make(chan os.Signal, 1)
 	defer close(sig)
 	signal.Notify(sig, os.Interrupt)
 	defer signal.Stop(sig)
 
-loop:
 	for err == nil && app.dataStream != nil {
 		select {
 		case <-sig:
-			end0()
-			return errors.New("Interrupted. Save was canceled.")
+			return errCanceled
 		case d, ok := <-app.dataStream:
 			if !ok {
-				break loop
+				return nil
 			}
 			err = d.Err()
 			if err != nil && !errors.Is(err, io.EOF) {
-				end0()
 				return err
 			}
 			line := d.Val()
@@ -116,10 +109,25 @@ loop:
 			}
 		}
 	}
-	end0()
+	return nil
+}
+
+func (app *Application) writeFile(session *Session) error {
+	fname, err := app.readLinePath(session, "Write to:", app.Name)
+	if err != nil {
+		return err
+	}
+	if err := app.completeLoading(session); err != nil {
+		if errors.Is(err, errCanceled) {
+			return errors.New("Interrupted. Save was canceled.")
+		}
+		if !errors.Is(err, io.EOF) {
+			return err
+		}
+	}
 
 	if fname == "" || fname == "-" {
-		session.TtyOut.Write([]byte{' '})
+		io.WriteString(session.TtyOut, "\rWrite to STDOUT "+ansi.EraseLine)
 		end := animation.Dots.Progress(session.TtyOut)
 		defer end()
 
@@ -148,7 +156,7 @@ loop:
 	if callBackErr != nil {
 		return callBackErr
 	}
-	session.TtyOut.Write([]byte{' '})
+	fmt.Fprintf(session.TtyOut, "\rWrite to %s %s", fname, ansi.EraseLine)
 	end := animation.Dots.Progress(session.TtyOut)
 	defer end()
 
