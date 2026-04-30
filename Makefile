@@ -26,16 +26,18 @@ EXE:=$(shell $(GO) env GOEXE)
 build:
 	$(GO) fmt ./...
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) -tags debug "./cmd/jegan"
+define _build
+	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "$1"
+
+endef
 
 all:
 	$(GO) fmt ./...
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/testjson"
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/nemo"
-	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
+	$(foreach i,$(wildcard ./cmd/*),$(call _build,$(i)))
 
 test:
 	$(GO) fmt ./...
-	$(GO) test -v ./...
+	$(GO) test ./...
 
 _dist:
 	$(SET) "CGO_ENABLED=0" && $(GO) build $(GOOPT) "./cmd/jegan"
