@@ -2,6 +2,10 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+v0.6.0
+------
+Apr 30, 2026
+
 - `F1` によるヘルプを追加 (#89)
 - 指定した JSON Path へ移動するコマンド `@` を追加 (#90)
 - `-auto` オプション指定時の readline が CLI モードで正しく機能していなかった不具合を修正 (#91)

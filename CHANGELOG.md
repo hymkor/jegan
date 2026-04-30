@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.6.0
+------
+Apr 30, 2026
+
 - Add `F1` key to open the help screen (#89)
 - Add JSON path navigation using '@' to jump to a specific item (#90)
 - Fix readline handling for `-auto` option in CLI mode (#91)
