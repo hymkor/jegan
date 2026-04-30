@@ -147,6 +147,7 @@ jegan < some.json
 Key bindings
 ------------
 
+- `F1` : Show help screen (press `q` to close)
 - `j`, `↓`, `Ctrl-N` : Move to the next item
 - `k`, `↑`, `Ctrl-P` : Move to the previous item
 - `l`, `→`, `Ctrl-F` : Scroll the view to the right
@@ -160,6 +161,7 @@ Key bindings
 - `?` : Search backward
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
+- '@' : Jump to the item specified by a JSON path
 - `z` : Toggle collapse/expand
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
@@ -183,6 +185,31 @@ Key bindings
 - `Ctrl+C` : Copy the current path and value to the clipboard
 - `w` : Save to file
 - `q` : Quit
+
+Non-interactive mode (-auto)
+----------------------------
+
+The `-auto` option allows scripted, non-interactive execution by simulating key inputs.
+
+Inputs are provided as a single string, where each step is separated by `|`.
+Each step corresponds to either a key press or a line input.
+
+Example:
+
+```
+jegan -auto "@|.architecture.\"32bit\".url|r|1|w|-|q|y" - < jegan.json > new-jegan.json
+```
+
+This performs the following steps:
+
+1. `@` : jump to a JSON path
+2. `.architecture."32bit".url` : input the path
+3. `r` : modify the item
+4. `1` : new value
+5. `w` : save
+6. `-` : write to standard output
+7. `q` : quit
+8. `y` : confirm
 
 Changelog
 ---------
