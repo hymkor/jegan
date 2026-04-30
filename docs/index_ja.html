@@ -1250,6 +1250,7 @@ scoop install jegan
 </code></pre>
 <h2 id="%E3%82%AD%E3%83%BC%E6%93%8D%E4%BD%9C">キー操作</h2>
 <ul>
+<li><code>F1</code> : ヘルプ (<code>q</code> で閉じる)</li>
 <li><code>j</code>, <code>↓</code>, <code>Ctrl-N</code> : 次の項目へ移動</li>
 <li><code>k</code>, <code>↑</code>, <code>Ctrl-P</code> : 前の項目へ移動</li>
 <li><code>l</code>, <code>→</code>, <code>Ctrl-F</code> : 表示範囲を右にスクロール</li>
@@ -1263,6 +1264,7 @@ scoop install jegan
 <li><code>?</code> : 後方検索</li>
 <li><code>n</code> : 同方向へ再検索</li>
 <li><code>N</code> : 反対方向へ再検索</li>
+<li>'@' : 指定した JSONPath の位置へ移動</li>
 <li><code>z</code> : 折り畳み / 展開表示を切り替え</li>
 <li><code>o</code> : カーソル行の下へ項目を追加。
 <ul>
@@ -1280,20 +1282,37 @@ scoop install jegan
 <li><em>上記以外</em> → 文字列（そのまま解釈）</li>
 </ul>
 </li>
-<li>Ctrl+G 押下で項目追加をキャンセルできます。</li>
+<li><code>Ctrl+G</code> 押下で項目追加をキャンセルできます。</li>
 <li>空入力は空文字列（<code>&quot;&quot;</code>）として扱われる</li>
 <li>オブジェクトのキーは重複できない</li>
 </ul>
 </li>
 <li><code>r</code> : カーソル行の項目を変更する（入力方法は <code>o</code> と同じ）</li>
 <li><code>R</code> : カーソル行の項目を変更する（値の型を明示的に指定する）</li>
-<li><code>d</code> : カーソル行の項目を削除する。
-ただし、空ではないオブジェクト・配列は削除できない</li>
+<li><code>d</code> : カーソル行の項目を削除する。</li>
 <li><code>u</code> : UNDO</li>
-<li><code>Ctrl-C</code> : JSONパスと値をクリップボードへコピーする</li>
+<li><code>Ctrl+C</code> : JSONパスと値をクリップボードへコピーする</li>
 <li><code>w</code> : ファイルへ保存</li>
 <li><code>q</code> : 終了</li>
 </ul>
+<h2 id="%E9%9D%9E%E3%82%A4%E3%83%B3%E3%82%BF%E3%83%A9%E3%82%AF%E3%83%86%E3%82%A3%E3%83%96%E3%83%A2%E3%83%BC%E3%83%89--auto">非インタラクティブモード (-auto)</h2>
+<p><code>-auto</code> オプションで、スクリプトを非インタラクティブに実行することができます。</p>
+<p>入力は単一の文字列で、各ステップは <code>|</code> で区切ります。
+各ステップは、１キー入力もしくは一行入力に対応します。</p>
+<p>例：</p>
+<pre><code>jegan -auto &quot;@|.architecture.\&quot;32bit\&quot;.url|r|1|w|-|q|y&quot; - &lt; jegan.json &gt; new-jegan.json
+</code></pre>
+<p>これは次のように評価されます。</p>
+<ol>
+<li><code>@</code> : 指定した JSON path へ移動</li>
+<li><code>.architecture.&quot;32bit&quot;.url</code> : パスを入力</li>
+<li><code>r</code> : 項目を修正</li>
+<li><code>1</code> : 新しい値</li>
+<li><code>w</code> : 保存</li>
+<li><code>-</code> : 標準出力を指定</li>
+<li><code>q</code> : アプリケーションを終了</li>
+<li><code>y</code> : 確認は Yes</li>
+</ol>
 <h2 id="%E7%92%B0%E5%A2%83%E5%A4%89%E6%95%B0">環境変数</h2>
 <h3 id="runewidth-eastasian">RUNEWIDTH_EASTASIAN</h3>
 <p>Unicode で「曖昧幅」とされる文字の表示桁数を明示的に指定します。</p>
@@ -1366,6 +1385,7 @@ scoop install jegan
 </li>
 <li><a href="#%E8%B5%B7%E5%8B%95%E6%96%B9%E6%B3%95">起動方法</a></li>
 <li><a href="#%E3%82%AD%E3%83%BC%E6%93%8D%E4%BD%9C">キー操作</a></li>
+<li><a href="#%E9%9D%9E%E3%82%A4%E3%83%B3%E3%82%BF%E3%83%A9%E3%82%AF%E3%83%86%E3%82%A3%E3%83%96%E3%83%A2%E3%83%BC%E3%83%89-auto">非インタラクティブモード (-auto)</a></li>
 <li><a href="#%E7%92%B0%E5%A2%83%E5%A4%89%E6%95%B0">環境変数</a>
 <ul>
 <li><a href="#runewidth_eastasian">RUNEWIDTH_EASTASIAN</a></li>

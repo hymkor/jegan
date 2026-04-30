@@ -1250,11 +1250,12 @@ scoop install jegan
 </code></pre>
 <h2 id="key-bindings">Key bindings</h2>
 <ul>
+<li><code>F1</code> : Show help screen (press <code>q</code> to close)</li>
 <li><code>j</code>, <code>↓</code>, <code>Ctrl-N</code> : Move to the next item</li>
 <li><code>k</code>, <code>↑</code>, <code>Ctrl-P</code> : Move to the previous item</li>
 <li><code>l</code>, <code>→</code>, <code>Ctrl-F</code> : Scroll the view to the right</li>
 <li><code>h</code>, <code>←</code>, <code>Ctrl-B</code> : Scroll the view to the left</li>
-<li><code>0</code>, <code>^</code> : reset horizontal scroll (jump to column 0)</li>
+<li><code>0</code>, <code>^</code> : Reset horizontal scroll (jump to column 0)</li>
 <li><code>Space</code>, <code>PageDown</code> : Move to the next page of items</li>
 <li><code>b</code>, <code>PageUp</code>       : Move to the previous page of items</li>
 <li><code>&lt;</code> : Move to the first item</li>
@@ -1263,6 +1264,7 @@ scoop install jegan
 <li><code>?</code> : Search backward</li>
 <li><code>n</code> : Repeat search in the same direction</li>
 <li><code>N</code> : Repeat search in the opposite direction</li>
+<li>'@' : Jump to the item specified by a JSON path</li>
 <li><code>z</code> : Toggle collapse/expand</li>
 <li><code>o</code> : Insert a new item below the cursor.
 <ul>
@@ -1272,7 +1274,7 @@ scoop install jegan
 <li>The value is interpreted as follows:
 <ul>
 <li><code>&quot;...&quot;</code> → string (escape sequences are interpreted)</li>
-<li>Input that can be parsed as a number → number</li>
+<li><em>Input that can be parsed as a number</em> → number</li>
 <li><code>null</code> → null</li>
 <li><code>true</code> / <code>false</code> → boolean</li>
 <li><code>{}</code> → empty object</li>
@@ -1287,13 +1289,30 @@ scoop install jegan
 </li>
 <li><code>r</code> : Modify the item at the cursor (same input method as <code>o</code>)</li>
 <li><code>R</code> : Modify the item at the cursor (explicitly specify the value type)</li>
-<li><code>d</code> : Delete the item at the cursor<br />
-Non-empty objects and arrays cannot be deleted</li>
+<li><code>d</code> : Delete the item at the cursor</li>
 <li><code>u</code> : UNDO</li>
-<li><code>Ctrl-C</code>: Copy the current path and value to the clipboard</li>
+<li><code>Ctrl+C</code> : Copy the current path and value to the clipboard</li>
 <li><code>w</code> : Save to file</li>
 <li><code>q</code> : Quit</li>
 </ul>
+<h2 id="non-interactive-mode--auto">Non-interactive mode (-auto)</h2>
+<p>The <code>-auto</code> option allows scripted, non-interactive execution by simulating key inputs.</p>
+<p>Inputs are provided as a single string, where each step is separated by <code>|</code>.
+Each step corresponds to either a key press or a line input.</p>
+<p>Example:</p>
+<pre><code>jegan -auto &quot;@|.architecture.\&quot;32bit\&quot;.url|r|1|w|-|q|y&quot; - &lt; jegan.json &gt; new-jegan.json
+</code></pre>
+<p>This performs the following steps:</p>
+<ol>
+<li><code>@</code> : jump to a JSON path</li>
+<li><code>.architecture.&quot;32bit&quot;.url</code> : input the path</li>
+<li><code>r</code> : modify the item</li>
+<li><code>1</code> : new value</li>
+<li><code>w</code> : save</li>
+<li><code>-</code> : write to standard output</li>
+<li><code>q</code> : quit</li>
+<li><code>y</code> : confirm</li>
+</ol>
 <h2 id="changelog">Changelog</h2>
 <ul>
 <li><a href="CHANGELOG.html">English</a></li>
@@ -1334,6 +1353,7 @@ Non-empty objects and arrays cannot be deleted</li>
 </li>
 <li><a href="#usage">Usage</a></li>
 <li><a href="#key-bindings">Key bindings</a></li>
+<li><a href="#non-interactive-mode-auto">Non-interactive mode (-auto)</a></li>
 <li><a href="#changelog">Changelog</a></li>
 <li><a href="#acknowledgements">Acknowledgements</a></li>
 <li><a href="#author">Author</a></li>
