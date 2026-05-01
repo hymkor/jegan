@@ -46,7 +46,7 @@ func renderString(s []byte, color string, b *strings.Builder) {
 func renderRawBytes(x *source.RawBytes, b *strings.Builder) {
 	b.WriteString(ansi.Red)
 	escape := false
-	for _, v := range x.String() {
+	for _, v := range x.Data().(string) {
 		if escape {
 			if ('a' <= v && v <= 'z') || ('A' <= v && v <= 'Z') {
 				escape = false
