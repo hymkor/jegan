@@ -45,16 +45,18 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 			return err
 		}
 		var last types.Line
+		keyStr := key.Data().(string)
 		jp := &types.JsonPath{
 			Parent: basePath,
-			Text:   key.String(),
+			Text:   keyStr,
 		}
 		err = readItem(br, jp, nest+1, func(line types.Line) error {
 			if last == nil {
 				path := line.Path()
+				keyStr := key.Data().(string)
 				last = &types.Pair{
 					SpaceKey:   space1,
-					Key:        key.String(),
+					Key:        keyStr,
 					SpaceColon: space2,
 					Item:       *types.NewItem(line.Data(), nest+1, false, line.LeadingSpace()),
 				}
