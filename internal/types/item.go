@@ -22,11 +22,6 @@ type Item struct {
 	path   *JsonPath
 }
 
-func (e *Item) Clone() *Item {
-	clone := *e
-	return &clone
-}
-
 func (e *Item) LeadingSpace() []byte          { return e.SpaceValue }
 func (e *Item) SetLeadingSpace(v []byte)      { e.SpaceValue = v }
 func (e *Item) Data() any                     { return e.data }
