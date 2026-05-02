@@ -103,7 +103,6 @@ func readObject(br io.RuneScanner, basePath *types.JsonPath, nest int, store fun
 			return err
 		}
 	}
-	return nil
 }
 
 func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func(types.Line) error) error {
@@ -171,7 +170,6 @@ func readArray(br io.RuneScanner, basePath *types.JsonPath, nest int, store func
 			return err
 		}
 	}
-	return nil
 }
 
 func readRawBytes(br io.RuneScanner, nest int, store func(types.Line) error, rest ...any) error {
@@ -219,7 +217,6 @@ func readRawBytes(br io.RuneScanner, nest int, store func(types.Line) error, res
 			return nil
 		}
 	}
-	return nil
 }
 
 func readItem(br io.RuneScanner, basePath *types.JsonPath, nest int, store0 func(types.Line) error) error {

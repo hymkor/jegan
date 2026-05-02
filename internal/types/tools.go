@@ -34,5 +34,4 @@ func Unwrap(data any) any {
 		}
 		data = v.Unwrap()
 	}
-	return data
 }
