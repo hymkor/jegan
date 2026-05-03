@@ -11,7 +11,7 @@ import (
 
 	"github.com/hymkor/jegan/internal/dbg"
 	"github.com/hymkor/jegan/internal/source"
-	"github.com/hymkor/jegan/internal/types"
+	"github.com/hymkor/jegan/types"
 )
 
 type List = list.List[types.Line]

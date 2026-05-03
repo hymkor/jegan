@@ -17,10 +17,11 @@ import (
 	"github.com/hymkor/go-safewrite/perm"
 	"github.com/hymkor/nemo/pager"
 
+	"github.com/hymkor/jegan/types"
+
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/dbg"
 	"github.com/hymkor/jegan/internal/nonblockpush"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 type Pair = types.Pair

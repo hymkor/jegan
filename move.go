@@ -6,7 +6,7 @@ import (
 
 	"github.com/nyaosorg/go-readline-ny"
 
-	"github.com/hymkor/jegan/internal/types"
+	"github.com/hymkor/jegan/types"
 )
 
 func (app *Application) keyFuncMoveTo(session *Session) error {

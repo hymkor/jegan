@@ -15,8 +15,9 @@ import (
 
 	"github.com/hymkor/go-generics-list"
 
+	"github.com/hymkor/jegan/types"
+
 	"github.com/hymkor/jegan/internal/nonblockpush"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 type Config struct {

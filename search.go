@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hymkor/jegan/internal/types"
+	"github.com/hymkor/jegan/types"
 )
 
 func newCompare(v any) (func(key string, data any) bool, bool) {

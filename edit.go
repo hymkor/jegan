@@ -9,9 +9,10 @@ import (
 
 	"github.com/atotto/clipboard"
 
+	"github.com/hymkor/jegan/types"
+
 	"github.com/hymkor/jegan/internal/ansi"
 	"github.com/hymkor/jegan/internal/source"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 func backup(v any, backup any) any {

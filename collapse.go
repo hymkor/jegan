@@ -8,8 +8,9 @@ import (
 
 	"github.com/hymkor/go-generics-list"
 
+	"github.com/hymkor/jegan/types"
+
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 type collapsed struct {
