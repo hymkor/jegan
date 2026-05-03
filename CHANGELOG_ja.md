@@ -2,6 +2,8 @@ Changelog
 =========
 ( [English](CHANGELOG.md) / Japanese )
 
+- Windows では "mattn/go-tty" v0.0.7 で, 非Windows では "golang.org/x/term" でキー入力を行うようにした (#95)
+
 v0.6.0
 ------
 Apr 30, 2026
