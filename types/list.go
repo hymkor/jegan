@@ -5,8 +5,9 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/hymkor/jegan/source"
+
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/source"
 )
 
 type Line interface {
