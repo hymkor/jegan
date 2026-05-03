@@ -10,7 +10,7 @@ import (
 
 	"github.com/nyaosorg/go-ttyadapter"
 	"github.com/nyaosorg/go-ttyadapter/auto"
-	"github.com/nyaosorg/go-ttyadapter/tty8pe"
+	"github.com/nyaosorg/go-ttyadapter/fav"
 	"github.com/nyaosorg/go-ttyadapter/ttyhook"
 
 	"github.com/hymkor/go-generics-list"
@@ -33,7 +33,7 @@ func (c *Config) Run(args []string) error {
 	if c.Auto != "" {
 		ttyIn = &auto.Pilot{Text: strings.Split(c.Auto, "|")}
 	} else {
-		ttyIn = &tty8pe.Tty{}
+		ttyIn = &fav.Tty{}
 	}
 
 	useStdin, names := expandArgs(args)
