@@ -23,11 +23,10 @@ func Marshal[T any](data T) []byte {
 	return bin
 }
 
-type Unwraper interface {
-	Unwrap() any
-}
-
 func Unwrap(data any) any {
+	type Unwraper interface {
+		Unwrap() any
+	}
 	for {
 		v, ok := data.(Unwraper)
 		if !ok {
@@ -35,5 +34,4 @@ func Unwrap(data any) any {
 		}
 		data = v.Unwrap()
 	}
-	return data
 }

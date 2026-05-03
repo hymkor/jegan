@@ -14,11 +14,6 @@ type Pair struct {
 	Item
 }
 
-func (p *Pair) Clone() *Pair {
-	clone := *p
-	return &clone
-}
-
 func (p *Pair) LeadingSpace() []byte     { return p.SpaceKey }
 func (p *Pair) SetLeadingSpace(v []byte) { p.SpaceValue = v }
 

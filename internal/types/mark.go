@@ -12,10 +12,6 @@ func (m Mark) String() string {
 	return string(rune(m))
 }
 
-func (m Mark) GoString() string {
-	return string(rune(m))
-}
-
 func (m Mark) Json() []byte {
 	return []byte{byte(m)}
 }

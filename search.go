@@ -135,7 +135,6 @@ func (app *Application) searchForward(
 			return nil
 		}
 	}
-	return nil
 }
 
 func (app *Application) searchBackward(
@@ -162,5 +161,4 @@ func (app *Application) searchBackward(
 			return nil
 		}
 	}
-	return nil
 }
