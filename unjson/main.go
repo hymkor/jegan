@@ -1,4 +1,4 @@
-package decode
+package unjson
 
 import (
 	"bytes"
@@ -9,9 +9,10 @@ import (
 
 	"github.com/hymkor/go-generics-list"
 
+	"github.com/hymkor/jegan/source"
+	"github.com/hymkor/jegan/types"
+
 	"github.com/hymkor/jegan/internal/dbg"
-	"github.com/hymkor/jegan/internal/source"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 type List = list.List[types.Line]

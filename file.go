@@ -19,9 +19,10 @@ import (
 	"github.com/hymkor/go-safewrite/perm"
 	"github.com/hymkor/nemo/pager"
 
+	"github.com/hymkor/jegan/types"
+	"github.com/hymkor/jegan/unjson"
+
 	"github.com/hymkor/jegan/internal/ansi"
-	"github.com/hymkor/jegan/internal/decode"
-	"github.com/hymkor/jegan/internal/types"
 )
 
 func expandArgs(args []string) (useStdin bool, names []string) {
@@ -195,7 +196,7 @@ func (app *Application) load(r io.Reader, name string, store func(types.Line) er
 		br = bufio.NewReader(r)
 	}
 	for {
-		err := decode.Unmarshal(br, store)
+		err := unjson.Unmarshal(br, store)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if err == io.EOF {

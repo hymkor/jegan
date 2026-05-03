@@ -3,6 +3,7 @@ Changelog
 ( English / [Japanese](CHANGELOG_ja.md) )
 
 - Use "mattn/go-tty" v0.0.7 on Windows and "golang.org/x/term" on non-Windows for tty input (#95)
+- Export subpackages "source", "types" and "unjson" (#97)
 
 v0.6.0
 ------
