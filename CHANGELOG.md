@@ -2,6 +2,8 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+- Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (`[`, `{`, `]`, `}`). (#99)
+
 v0.6.1
 ------
 May 3, 2026
