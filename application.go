@@ -138,6 +138,14 @@ func (app *Application) handle(session *Session, key string) (pager.EventResult,
 	switch key {
 	default:
 		return pager.PassToPager, nil
+	case "[":
+		app.keyFuncUpperGroupHead(session, types.ArrayStart, types.ArrayEnd)
+	case "{":
+		app.keyFuncUpperGroupHead(session, types.ObjStart, types.ObjEnd)
+	case "]":
+		app.keyFuncUpperGroupTail(session, types.ArrayEnd, types.ArrayStart)
+	case "}":
+		app.keyFuncUpperGroupTail(session, types.ObjEnd, types.ObjStart)
 	case keys.F1:
 		app.keyFuncHelp(session)
 	case "@":
