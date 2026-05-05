@@ -1142,6 +1142,26 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( English / <a href="CHANGELOG_ja.html">Japanese</a> )</p>
+<h2 id="v070">v0.7.0</h2>
+<p>May 6, 2026</p>
+<h3 id="bug-fixes">Bug fixes</h3>
+<ul>
+<li>Fix status line displaying internal object instead of search query (e.g. &quot;3.0&quot;) (#100)</li>
+</ul>
+<h3 id="new-features">New features</h3>
+<ul>
+<li>Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (<code>[</code>, <code>{</code>, <code>]</code>, <code>}</code>). (#99)</li>
+</ul>
+<h3 id="improvements">Improvements</h3>
+<ul>
+<li>Improved search behavior: (#101)
+<ul>
+<li>Unquoted input (e.g. <code>3.0</code>) now matches both numeric values (e.g. <code>3</code>) and strings containing the value (e.g. <code>&quot;3.0&quot;</code>)</li>
+<li>Quoted input (e.g. <code>&quot;foo&quot;</code>) matches string values only, using substring matching</li>
+<li>Boolean and null literals are excluded from string matching</li>
+</ul>
+</li>
+</ul>
 <h2 id="v061">v0.6.1</h2>
 <p>May 3, 2026</p>
 <ul>
@@ -1150,16 +1170,24 @@ a.permalink:hover{
 </ul>
 <h2 id="v060">v0.6.0</h2>
 <p>Apr 30, 2026</p>
+<h3 id="bug-fixes-1">Bug fixes</h3>
+<ul>
+<li>Fix readline handling for <code>-auto</code> option in CLI mode (#91)</li>
+</ul>
+<h3 id="new-features-1">New features</h3>
 <ul>
 <li>Add <code>F1</code> key to open the help screen (#89)</li>
 <li>Add JSON path navigation using '@' to jump to a specific item (#90)</li>
-<li>Fix readline handling for <code>-auto</code> option in CLI mode (#91)</li>
 <li>Add an application-local clipboard to the readline component. (#93)</li>
 </ul>
 <h2 id="v050">v0.5.0</h2>
 <p>Apr 24, 2026</p>
+<h3 id="bug-fixes-2">Bug fixes</h3>
 <ul>
-<li>Improve search: now matches both keys and values, case-insensitive (#68)</li>
+<li>Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)</li>
+</ul>
+<h3 id="new-features-2">New features</h3>
+<ul>
 <li>Undo support for replace operations (<code>r</code>, <code>R</code>) (#69)</li>
 <li>Undo support for deletions (#69)
 <ul>
@@ -1170,6 +1198,10 @@ a.permalink:hover{
 </li>
 <li>Allow deleting non-empty containers by collapsing them into <code>&lt;DEL&gt;</code> markers (#70)</li>
 <li>Support collapsing and expanding objects and arrays with <code>z</code> (#71)</li>
+</ul>
+<h3 id="improvements-1">Improvements</h3>
+<ul>
+<li>Improve search: now matches both keys and values, case-insensitive (#68)</li>
 <li>Improve readline input: (#74)
 <ul>
 <li>Add filename completion for &quot;w&quot; command</li>
@@ -1178,7 +1210,6 @@ a.permalink:hover{
 </ul>
 </li>
 <li>Add background JSON loading support (improves startup time for large files) (#79)</li>
-<li>Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)</li>
 </ul>
 <h2 id="v040">v0.4.0</h2>
 <p>Apr 17, 2026</p>
@@ -1223,7 +1254,7 @@ a.permalink:hover{
 </ul>
 <h2 id="v021">v0.2.1</h2>
 <p>Apr 12, 2026</p>
-<h3 id="bug-fixes">Bug Fixes</h3>
+<h3 id="bug-fixes-3">Bug Fixes</h3>
 <ul>
 <li>Fix parsing issue where empty arrays or objects containing whitespace caused incorrect nesting (#40)</li>
 <li>Fix error propagation so messages are not lost (#41)</li>
@@ -1288,7 +1319,7 @@ so users do not need to type them explicitly.</p>
 </ul>
 </li>
 </ul>
-<h3 id="bug-fixes-1">Bug Fixes</h3>
+<h3 id="bug-fixes-4">Bug Fixes</h3>
 <ul>
 <li>Fix modified mark (<code>*</code>) being appended to unrelated messages (#32)</li>
 <li>Change Ctrl-L behavior during input (e.g. cell or filename editing) (#37):
@@ -1320,15 +1351,33 @@ so users do not need to type them explicitly.</p>
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v070">v0.7.0</a>
+<ul>
+<li><a href="#bug-fixes">Bug fixes</a></li>
+<li><a href="#new-features">New features</a></li>
+<li><a href="#improvements">Improvements</a></li>
+</ul>
+</li>
 <li><a href="#v061">v0.6.1</a></li>
-<li><a href="#v060">v0.6.0</a></li>
-<li><a href="#v050">v0.5.0</a></li>
+<li><a href="#v060">v0.6.0</a>
+<ul>
+<li><a href="#bug-fixes-1">Bug fixes</a></li>
+<li><a href="#new-features-1">New features</a></li>
+</ul>
+</li>
+<li><a href="#v050">v0.5.0</a>
+<ul>
+<li><a href="#bug-fixes-2">Bug fixes</a></li>
+<li><a href="#new-features-2">New features</a></li>
+<li><a href="#improvements-1">Improvements</a></li>
+</ul>
+</li>
 <li><a href="#v040">v0.4.0</a></li>
 <li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>
 <li><a href="#v021">v0.2.1</a>
 <ul>
-<li><a href="#bug-fixes">Bug Fixes</a></li>
+<li><a href="#bug-fixes-3">Bug Fixes</a></li>
 </ul>
 </li>
 <li><a href="#v020">v0.2.0</a>
@@ -1337,7 +1386,7 @@ so users do not need to type them explicitly.</p>
 <li><a href="#usability-improvements">Usability Improvements</a></li>
 <li><a href="#readline-improvements">Readline Improvements</a></li>
 <li><a href="#cli-and-io-improvements">CLI and I/O Improvements</a></li>
-<li><a href="#bug-fixes-1">Bug Fixes</a></li>
+<li><a href="#bug-fixes-4">Bug Fixes</a></li>
 </ul>
 </li>
 <li><a href="#v010">v0.1.0</a></li>
