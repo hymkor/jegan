@@ -11,29 +11,34 @@ import (
 	"github.com/hymkor/jegan/types"
 )
 
-func newCompare(v any) (func(key string, data any) bool, bool) {
+func newStringCompare(s string) func(key string, data any) bool {
+	s = strings.ToLower(s)
+	return func(key string, data any) bool {
+		key = strings.ToLower(key)
+		if strings.Contains(key, s) {
+			return true
+		}
+		other := types.Unwrap(data)
+		if o, ok := other.(string); ok {
+			o = strings.ToLower(o)
+			return strings.Contains(o, s)
+		}
+		return false
+	}
+}
+
+func newCompare(text string, v any) (func(key string, data any) bool, bool) {
 	if s, ok := v.(string); ok {
-		s = strings.ToLower(s)
-		return func(key string, data any) bool {
-			key = strings.ToLower(key)
-			if strings.Contains(key, s) {
+		return newStringCompare(s), true
+	}
+	rawSearch := newStringCompare(text)
+	if n, ok := v.(float64); ok {
+		return func(key string, other any) bool {
+			other = types.Unwrap(other)
+			if o, ok := other.(float64); ok && n == o {
 				return true
 			}
-			other := types.Unwrap(data)
-			if o, ok := other.(string); ok {
-				o = strings.ToLower(o)
-				return strings.Contains(o, s)
-			}
-			return false
-		}, true
-	}
-	if n, ok := v.(float64); ok {
-		return func(_ string, other any) bool {
-			other = types.Unwrap(other)
-			if o, ok := other.(float64); ok {
-				return n == o
-			}
-			return false
+			return rawSearch(key, other)
 		}, true
 	}
 	if v == nil {
@@ -80,7 +85,7 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 		return errors.New("can not search not single value")
 	}
 	targetVal := types.Unwrap(targets[0])
-	compare, ok := newCompare(targetVal)
+	compare, ok := newCompare(text, targetVal)
 	if !ok {
 		return fmt.Errorf("can not search: %v", targetVal)
 	}
