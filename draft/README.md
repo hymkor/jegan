@@ -162,6 +162,8 @@ Key bindings
 - `n` : Repeat search in the same direction
 - `N` : Repeat search in the opposite direction
 - '@' : Jump to the item specified by a JSON path
+- `[`, `{` : Jump to the nearest opening bracket at the parent level, or to the matching opening bracket if on a closing bracket
+- `]`, `}` : Jump to the nearest closing bracket at the parent level, or to the matching closing bracket if on an opening bracket
 - `z` : Toggle collapse/expand
 - `o` : Insert a new item below the cursor.
   - For object items, enter both key and value.
