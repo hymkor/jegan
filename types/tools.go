@@ -28,10 +28,12 @@ func Unwrap(data any) any {
 		Unwrap() any
 	}
 	for {
-		v, ok := data.(Unwraper)
-		if !ok {
+		if v, ok := data.(interface{ Unwrap() any }); ok {
+			data = v.Unwrap()
+		} else if v, ok := data.(interface{ Data() any }); ok {
+			data = v.Data()
+		} else {
 			return data
 		}
-		data = v.Unwrap()
 	}
 }
