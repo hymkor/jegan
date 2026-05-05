@@ -2,6 +2,10 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
+v0.7.0
+------
+May 6, 2026
+
 ### Bug fixes
 
 - Fix status line displaying internal object instead of search query (e.g. "3.0") (#100)

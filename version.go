@@ -1,3 +1,3 @@
 package jegan
 
-var version = "v0.6.1-goinstall"
+var version = "v0.7.0-goinstall"
