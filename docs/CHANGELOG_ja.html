@@ -1142,6 +1142,26 @@ a.permalink:hover{
 <div class="main markdown-body">
 <h1 id="changelog">Changelog</h1>
 <p>( <a href="CHANGELOG.html">English</a> / Japanese )</p>
+<h2 id="v070">v0.7.0</h2>
+<p>May 6, 2026</p>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</h3>
+<ul>
+<li>検索文字列が表示されるべきステータスラインに内部表現が出ていた不具合を修正 (#100)</li>
+</ul>
+<h3 id="%E6%96%B0%E6%A9%9F%E8%83%BD">新機能</h3>
+<ul>
+<li>括弧上にいる場合は対応する括弧へ、さもなければ、最も近い親レベルの括弧に移動するキーを追加した (<code>[</code>,<code>{</code>,<code>}</code>,<code>]</code>) (#99)</li>
+</ul>
+<h3 id="%E6%94%B9%E5%96%84">改善</h3>
+<ul>
+<li>検索動作の改善 (#101)
+<ul>
+<li><code>3.0</code> のような引用符のない入力は、<code>3</code> のような数値と、値を含む文字列(例:<code>&quot;3.0&quot;</code>) の両方と照合する</li>
+<li><code>&quot;3.0&quot;</code> のような引用符のある入力は文字列として照合する(部分一致あり)</li>
+<li>true/false/nil については文字列としての照合から除く</li>
+</ul>
+</li>
+</ul>
 <h2 id="v061">v0.6.1</h2>
 <p>May 3, 2026</p>
 <ul>
@@ -1150,16 +1170,24 @@ a.permalink:hover{
 </ul>
 <h2 id="v060">v0.6.0</h2>
 <p>Apr 30, 2026</p>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</h3>
+<ul>
+<li><code>-auto</code> オプション指定時の readline が CLI モードで正しく機能していなかった不具合を修正 (#91)</li>
+</ul>
+<h3 id="%E6%96%B0%E6%A9%9F%E8%83%BD-1">新機能</h3>
 <ul>
 <li><code>F1</code> によるヘルプを追加 (#89)</li>
 <li>指定した JSON Path へ移動するコマンド <code>@</code> を追加 (#90)</li>
-<li><code>-auto</code> オプション指定時の readline が CLI モードで正しく機能していなかった不具合を修正 (#91)</li>
 <li>readline でアプリケーション内クリップボードをサポート (#93)</li>
 </ul>
 <h2 id="v050">v0.5.0</h2>
 <p>Apr 24, 2026</p>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-2">不具合修正</h3>
 <ul>
-<li>キーと値双方を見るよう検索を改善した。また英大文字・小文字を区別しないようにした (#68)</li>
+<li><code>f</code>,<code>t</code>,<code>n</code> で始まる非JSON 識別子を読み取る時に、EOF エラーになる不具合を修正 (#84)</li>
+</ul>
+<h3 id="%E6%96%B0%E6%A9%9F%E8%83%BD-2">新機能</h3>
+<ul>
 <li>置換(<code>r</code>, <code>R</code>) に対する UNDO をサポート (#69)</li>
 <li>削除(<code>d</code>) に対する UNDO をサポート (#69)
 <ul>
@@ -1170,6 +1198,10 @@ a.permalink:hover{
 </li>
 <li>空でないオブジェクト・配列も削除できるようになった (#70)</li>
 <li><code>z</code> キーでオブジェクト・配列の折りたたみ／展開に対応 (#71)</li>
+</ul>
+<h3 id="%E6%94%B9%E5%96%84-1">改善</h3>
+<ul>
+<li>キーと値双方を見るよう検索を改善した。また英大文字・小文字を区別しないようにした (#68)</li>
 <li>readline 入力を改善 (#74)
 <ul>
 <li>&quot;w&quot; コマンドでのファイル名補完</li>
@@ -1178,7 +1210,6 @@ a.permalink:hover{
 </ul>
 </li>
 <li>JSONのバックグランド読み込みをサポートし、大きなファイルの起動時間を改善した (#79)</li>
-<li><code>f</code>,<code>t</code>,<code>n</code> で始まる非JSON 識別子を読み取る時に、EOF エラーになる不具合を修正 (#84)</li>
 </ul>
 <h2 id="v040">v0.4.0</h2>
 <p>Apr 17, 2026</p>
@@ -1223,7 +1254,7 @@ a.permalink:hover{
 </ul>
 <h2 id="v021">v0.2.1</h2>
 <p>Apr 12, 2026</p>
-<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</h3>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-3">不具合修正</h3>
 <ul>
 <li>
 <p><code>[ ]</code> や <code>{ }</code> などのように、空のオブジェクトもしくは空の配列の中に１個以上の空白だけが含まれていると、<code>]</code> や <code>}</code> をうまく検出できず、ネストの個数が狂って上位のオブジェクトもしくは配列まで終ったことにしてしまう不具合を修正 (要素が1個でもあれば表面化しなかった ) (#40)</p>
@@ -1278,7 +1309,7 @@ a.permalink:hover{
 </ul>
 </li>
 </ul>
-<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</h3>
+<h3 id="%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-4">不具合修正</h3>
 <ul>
 <li>変更マーク(<code>*</code>)が関係ないメッセージにもついていた不具合を修正 (#32)</li>
 <li>セルやファイル名などの入力中の Ctrl-L の動作を変更 (#37)
@@ -1310,15 +1341,33 @@ a.permalink:hover{
 <ul>
 <li><a href="#changelog">Changelog</a>
 <ul>
+<li><a href="#v070">v0.7.0</a>
+<ul>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</a></li>
+<li><a href="#%E6%96%B0%E6%A9%9F%E8%83%BD">新機能</a></li>
+<li><a href="#%E6%94%B9%E5%96%84">改善</a></li>
+</ul>
+</li>
 <li><a href="#v061">v0.6.1</a></li>
-<li><a href="#v060">v0.6.0</a></li>
-<li><a href="#v050">v0.5.0</a></li>
+<li><a href="#v060">v0.6.0</a>
+<ul>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</a></li>
+<li><a href="#%E6%96%B0%E6%A9%9F%E8%83%BD-1">新機能</a></li>
+</ul>
+</li>
+<li><a href="#v050">v0.5.0</a>
+<ul>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-2">不具合修正</a></li>
+<li><a href="#%E6%96%B0%E6%A9%9F%E8%83%BD-2">新機能</a></li>
+<li><a href="#%E6%94%B9%E5%96%84-1">改善</a></li>
+</ul>
+</li>
 <li><a href="#v040">v0.4.0</a></li>
 <li><a href="#v031">v0.3.1</a></li>
 <li><a href="#v030">v0.3.0</a></li>
 <li><a href="#v021">v0.2.1</a>
 <ul>
-<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3">不具合修正</a></li>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-3">不具合修正</a></li>
 </ul>
 </li>
 <li><a href="#v020">v0.2.0</a>
@@ -1327,7 +1376,7 @@ a.permalink:hover{
 <li><a href="#%E6%93%8D%E4%BD%9C%E6%80%A7%E3%81%AE%E6%94%B9%E5%96%84">操作性の改善</a></li>
 <li><a href="#readline-%E6%94%B9%E5%96%84">Readline 改善</a></li>
 <li><a href="#%E8%B5%B7%E5%8B%95%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%A8%99%E6%BA%96%E5%85%A5%E5%87%BA%E5%8A%9B%E3%81%AE%E6%94%B9%E5%96%84">起動パラメータ・標準入出力の改善</a></li>
-<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-1">不具合修正</a></li>
+<li><a href="#%E4%B8%8D%E5%85%B7%E5%90%88%E4%BF%AE%E6%AD%A3-4">不具合修正</a></li>
 </ul>
 </li>
 <li><a href="#v010">v0.1.0</a></li>
