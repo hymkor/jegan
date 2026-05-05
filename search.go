@@ -9,7 +9,6 @@ import (
 )
 
 func newCompare(v any) (func(key string, data any) bool, bool) {
-	v = types.Unwrap(v)
 	if s, ok := v.(string); ok {
 		s = strings.ToLower(s)
 		return func(key string, data any) bool {
@@ -62,7 +61,6 @@ func newCompare(v any) (func(key string, data any) bool, bool) {
 }
 
 func (app *Application) keyFuncSearch(session *Session, revert bool) error {
-
 	prompt := "Search:"
 	if revert {
 		prompt = "Search (backward):"
@@ -78,9 +76,10 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 	if len(targets) != 1 {
 		return errors.New("can not search not single value")
 	}
-	compare, ok := newCompare(targets[0])
+	targetVal := types.Unwrap(targets[0])
+	compare, ok := newCompare(targetVal)
 	if !ok {
-		return fmt.Errorf("can not search: %v", targets[0])
+		return fmt.Errorf("can not search: %v", targetVal)
 	}
 
 	match := func(p *Element) scanResult {
@@ -98,21 +97,21 @@ func (app *Application) keyFuncSearch(session *Session, revert bool) error {
 
 	if revert {
 		app.search = func() error {
-			app.message = fmt.Sprintf("Prev: %v", targets[0])
+			app.message = fmt.Sprintf("Prev: %v", targetVal)
 			return app.searchBackward(session, match)
 		}
 		app.revert = func() error {
-			app.message = fmt.Sprintf("Next: %v", targets[0])
+			app.message = fmt.Sprintf("Next: %v", targetVal)
 			return app.searchForward(session, match)
 		}
 		return app.searchBackward(session, match)
 	}
 	app.search = func() error {
-		app.message = fmt.Sprintf("Next: %v", targets[0])
+		app.message = fmt.Sprintf("Next: %v", targetVal)
 		return app.searchForward(session, match)
 	}
 	app.revert = func() error {
-		app.message = fmt.Sprintf("Prev: %v", targets[0])
+		app.message = fmt.Sprintf("Prev: %v", targetVal)
 		return app.searchBackward(session, match)
 	}
 	return app.searchForward(session, match)
