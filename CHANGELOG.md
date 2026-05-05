@@ -2,8 +2,16 @@ Changelog
 =========
 ( English / [Japanese](CHANGELOG_ja.md) )
 
-- Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (`[`, `{`, `]`, `}`). (#99)
+### Bug fixes
+
 - Fix status line displaying internal object instead of search query (e.g. "3.0") (#100)
+
+### New features
+
+- Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (`[`, `{`, `]`, `}`). (#99)
+
+### Improvements
+
 - Improved search behavior: (#101)
   - Unquoted input (e.g. `3.0`) now matches both numeric values (e.g. `3`) and strings containing the value (e.g. `"3.0"`)
   - Quoted input (e.g. `"foo"`) matches string values only, using substring matching
@@ -20,16 +28,26 @@ v0.6.0
 ------
 Apr 30, 2026
 
+### Bug fixes
+
+- Fix readline handling for `-auto` option in CLI mode (#91)
+
+### New features
+
 - Add `F1` key to open the help screen (#89)
 - Add JSON path navigation using '@' to jump to a specific item (#90)
-- Fix readline handling for `-auto` option in CLI mode (#91)
 - Add an application-local clipboard to the readline component. (#93)
 
 v0.5.0
 ------
 Apr 24, 2026
 
-- Improve search: now matches both keys and values, case-insensitive (#68)
+### Bug fixes
+
+- Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)
+
+### New features
+
 - Undo support for replace operations (`r`, `R`) (#69)
 - Undo support for deletions (#69)
   - Deleted elements are now marked as `<DEL>` instead of being removed immediately
@@ -37,12 +55,15 @@ Apr 24, 2026
   - `<DEL>` entries are omitted when saving, so deletions are finalized on disk
 - Allow deleting non-empty containers by collapsing them into `<DEL>` markers (#70)
 - Support collapsing and expanding objects and arrays with `z` (#71)
+
+### Improvements
+
+- Improve search: now matches both keys and values, case-insensitive (#68)
 - Improve readline input: (#74)
   - Add filename completion for "w" command
   - Enable history and prediction
   - Preload common JSON literals ( `null`, `false`, `true`, `""`, `{}`, `[]` )
 - Add background JSON loading support (improves startup time for large files) (#79)
-- Fix EOF error when parsing identifiers starting with 'f', 't', or 'n' (#84)
 
 v0.4.0
 ------
