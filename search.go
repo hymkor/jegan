@@ -3,7 +3,10 @@ package jegan
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
+
+	"github.com/nyaosorg/go-readline-ny"
 
 	"github.com/hymkor/jegan/types"
 )
@@ -135,6 +138,26 @@ const (
 	scanStop
 )
 
+func (app *Application) adjustWindow(session *Session) {
+	if app.csrline < session.WinPos {
+		// move window backward
+		session.Window = app.cursor
+		session.WinPos = app.csrline
+	} else if app.csrline >= session.WinPos+session.ContentHeight {
+		// move window forward
+		session.Window = app.cursor
+		session.WinPos = app.csrline
+		for i := 0; i < session.ContentHeight-1; i++ {
+			p := session.Window.Prev()
+			if p == nil {
+				break
+			}
+			session.Window = p
+			session.WinPos--
+		}
+	}
+}
+
 func (app *Application) scanForwardUntil(
 	session *Session,
 	match func(*Element) scanResult) bool {
@@ -153,10 +176,7 @@ func (app *Application) scanForwardUntil(
 		if result == scanMatch {
 			app.setCursor(_cursor)
 			app.csrline = _csrPos
-			for _csrPos-session.WinPos >= session.ContentHeight {
-				session.Window = session.Window.Next()
-				session.WinPos++
-			}
+			app.adjustWindow(session)
 			return true
 		}
 		if result == scanStop {
@@ -183,10 +203,7 @@ func (app *Application) scanBackwardUntil(
 		if result == scanMatch {
 			app.setCursor(_cursor)
 			app.csrline = _csrPos
-			for _csrPos < session.WinPos {
-				session.Window = _cursor
-				session.WinPos = _csrPos
-			}
+			app.adjustWindow(session)
 			return true
 		}
 		if result == scanStop {
@@ -231,5 +248,37 @@ func (app *Application) keyFuncUpperGroupTail(session *Session, target, here typ
 	if !found {
 		app.message = "Not found: " + string(target)
 	}
+	return nil
+}
+
+func (app *Application) keyFuncMoveTo(session *Session) error {
+	location, err := app.readLineOpt(session, "JSON Path:", "", func(*readline.Editor) {})
+	if err != nil {
+		return err
+	}
+	jsonpath, err := types.ParseJson(location)
+	if err != nil {
+		return err
+	}
+	p, n := jsonpath.Search(app.list.Front())
+	if p == nil {
+		p = app.list.Back()
+		n = app.list.Len() - 1
+
+		err = app.completeLoading(session)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return err
+		}
+		q, m := jsonpath.Search(p)
+		if q == nil {
+			app.message = jsonpath.String() + ": not found"
+			return nil
+		}
+		n += m
+		p = q
+	}
+	app.setCursor(p)
+	app.csrline = n
+	app.adjustWindow(session)
 	return nil
 }
