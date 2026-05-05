@@ -3,6 +3,7 @@ Changelog
 ( English / [Japanese](CHANGELOG_ja.md) )
 
 - Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (`[`, `{`, `]`, `}`). (#99)
+- Fix status line displaying internal object instead of search query (e.g. "3.0") (#100)
 
 v0.6.1
 ------
