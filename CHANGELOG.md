@@ -4,6 +4,10 @@ Changelog
 
 - Add key bindings to jump to the nearest parent-level bracket, or to the matching pair when on a bracket (`[`, `{`, `]`, `}`). (#99)
 - Fix status line displaying internal object instead of search query (e.g. "3.0") (#100)
+- Improved search behavior: (#101)
+  - Unquoted input (e.g. `3.0`) now matches both numeric values (e.g. `3`) and strings containing the value (e.g. `"3.0"`)
+  - Quoted input (e.g. `"foo"`) matches string values only, using substring matching
+  - Boolean and null literals are excluded from string matching
 
 v0.6.1
 ------
