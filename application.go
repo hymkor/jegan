@@ -251,14 +251,16 @@ func (app *Application) status(session *Session) (text string) {
 
 func getHeight(tty ttyadapter.Tty) (height int, err error) {
 	height = 40
-	err = tty.Open(nil)
-	if err != nil {
-		return
+	if !tty.IsOpen() {
+		err = tty.Open(nil)
+		if err != nil {
+			return
+		}
+		defer tty.Close()
 	}
 	if _, height, err = tty.Size(); err != nil {
 		height = 40
 	}
-	tty.Close()
 	return
 }
 
