@@ -43,7 +43,7 @@ func (app *Application) keyFuncHelp(session *Session) error {
 	}
 	// Run pager event loop
 	err := pg.EventLoop(
-		&fav.Tty{},     // terminal input
+		new(fav.Tty),   // terminal input
 		lines,          // data source
 		session.TtyOut) // output
 

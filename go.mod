@@ -6,13 +6,13 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/hymkor/go-generics-list v0.2.3
 	github.com/hymkor/go-safewrite v0.4.0
-	github.com/hymkor/nemo v0.3.0
+	github.com/hymkor/nemo v0.3.2
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.22
 	github.com/nyaosorg/go-inline-animation v0.3.1
 	github.com/nyaosorg/go-readline-ny v1.15.1
 	github.com/nyaosorg/go-readline-skk v0.6.2
-	github.com/nyaosorg/go-ttyadapter v0.6.2
+	github.com/nyaosorg/go-ttyadapter v0.7.0
 	github.com/nyaosorg/go-windows-dbg v0.0.0-20240724174901-9645d9b1df23
 )
 
