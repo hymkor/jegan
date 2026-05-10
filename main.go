@@ -34,7 +34,7 @@ func (c *Config) Run(args []string) error {
 	if c.Auto != "" {
 		ttyIn = &auto.Pilot{Text: strings.Split(c.Auto, "|")}
 	} else {
-		ttyIn = &fav.Tty{}
+		ttyIn = new(fav.Tty)
 	}
 
 	useStdin, names := expandArgs(args)
